@@ -7,12 +7,12 @@
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="WeltkindVPN"/>
+  <meta name="apple-mobile-web-app-title" content="Weltkind"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
   <link rel="icon" href="icons/icon-192.png"/>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet"/>
-  <title>WeltkindVPN</title>
+  <title>Weltkind</title>
   <style>
     :root{--bg:#050d14;--surface:#0a1929;--card:#0d2137;--accent:#00e676;--accent2:#00b0ff;--warn:#ff6d00;--text:#e0f7fa;--muted:#546e7a;--border:rgba(0,230,118,.12);}
     *{margin:0;padding:0;box-sizing:border-box}
@@ -86,7 +86,7 @@
   <div class="splash-bar"><div class="splash-bar-fill"></div></div>
 </div>
 <header id="hdr">
-  <div class="hdr-brand">⚡ WeltkindVPN</div>
+  <div class="hdr-brand">⚡ Weltkind</div>
   <div class="hdr-right">
     <div class="conn-pill">
       <div class="conn-dot" id="conn-dot"></div>
@@ -111,7 +111,7 @@
 <div id="frame-wrap">
   <iframe id="main-frame"
     src="https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec"
-    title="WeltkindVPN"
+    title="Weltkind"
     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation allow-modals">
   </iframe>
 </div>
@@ -169,7 +169,7 @@ async function testNotif(){
   if(p==='default')p=await Notification.requestPermission();
   if(p==='denied'){showSt('❌ Заблокировано браузером','err');return;}
   setTimeout(()=>{
-    const n=new Notification('✅ WeltkindVPN — тест',{body:'Уведомления работают! Вы будете получать напоминания.',icon:'icons/icon-192.png',tag:'vpn-test'});
+    const n=new Notification('✅ Weltkind — тест',{body:'Уведомления работают! Вы будете получать напоминания.',icon:'icons/icon-192.png',tag:'vpn-test'});
     n.onclick=()=>{window.focus();n.close();};
   },500);
   showSt('📬 Тестовое уведомление отправлено!','ok');
