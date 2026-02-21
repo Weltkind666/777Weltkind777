@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f0f1a" />
+  <meta name="description" content="Моё приложение" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Weltkind" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
+  <title>Weltkind</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=DM+Mono:wght@300;400&display=swap');
+
+    :root {
+      --bg: #0a0a14;
+      --surface: #12121f;
+      --border: rgba(120, 100, 255, 0.15);
+      --accent: #7c5cfc;
+      --accent2: #00e5ff;
+      --text: #e8e8f0;
+      --muted: #6b6b88;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Syne', sans-serif;
+      color: var(--text);
+    }
+
+    /* SPLASH / LOADING SCREEN */
+    #splash {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      z-index: 9999;
+      transition: opacity 0.5s ease;
+    }
+
+    #splash.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .logo-ring {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: var(--accent);
+      border-right-color: var(--accent2);
+      animation: spin 1s linear infinite;
+      position: relative;
+    }
+
+    .logo-ring::after {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      opacity: 0.3;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .splash-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .splash-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    /* HEADER */
+    #app-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: rgba(10, 10, 20, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 100;
+    }
+
+    .header-brand {
+      font-size: 1.1rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 6px #22c55e;
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.loading { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+    .status-dot.error { background: #ef4444; box-shadow: 0 0 6px #ef4444; animation: none; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* IFRAME CONTAINER */
+    #frame-wrap {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    #main-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    #main-frame.loaded { opacity: 1; }
+
+    /* ERROR STATE */
+    #error-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 20px;
+      padding: 40px;
+      text-align: center;
+    }
+
+    #error-state.show { display: flex; }
+
+    .error-icon {
+      font-size: 3rem;
+      filter: grayscale(0.3);
+    }
+
+    .error-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #ef4444;
+    }
+
+    .error-msg {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .retry-btn {
+      padding: 12px 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 100px;
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .retry-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(124, 92, 252, 0.4);
+    }
+
+    /* INSTALL BANNER */
+    #install-banner {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 20px;
+      flex-direction: row;
+      align-items: center;
+      gap: 14px;
+      z-index: 200;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+      min-width: 280px;
+      max-width: 90vw;
+      animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes slideUp {
+      from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+      to { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
+
+    #install-banner.show { display: flex; }
+
+    .banner-icon { font-size: 1.8rem; }
+
+    .banner-text { flex: 1; }
+    .banner-text strong { display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 2px; }
+    .banner-text span { font-size: 0.75rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+    .install-btn {
+      padding: 8px 18px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 100px;
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .close-banner {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SPLASH -->
+  <div id="splash">
+    <div class="logo-ring"></div>
+    <div class="splash-title">Weltkind</div>
+    <div class="splash-sub">ЗАГРУЗКА ПРИЛОЖЕНИЯ...</div>
+  </div>
+
+  <!-- HEADER -->
+  <header id="app-header">
+    <div class="header-brand">Weltkind</div>
+    <div class="header-status">
+      <div class="status-dot loading" id="status-dot"></div>
+      <span id="status-text">подключение...</span>
+    </div>
+  </header>
+
+  <!-- FRAME -->
+  <div id="frame-wrap">
+    <iframe
+      id="main-frame"
+      src="https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec"
+      title="Weltkind"
+      allow="camera; microphone; geolocation"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
+    ></iframe>
+
+    <!-- ERROR STATE -->
+    <div id="error-state">
+      <div class="error-icon">⚠️</div>
+      <div class="error-title">Не удалось загрузить</div>
+      <div class="error-msg">Проверьте подключение к интернету<br>или сервис временно недоступен</div>
+      <button class="retry-btn" onclick="reloadFrame()">Повторить</button>
+    </div>
+  </div>
+
+  <!-- INSTALL BANNER -->
+  <div id="install-banner">
+    <div class="banner-icon">📲</div>
+    <div class="banner-text">
+      <strong>Установить приложение</strong>
+      <span>Работает без браузера</span>
+    </div>
+    <button class="install-btn" id="install-btn">Установить</button>
+    <button class="close-banner" id="close-banner">✕</button>
+  </div>
+
+  <script>
+    const frame = document.getElementById('main-frame');
+    const splash = document.getElementById('splash');
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const errorState = document.getElementById('error-state');
+    const installBanner = document.getElementById('install-banner');
+
+    let deferredPrompt = null;
+    let loadTimer = null;
+
+    // FRAME LOAD
+    frame.addEventListener('load', () => {
+      clearTimeout(loadTimer);
+      frame.classList.add('loaded');
+      splash.classList.add('hidden');
+      statusDot.classList.remove('loading', 'error');
+      statusText.textContent = 'активен';
+    });
+
+    frame.addEventListener('error', showError);
+
+    // Timeout fallback (10 sec)
+    loadTimer = setTimeout(() => {
+      if (!frame.classList.contains('loaded')) showError();
+    }, 10000);
+
+    function showError() {
+      splash.classList.add('hidden');
+      frame.style.display = 'none';
+      errorState.classList.add('show');
+      statusDot.classList.add('error');
+      statusText.textContent = 'ошибка';
+    }
+
+    function reloadFrame() {
+      frame.style.display = '';
+      errorState.classList.remove('show');
+      statusDot.classList.remove('error');
+      statusDot.classList.add('loading');
+      statusText.textContent = 'подключение...';
+      frame.src = frame.src;
+      loadTimer = setTimeout(() => {
+        if (!frame.classList.contains('loaded')) showError();
+      }, 10000);
+    }
+
+    // SERVICE WORKER
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    // PWA INSTALL PROMPT
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      setTimeout(() => installBanner.classList.add('show'), 3000);
+    });
+
+    document.getElementById('install-btn').addEventListener('click', async () => {
+      installBanner.classList.remove('show');
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+      }
+    });
+
+    document.getElementById('close-banner').addEventListener('click', () => {
+      installBanner.classList.remove('show');
+    });
+
+    window.addEventListener('appinstalled', () => {
+      installBanner.classList.remove('show');
+      deferredPrompt = null;
+    });
+  </script>
+</body>
+</html>
