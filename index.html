@@ -38,8 +38,8 @@
     .conn-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--accent);cursor:pointer;transition:background .2s}
     .conn-pill:hover{background:rgba(0,230,118,.15)}
     .conn-dot{width:6px;height:6px;border-radius:50%;background:var(--warn);transition:background .4s,box-shadow .4s}
-    .conn-dot.blink{animation:blink 2s infinite}
     @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+    .conn-dot.blink{animation:blink 2s infinite}
     .bell-btn{position:relative;width:36px;height:36px;border-radius:10px;background:rgba(0,176,255,.08);border:1px solid rgba(0,176,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;transition:background .2s}
     .bell-btn:hover{background:rgba(0,176,255,.2)}
     .bell-badge{position:absolute;top:4px;right:4px;width:8px;height:8px;background:var(--warn);border-radius:50%;border:1px solid var(--bg);display:none}
@@ -47,11 +47,10 @@
     #frame-wrap{position:fixed;top:52px;left:0;right:0;bottom:0;z-index:10}
     #main-frame{width:100%;height:100%;border:none;display:block;opacity:0;transition:opacity .5s}
     #main-frame.loaded{opacity:1}
-
-    /* ─── Notification Panel ─── */
+    /* Panel */
     #notif-panel{position:fixed;top:60px;right:12px;z-index:500;width:min(320px,92vw);background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 16px 48px rgba(0,0,0,.7);transform:translateY(-20px) scale(.95);opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.34,1.56,.64,1)}
     #notif-panel.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all}
-    .np-title{font-size:1rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .np-title{font-size:1rem;font-weight:700;margin-bottom:14px}
     .np-label{font-family:'JetBrains Mono',monospace;font-size:.63rem;color:var(--muted);letter-spacing:.1em;margin-bottom:6px;text-transform:uppercase}
     .np-section{margin-bottom:12px}
     .np-input{width:100%;padding:9px 12px;border-radius:9px;background:rgba(0,230,118,.05);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.8rem;outline:none;transition:border .2s}
@@ -61,37 +60,32 @@
     .np-btn-green:hover{box-shadow:0 0 20px rgba(0,230,118,.4);transform:translateY(-1px)}
     .np-btn-blue{background:rgba(0,176,255,.1);border:1px solid rgba(0,176,255,.25);color:var(--accent2)}
     .np-btn-red{background:rgba(255,23,68,.08);border:1px solid rgba(255,23,68,.25);color:#ff6b6b}
-
-    /* Auto-sync status card */
-    .sync-card{border-radius:12px;padding:12px 14px;margin-bottom:12px;border:1px solid var(--border);background:rgba(0,230,118,.04)}
-    .sync-card.ok{border-color:rgba(0,230,118,.35);background:rgba(0,230,118,.07)}
-    .sync-card.warn{border-color:rgba(255,109,0,.35);background:rgba(255,109,0,.07)}
-    .sync-card.err{border-color:rgba(255,23,68,.35);background:rgba(255,23,68,.07)}
-    .sync-card .sc-row{display:flex;justify-content:space-between;align-items:center;font-size:.82rem;margin-bottom:4px}
-    .sync-card .sc-row:last-child{margin-bottom:0}
-    .sync-card .sc-label{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.7rem}
-    .sync-card .sc-val{font-weight:700}
+    /* Sync card */
+    .sync-card{border-radius:12px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--border);background:rgba(255,255,255,.03)}
+    .sync-card.ok{border-color:rgba(0,230,118,.4);background:rgba(0,230,118,.06)}
+    .sync-card.warn{border-color:rgba(255,109,0,.4);background:rgba(255,109,0,.06)}
+    .sync-card.err{border-color:rgba(255,23,68,.4);background:rgba(255,23,68,.06)}
+    .sc-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;font-size:.85rem}
+    .sc-row:last-child{margin-bottom:0}
+    .sc-lbl{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase}
+    .sc-val{font-weight:700}
     .sync-card.ok .sc-val{color:var(--accent)}
     .sync-card.warn .sc-val{color:var(--warn)}
-    .sync-card.err .sc-val{color:#ff6b6b}
-    .sync-hint{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);text-align:center;margin-top:8px;line-height:1.5}
-    .np-divider{height:1px;background:var(--border);margin:12px 0}
-    .np-status{font-family:'JetBrains Mono',monospace;font-size:.72rem;margin-top:10px;padding:8px 10px;border-radius:8px;background:rgba(0,230,118,.05);border:1px solid var(--border);display:none}
+    .sync-card.err .sc-val{color:#ff5252}
+    .sub-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.07);margin-top:8px;overflow:hidden}
+    .sub-bar-fill{height:100%;border-radius:2px;transition:width .8s ease,background .4s}
+    .np-hint{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--muted);text-align:center;margin:8px 0;line-height:1.5}
+    .np-divider{height:1px;background:var(--border);margin:10px 0}
+    .np-status{font-family:'JetBrains Mono',monospace;font-size:.72rem;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(0,230,118,.05);border:1px solid var(--border);display:none}
     .np-status.show{display:block}
     .np-status.ok{color:var(--accent);border-color:rgba(0,230,118,.3)}
     .np-status.warn{color:var(--warn);border-color:rgba(255,109,0,.3)}
     .np-status.err{color:#ff1744;border-color:rgba(255,23,68,.3)}
-
-    /* Subscription progress bar */
-    .sub-progress{margin:10px 0 4px}
-    .sub-progress-bar{height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:6px}
-    .sub-progress-fill{height:100%;border-radius:2px;transition:width .6s ease,background .4s}
-
+    /* Install banner */
     #install-banner{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(0,230,118,.25);border-radius:14px;padding:12px 16px;flex-direction:row;align-items:center;gap:12px;z-index:400;box-shadow:0 8px 32px rgba(0,0,0,.6);min-width:260px;max-width:90vw;animation:su .4s cubic-bezier(.34,1.56,.64,1)}
     @keyframes su{from{transform:translateX(-50%) translateY(80px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
     #install-banner.show{display:flex}
-    .ib-icon{font-size:1.7rem}
-    .ib-text{flex:1}
+    .ib-icon{font-size:1.7rem}.ib-text{flex:1}
     .ib-text strong{display:block;font-size:.95rem;font-weight:700}
     .ib-text span{font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
     .ib-install{padding:8px 16px;background:linear-gradient(135deg,var(--accent),#00b300);border:none;border-radius:100px;color:#000;font-family:'Rajdhani',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer}
@@ -120,7 +114,7 @@
       <div class="conn-dot blink" id="conn-dot"></div>
       <span id="conn-text">загрузка...</span>
     </div>
-    <div class="bell-btn" id="bell-btn" onclick="togglePanel()">🔔
+    <div class="bell-btn" onclick="togglePanel()">🔔
       <div class="bell-badge" id="bell-badge"></div>
     </div>
   </div>
@@ -128,44 +122,29 @@
 
 <div id="dimmer" onclick="closePanel()"></div>
 
-<!-- ─── Notification Panel ─── -->
 <div id="notif-panel">
   <div class="np-title">🔔 Уведомления о подписке</div>
 
-  <!-- Статус (заполняется автоматически из iframe) -->
+  <!-- Карточка статуса (авто-синк) -->
   <div id="sync-card" class="sync-card">
-    <div class="sc-row">
-      <span class="sc-label">СТАТУС</span>
-      <span class="sc-val" id="sc-status">—</span>
-    </div>
-    <div class="sc-row">
-      <span class="sc-label">ИСТЕКАЕТ</span>
-      <span class="sc-val" id="sc-expiry">—</span>
-    </div>
-    <div class="sc-row">
-      <span class="sc-label">ОСТАЛОСЬ</span>
-      <span class="sc-val" id="sc-days">—</span>
-    </div>
-    <div class="sub-progress">
-      <div class="sub-progress-bar"><div class="sub-progress-fill" id="sub-fill" style="width:0%"></div></div>
-    </div>
+    <div class="sc-row"><span class="sc-lbl">СТАТУС</span><span class="sc-val" id="sc-status">—</span></div>
+    <div class="sc-row"><span class="sc-lbl">ИСТЕКАЕТ</span><span class="sc-val" id="sc-expiry">—</span></div>
+    <div class="sc-row"><span class="sc-lbl">ОСТАЛОСЬ</span><span class="sc-val" id="sc-days">—</span></div>
+    <div class="sub-bar"><div class="sub-bar-fill" id="sub-fill" style="width:0%"></div></div>
   </div>
 
-  <div class="sync-hint" id="sync-hint">
-    ⬇️ Войдите в аккаунт ниже — статус обновится автоматически
-  </div>
+  <div id="np-hint" class="np-hint">⬇️ Войдите в аккаунт — данные синхронизируются автоматически</div>
 
   <div class="np-divider"></div>
 
-  <!-- Ручной ввод даты (fallback) -->
+  <!-- Ручной ввод -->
   <div class="np-section">
     <div class="np-label">Или введите дату вручную</div>
     <input type="date" id="np-date" class="np-input"/>
   </div>
-
   <button class="np-btn np-btn-green" onclick="saveNotif()">💾 Сохранить и включить</button>
   <button class="np-btn np-btn-blue" onclick="testNotif()">🧪 Тестовое уведомление</button>
-  <button class="np-btn np-btn-red" id="notif-off-btn" onclick="disableNotif()" style="display:none">🔕 Отключить уведомления</button>
+  <button class="np-btn np-btn-red" id="notif-off-btn" onclick="disableNotif()" style="display:none">🔕 Отключить</button>
 
   <div id="np-status" class="np-status"></div>
 </div>
@@ -186,24 +165,24 @@
 </div>
 
 <script>
-/* ─── Matrix canvas ─── */
+/* ── Matrix canvas ── */
 (function(){
   const c=document.getElementById('bg-canvas'),ctx=c.getContext('2d');
-  let cols,drops;
-  const chars='01アイウエオカキクケ';
+  let cols,drops;const chars='01アイウエオカキクケ';
   function resize(){c.width=innerWidth;c.height=innerHeight;cols=Math.floor(c.width/18);drops=Array(cols).fill(1);}
-  function draw(){ctx.fillStyle='rgba(5,13,20,.06)';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#00e676';ctx.font='13px monospace';for(let i=0;i<drops.length;i++){ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*18,drops[i]*18);if(drops[i]*18>c.height&&Math.random()>.975)drops[i]=0;drops[i]++;}};
+  function draw(){ctx.fillStyle='rgba(5,13,20,.06)';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#00e676';ctx.font='13px monospace';for(let i=0;i<drops.length;i++){ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*18,drops[i]*18);if(drops[i]*18>c.height&&Math.random()>.975)drops[i]=0;drops[i]++;}}
   resize();window.addEventListener('resize',resize);setInterval(draw,55);
 })();
 
-/* ─── Iframe load ─── */
+/* ── Constants ── */
+const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
+
+/* ── Iframe load ── */
 const frame=document.getElementById('main-frame');
 const dot=document.getElementById('conn-dot');
 const txt=document.getElementById('conn-text');
 let splashTimer=setTimeout(()=>{
   document.getElementById('splash').classList.add('out');
-  dot.classList.add('blink');
-  dot.style.background='var(--warn)';
   txt.textContent='медленно';
 },9000);
 
@@ -211,141 +190,90 @@ frame.addEventListener('load',()=>{
   clearTimeout(splashTimer);
   frame.classList.add('loaded');
   setTimeout(()=>document.getElementById('splash').classList.add('out'),400);
-  // Header: отображается реальный статус подписки если уже есть данные в localStorage
-  const stored=loadStoredSub();
-  if(stored && stored.date){
-    refreshHeaderStatus(stored);
-  } else {
-    dot.style.background='var(--accent)';
-    dot.style.boxShadow='0 0 8px var(--accent)';
-    dot.classList.remove('blink');
-    txt.textContent='войдите в аккаунт';
-  }
+  // Восстанавливаем из localStorage
+  applyStoredSub(loadSub());
   checkExpiry();
 });
 
-/* ─── Service Worker ─── */
+/* ── SW ── */
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 
-/* ─── Panel open/close ─── */
-function togglePanel(){
-  const p=document.getElementById('notif-panel'),d=document.getElementById('dimmer');
-  if(p.classList.contains('open')){closePanel();}
-  else{
-    p.classList.add('open');
-    d.classList.add('show');
-    renderSyncCard();
-    const s=loadStoredSub();
-    if(s && s.date) document.getElementById('np-date').value=s.date;
-  }
-}
-function closePanel(){
-  document.getElementById('notif-panel').classList.remove('open');
-  document.getElementById('dimmer').classList.remove('show');
-}
+/* ── localStorage ── */
+function loadSub(){try{return JSON.parse(localStorage.getItem('vpn_s')||'{}')||{};}catch(e){return{};}}
+function saveSub(o){localStorage.setItem('vpn_s',JSON.stringify(o));}
 
-/* ─── localStorage helpers ─── */
-function loadStoredSub(){
-  try{ return JSON.parse(localStorage.getItem('vpn_s')||'{}'); }
-  catch(e){ return {}; }
-}
-function saveStoredSub(obj){
-  localStorage.setItem('vpn_s', JSON.stringify(obj));
-}
-
-/* ─── Convert "dd.mm.yyyy" → "yyyy-mm-dd" ─── */
-function displayDateToISO(str){
-  if(!str || str==='Не определено' || str==='Не оплачено') return null;
-  // "15.03.2025" → "2025-03-15"
+/* ── Date helpers ── */
+function toISO(str){
+  if(!str||str==='Не определено'||str==='Не оплачено') return null;
   const p=str.split('.');
   if(p.length===3) return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
-  // Already ISO or other format
   const d=new Date(str);
-  if(!isNaN(d)) return d.toISOString().slice(0,10);
-  return null;
+  return isNaN(d)?null:d.toISOString().slice(0,10);
+}
+function daysLeft(iso){
+  if(!iso) return null;
+  return Math.ceil((new Date(iso)-Date.now())/86400000);
 }
 
-/* ─── Days left ─── */
-function daysLeft(isoDate){
-  if(!isoDate) return null;
-  return Math.ceil((new Date(isoDate) - Date.now()) / 86400000);
+/* ══════════════════════════════════════════
+   ★ МЕТОД 1: postMessage от iframe (Apps Script)
+     Apps Script шлёт: window.top.postMessage({type:'weltkind_sub',...})
+   ══════════════════════════════════════════ */
+window.addEventListener('message',function(e){
+  if(!e.data||e.data.type!=='weltkind_sub') return;
+  console.log('[PWA] postMessage получен от iframe:', e.data);
+  handleSubData(e.data.expiryDate, e.data.status, e.data.phone, 'postMessage');
+});
+
+/* ══════════════════════════════════════════
+   ★ МЕТОД 2: MutationObserver — наблюдаем за
+     iframe URL через hash-трюк (fallback)
+   ══════════════════════════════════════════ */
+// Слушаем hashchange который может прийти из iframe через allow-top-navigation
+window.addEventListener('hashchange',function(){
+  const hash=location.hash;
+  if(hash.startsWith('#wpwa:')){
+    try{
+      const data=JSON.parse(decodeURIComponent(hash.slice(6)));
+      if(data.type==='sub') handleSubData(data.expiryDate,data.status,data.phone,'hash');
+    }catch(e){}
+    history.replaceState(null,'',location.pathname+location.search);
+  }
+});
+
+/* ── Обработка данных подписки (единая точка) ── */
+function handleSubData(expiryDate, status, phone, source){
+  console.log('[PWA] handleSubData source='+source, expiryDate, status, phone);
+  const iso=toISO(expiryDate);
+  if(!iso && status!=='Не оплачено') return; // игнорируем мусор
+
+  const prev=loadSub();
+  // totalDays — максимальный остаток дней (зафиксируем при первом получении)
+  let totalDays=prev.totalDays||30;
+  if(iso){const d=daysLeft(iso);if(d&&d>totalDays)totalDays=d;}
+
+  const sub={date:iso,displayDate:expiryDate,status,phone,totalDays,syncedAt:Date.now()};
+  saveSub(sub);
+  applyStoredSub(sub);
+  checkExpiry();
+  // Запрашиваем разрешение автоматически если подписка активна
+  if(iso && status==='Оплачено') autoAskPermission();
 }
 
-/* ─── Sync card render ─── */
-function renderSyncCard(){
-  const s=loadStoredSub();
-  const card=document.getElementById('sync-card');
-  const scStatus=document.getElementById('sc-status');
-  const scExpiry=document.getElementById('sc-expiry');
-  const scDays=document.getElementById('sc-days');
-  const fill=document.getElementById('sub-fill');
-  const hint=document.getElementById('sync-hint');
-  const offBtn=document.getElementById('notif-off-btn');
-
-  if(!s || !s.date){
-    card.className='sync-card';
-    scStatus.textContent='неизвестен';
-    scExpiry.textContent='—';
-    scDays.textContent='—';
-    fill.style.width='0%';
-    fill.style.background='var(--muted)';
-    hint.style.display='block';
-    offBtn.style.display='none';
-    return;
-  }
-
-  hint.style.display='none';
-  offBtn.style.display='block';
-
-  const days=daysLeft(s.date);
-  scExpiry.textContent=new Date(s.date).toLocaleDateString('ru-RU');
-
-  if(days===null){
-    card.className='sync-card';
-    scStatus.textContent='нет данных';
-    scDays.textContent='—';
-  } else if(days<=0){
-    card.className='sync-card err';
-    scStatus.textContent='❌ истекла';
-    scDays.textContent=`${Math.abs(days)} дн. назад`;
-    fill.style.width='100%';
-    fill.style.background='#ff1744';
-  } else if(days<=3){
-    card.className='sync-card warn';
-    scStatus.textContent='⚠️ истекает скоро';
-    scDays.textContent=`${days} дн.`;
-    const pct=Math.min(100, Math.round((3-days)/3*100));
-    fill.style.width=pct+'%';
-    fill.style.background='var(--warn)';
-  } else {
-    card.className='sync-card ok';
-    scStatus.textContent='✅ активна';
-    scDays.textContent=`${days} дн.`;
-    const totalDays=s.totalDays||30;
-    const pct=Math.max(5, Math.min(100, Math.round(days/totalDays*100)));
-    fill.style.width=pct+'%';
-    fill.style.background='var(--accent)';
-  }
-
-  // Notification permission indicator
-  if(Notification.permission==='granted'){
-    document.getElementById('bell-badge').classList.add('show');
-  }
-}
-
-/* ─── Refresh header (conn-pill) ─── */
-function refreshHeaderStatus(s){
-  if(!s || !s.date){
+/* ── Обновляем шапку и карточку ── */
+function applyStoredSub(sub){
+  if(!sub||!sub.date){
+    dot.className='conn-dot blink';
     dot.style.background='var(--warn)';
-    dot.classList.add('blink');
-    txt.textContent='нет данных';
+    dot.style.boxShadow='';
+    txt.textContent='войдите в аккаунт';
     return;
   }
-  const days=daysLeft(s.date);
+  const days=daysLeft(sub.date);
   dot.classList.remove('blink');
   if(days===null){
-    dot.style.background='var(--muted)';
     txt.textContent='—';
+    dot.style.background='var(--muted)';
   } else if(days<=0){
     dot.style.background='#ff1744';
     dot.style.boxShadow='0 0 8px #ff1744';
@@ -355,192 +283,154 @@ function refreshHeaderStatus(s){
     dot.style.background='var(--warn)';
     dot.style.boxShadow='0 0 8px var(--warn)';
     dot.classList.add('blink');
-    txt.textContent=`${days} дн.`;
+    txt.textContent=days+' дн.';
     document.getElementById('bell-badge').classList.add('show');
   } else {
     dot.style.background='var(--accent)';
     dot.style.boxShadow='0 0 8px var(--accent)';
-    txt.textContent=`${days} дн.`;
+    txt.textContent=days+' дн.';
   }
 }
 
-/* ═══════════════════════════════════════════
-   ★ КЛЮЧЕВАЯ ИНТЕГРАЦИЯ: слушаем postMessage
-     от iframe (Apps Script)
-   ═══════════════════════════════════════════ */
-window.addEventListener('message', function(event){
-  if(!event.data || event.data.type !== 'weltkind_sub') return;
+/* ── Карточка в панели ── */
+function renderSyncCard(){
+  const sub=loadSub();
+  const card=document.getElementById('sync-card');
+  const hint=document.getElementById('np-hint');
+  const offBtn=document.getElementById('notif-off-btn');
+  const fill=document.getElementById('sub-fill');
 
-  const {expiryDate, status, phone} = event.data;
-  const isoDate = displayDateToISO(expiryDate);
-
-  // Считаем totalDays для прогресс-бара
-  const prevStored = loadStoredSub();
-  let totalDays = prevStored.totalDays || 30;
-  if(isoDate){
-    const d = daysLeft(isoDate);
-    if(d !== null && d > totalDays) totalDays = d; // максимум (когда только оплачено)
+  if(!sub||!sub.date){
+    card.className='sync-card';
+    document.getElementById('sc-status').textContent='неизвестен';
+    document.getElementById('sc-expiry').textContent='—';
+    document.getElementById('sc-days').textContent='—';
+    fill.style.width='0%';
+    hint.style.display='block';
+    offBtn.style.display='none';
+    return;
   }
+  hint.style.display='none';
+  offBtn.style.display='block';
+  document.getElementById('sc-expiry').textContent=new Date(sub.date).toLocaleDateString('ru-RU');
+  const days=daysLeft(sub.date);
+  if(days===null){card.className='sync-card';return;}
+  if(days<=0){
+    card.className='sync-card err';
+    document.getElementById('sc-status').textContent='❌ истекла';
+    document.getElementById('sc-days').textContent=Math.abs(days)+' дн. назад';
+    fill.style.width='100%';fill.style.background='#ff1744';
+  } else if(days<=3){
+    card.className='sync-card warn';
+    document.getElementById('sc-status').textContent='⚠️ скоро истекает';
+    document.getElementById('sc-days').textContent=days+' дн.';
+    fill.style.width=Math.round((3-days)/3*100)+'%';fill.style.background='var(--warn)';
+  } else {
+    card.className='sync-card ok';
+    document.getElementById('sc-status').textContent='✅ активна';
+    document.getElementById('sc-days').textContent=days+' дн.';
+    const pct=Math.max(5,Math.min(100,Math.round(days/(sub.totalDays||30)*100)));
+    fill.style.width=pct+'%';fill.style.background='var(--accent)';
+  }
+  if(Notification.permission==='granted') document.getElementById('bell-badge').classList.add('show');
+}
 
-  const sub = {
-    date: isoDate,
-    displayDate: expiryDate,
-    status: status,
-    phone: phone,
-    totalDays: totalDays,
-    syncedAt: Date.now()
-  };
-  saveStoredSub(sub);
-
-  // Обновляем шапку
-  refreshHeaderStatus(sub);
-
-  // Если панель открыта — обновляем
-  if(document.getElementById('notif-panel').classList.contains('open')){
+/* ── Panel ── */
+function togglePanel(){
+  const p=document.getElementById('notif-panel'),d=document.getElementById('dimmer');
+  if(p.classList.contains('open')){closePanel();}
+  else{
+    p.classList.add('open');d.classList.add('show');
     renderSyncCard();
-    if(isoDate) document.getElementById('np-date').value = isoDate;
+    const s=loadSub();
+    if(s.date) document.getElementById('np-date').value=s.date;
   }
+}
+function closePanel(){
+  document.getElementById('notif-panel').classList.remove('open');
+  document.getElementById('dimmer').classList.remove('show');
+}
 
-  // Автоматически запрашиваем разрешение на уведомления и сохраняем
-  if(isoDate && status === 'Оплачено'){
-    autoEnableNotifications(sub);
-  }
-
-  // Проверяем — нужно ли показать уведомление прямо сейчас
-  checkExpiry();
-});
-
-/* ─── Auto-enable notifications when subscription data arrives ─── */
-async function autoEnableNotifications(sub){
-  if(Notification.permission === 'default'){
-    const perm = await Notification.requestPermission();
-    if(perm !== 'granted') return;
-  }
-  if(Notification.permission === 'granted'){
-    document.getElementById('bell-badge').classList.add('show');
-    // Тихо сохраняем — уведомления уже включены
-    showSt('✅ Данные синхронизированы автоматически! Уведомлю за 3 дня до конца подписки.','ok');
+/* ── Auto permission ── */
+async function autoAskPermission(){
+  if(Notification.permission==='default'){
+    const p=await Notification.requestPermission();
+    if(p==='granted'){
+      showSt('✅ Данные синхронизированы! Уведомлю за 3 дня до конца подписки.','ok');
+      document.getElementById('bell-badge').classList.add('show');
+    }
   }
 }
 
-/* ─── Manual save ─── */
+/* ── Manual save ── */
 async function saveNotif(){
   const date=document.getElementById('np-date').value;
   if(!date){showSt('⚠️ Укажите дату','warn');return;}
-
   let p=Notification.permission;
   if(p==='default') p=await Notification.requestPermission();
   if(p==='denied'){showSt('❌ Уведомления заблокированы браузером','err');return;}
-
-  const stored=loadStoredSub();
-  stored.date=date;
-  stored.totalDays=stored.totalDays||30;
-  stored.savedAt=Date.now();
-  saveStoredSub(stored);
-
-  refreshHeaderStatus(stored);
+  const sub=loadSub();
+  sub.date=date;sub.totalDays=sub.totalDays||30;sub.savedAt=Date.now();
+  saveSub(sub);
+  applyStoredSub(sub);
   renderSyncCard();
   showSt('✅ Сохранено! Уведомлю за 3 дня до конца подписки.','ok');
   document.getElementById('bell-badge').classList.add('show');
   checkExpiry();
 }
 
-/* ─── Disable notifications ─── */
 function disableNotif(){
-  saveStoredSub({});
-  refreshHeaderStatus({});
-  renderSyncCard();
+  saveSub({});applyStoredSub({});renderSyncCard();
   document.getElementById('bell-badge').classList.remove('show');
   document.getElementById('np-date').value='';
   showSt('🔕 Уведомления отключены','warn');
 }
 
-/* ─── Test notification ─── */
+/* ── Test notification ── */
 async function testNotif(){
   let p=Notification.permission;
   if(p==='default') p=await Notification.requestPermission();
   if(p==='denied'){showSt('❌ Заблокировано браузером','err');return;}
   setTimeout(()=>{
     const n=new Notification('✅ Weltkind — тест',{
-      body:'Уведомления работают! Данные синхронизируются автоматически при входе в аккаунт.',
-      icon:'icons/icon-192.png',
-      tag:'vpn-test'
+      body:'Уведомления работают! Данные о подписке синхронизируются при входе в аккаунт.',
+      icon:'icons/icon-192.png',tag:'vpn-test'
     });
     n.onclick=()=>{window.focus();n.close();};
   },500);
   showSt('📬 Тестовое уведомление отправлено!','ok');
 }
 
-/* ─── Check expiry and show notification ─── */
+/* ── Check expiry & push notification ── */
 function checkExpiry(){
-  const s=loadStoredSub();
-  if(!s || !s.date || Notification.permission!=='granted') return;
-
-  const days=daysLeft(s.date);
-  if(days===null) return;
-
-  if(days<=3){
-    const title=days<=0?'🚨 Подписка истекла!':`⚠️ Подписка истекает через ${days} дн.`;
-    const body=days<=0
-      ?'Продлите VPN прямо сейчас! Откройте приложение.'
-      :'Осталось совсем немного — зайдите и продлите подписку.';
-    setTimeout(()=>{
-      const n=new Notification(title,{
-        body,
-        icon:'icons/icon-192.png',
-        tag:'vpn-expiry',
-        renotify:true,
-        vibrate:[200,100,200,100,200]
-      });
-      n.onclick=()=>{window.focus();n.close();};
-    },1500);
-    document.getElementById('bell-badge').classList.add('show');
-  }
-}
-
-/* ─── Show status message ─── */
-function showSt(msg,type){
-  const e=document.getElementById('np-status');
-  e.textContent=msg;
-  e.className='np-status show '+type;
-}
-
-/* ─── On load: restore stored data ─── */
-window.addEventListener('DOMContentLoaded',()=>{
-  const s=loadStoredSub();
-  if(s && s.date){
-    refreshHeaderStatus(s);
-    checkExpiry();
-  }
-  // Периодическая проверка каждый час
-  setInterval(checkExpiry, 3600000);
-  // Ежедневно в 9:00 — дополнительный check
-  scheduleNextDayCheck();
-});
-
-/* ─── Schedule daily check ─── */
-function scheduleNextDayCheck(){
-  const now=new Date();
-  const next=new Date(now);
-  next.setHours(9,0,0,0);
-  if(next<=now) next.setDate(next.getDate()+1);
-  const delay=next-now;
+  const sub=loadSub();
+  if(!sub.date||Notification.permission!=='granted') return;
+  const days=daysLeft(sub.date);
+  if(days===null||days>3) return;
+  const title=days<=0?'🚨 Подписка истекла!':`⚠️ Подписка истекает через ${days} дн.`;
+  const body=days<=0?'Продлите VPN прямо сейчас!':'Зайдите и продлите подписку.';
   setTimeout(()=>{
-    checkExpiry();
-    scheduleNextDayCheck();
-  }, delay);
+    const n=new Notification(title,{body,icon:'icons/icon-192.png',tag:'vpn-expiry',renotify:true,vibrate:[200,100,200]});
+    n.onclick=()=>{window.focus();n.close();};
+  },1500);
+  document.getElementById('bell-badge').classList.add('show');
 }
 
-/* ─── PWA install ─── */
-let dp=null;
-window.addEventListener('beforeinstallprompt',e=>{
-  e.preventDefault();dp=e;
-  setTimeout(()=>document.getElementById('install-banner').classList.add('show'),4000);
+function showSt(msg,type){
+  const e=document.getElementById('np-status');e.textContent=msg;e.className='np-status show '+type;
+}
+
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded',()=>{
+  const sub=loadSub();
+  if(sub.date){applyStoredSub(sub);checkExpiry();}
+  setInterval(checkExpiry,3600000);
 });
-document.getElementById('install-btn').onclick=async()=>{
-  document.getElementById('install-banner').classList.remove('show');
-  if(dp){dp.prompt();await dp.userChoice;dp=null;}
-};
+
+/* ── PWA install ── */
+let dp=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;setTimeout(()=>document.getElementById('install-banner').classList.add('show'),4000);});
+document.getElementById('install-btn').onclick=async()=>{document.getElementById('install-banner').classList.remove('show');if(dp){dp.prompt();await dp.userChoice;dp=null;}};
 window.addEventListener('appinstalled',()=>document.getElementById('install-banner').classList.remove('show'));
 </script>
 </body>
