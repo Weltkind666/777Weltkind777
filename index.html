@@ -14,9 +14,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet"/>
   <title>Weltkind</title>
   <style>
-    :root{--bg:#050d14;--surface:#0a1929;--card:#0d2137;--accent:#00e676;--accent2:#00b0ff;--warn:#ff6d00;--text:#e0f7fa;--muted:#546e7a;--border:rgba(0,230,118,.12);}
+    :root {
+      --bg:#050d14; --surface:#0a1929; --card:#0d2137;
+      --accent:#00e676; --accent2:#00b0ff; --warn:#ff6d00;
+      --text:#e0f7fa; --muted:#546e7a; --border:rgba(0,230,118,.12);
+    }
     *{margin:0;padding:0;box-sizing:border-box}
     html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Rajdhani',sans-serif;color:var(--text)}
+
+    /* ── Splash ── */
     #bg-canvas{position:fixed;inset:0;z-index:0;opacity:.3}
     #splash{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s ease}
     #splash.out{opacity:0;pointer-events:none}
@@ -32,23 +38,73 @@
     .splash-bar{margin-top:32px;width:160px;height:2px;background:rgba(0,230,118,.12);border-radius:2px;overflow:hidden}
     .splash-bar-fill{height:100%;width:0%;background:var(--accent);border-radius:2px;animation:bf 2.2s ease forwards}
     @keyframes bf{to{width:100%}}
-    #hdr{position:fixed;top:0;left:0;right:0;height:52px;z-index:200;background:rgba(5,13,20,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px}
-    .hdr-brand{font-size:1.1rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .hdr-right{display:flex;align-items:center;gap:10px}
-    .conn-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--accent);cursor:pointer;transition:background .2s}
+
+    /* ── Header ── */
+    #hdr{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(5,13,20,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 12px;display:flex;align-items:center;justify-content:space-between;height:52px;gap:8px}
+    .hdr-left{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .hdr-brand{font-size:1.05rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
+    #ip-chip{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;background:rgba(0,176,255,.06);border:1px solid rgba(0,176,255,.15);font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);transition:all .3s;cursor:default;white-space:nowrap;max-width:150px;overflow:hidden}
+    #ip-chip.loaded{color:var(--accent2);border-color:rgba(0,176,255,.3)}
+    #ip-flag{font-size:.85rem;line-height:1;flex-shrink:0}
+    #ip-text{overflow:hidden;text-overflow:ellipsis}
+    .hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .conn-pill{display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--accent);cursor:pointer;transition:background .2s;white-space:nowrap}
     .conn-pill:hover{background:rgba(0,230,118,.15)}
-    .conn-dot{width:6px;height:6px;border-radius:50%;background:var(--warn);transition:background .4s,box-shadow .4s}
+    .conn-dot{width:6px;height:6px;border-radius:50%;background:var(--warn);transition:background .4s,box-shadow .4s;flex-shrink:0}
     @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
     .conn-dot.blink{animation:blink 2s infinite}
-    .bell-btn{position:relative;width:36px;height:36px;border-radius:10px;background:rgba(0,176,255,.08);border:1px solid rgba(0,176,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;transition:background .2s}
+    .bell-btn{position:relative;width:34px;height:34px;border-radius:10px;background:rgba(0,176,255,.08);border:1px solid rgba(0,176,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:background .2s;flex-shrink:0}
     .bell-btn:hover{background:rgba(0,176,255,.2)}
-    .bell-badge{position:absolute;top:4px;right:4px;width:8px;height:8px;background:var(--warn);border-radius:50%;border:1px solid var(--bg);display:none}
+    .bell-badge{position:absolute;top:3px;right:3px;width:8px;height:8px;background:var(--warn);border-radius:50%;border:1px solid var(--bg);display:none}
     .bell-badge.show{display:block}
-    #frame-wrap{position:fixed;top:52px;left:0;right:0;bottom:0;z-index:10}
+
+    /* Offline bar */
+    #offline-bar{position:fixed;top:52px;left:0;right:0;z-index:190;background:#b71c1c;color:#fff;font-family:'JetBrains Mono',monospace;font-size:.7rem;text-align:center;padding:5px;display:none;animation:slideDown .3s ease}
+    #offline-bar.show{display:block}
+    @keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+
+    /* ── Frame + Pull-to-refresh ── */
+    #frame-wrap{position:fixed;top:52px;left:0;right:0;bottom:0;z-index:10;overflow:hidden}
+    #pull-indicator{position:absolute;top:0;left:50%;transform:translateX(-50%) translateY(-60px);width:36px;height:36px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:none;align-items:center;justify-content:center;font-size:1.1rem;z-index:20;pointer-events:none;opacity:0;transition:opacity .2s}
+    @keyframes spin{to{transform:translateX(-50%) translateY(8px) rotate(360deg)}}
+    #pull-indicator.spinning{animation:spin .6s linear infinite;display:flex}
     #main-frame{width:100%;height:100%;border:none;display:block;opacity:0;transition:opacity .5s}
     #main-frame.loaded{opacity:1}
-    /* Panel */
-    #notif-panel{position:fixed;top:60px;right:12px;z-index:500;width:min(320px,92vw);background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 16px 48px rgba(0,0,0,.7);transform:translateY(-20px) scale(.95);opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.34,1.56,.64,1)}
+
+    /* Offline page */
+    #offline-page{position:absolute;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:15;padding:24px;text-align:center}
+    #offline-page.show{display:flex}
+    .offline-icon{font-size:3.5rem}
+    .offline-title{font-size:1.4rem;font-weight:700}
+    .offline-sub{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--muted);line-height:1.6}
+    .offline-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 20px;width:100%;max-width:320px;text-align:left}
+    .offline-card-title{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+    .offline-row{display:flex;justify-content:space-between;font-size:.9rem;margin-bottom:6px}
+    .offline-row:last-child{margin-bottom:0}
+    .offline-val{font-weight:700;color:var(--accent)}
+    .offline-val.warn{color:var(--warn)}
+    .offline-val.err{color:#ff5252}
+    .offline-retry{margin-top:8px;padding:10px 24px;background:linear-gradient(135deg,var(--accent),#00b300);border:none;border-radius:100px;color:#000;font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer}
+
+    /* ── Onboarding ── */
+    #onboarding{position:fixed;inset:0;z-index:8888;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px}
+    #onboarding.done{display:none}
+    .ob-slide{display:none;flex-direction:column;align-items:center;text-align:center;max-width:320px;width:100%}
+    .ob-slide.active{display:flex;animation:fadeSlide .35s ease}
+    @keyframes fadeSlide{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+    .ob-emoji{font-size:4rem;margin-bottom:20px}
+    .ob-title{font-size:1.5rem;font-weight:700;margin-bottom:14px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .ob-desc{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--muted);line-height:1.75;max-width:280px}
+    .ob-desc strong{color:var(--text)}
+    .ob-dots{display:flex;gap:8px;margin:28px 0 22px}
+    .ob-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:all .3s}
+    .ob-dot.active{background:var(--accent);width:24px;border-radius:4px}
+    .ob-btn{padding:13px 40px;background:linear-gradient(135deg,var(--accent),#00b300);border:none;border-radius:100px;color:#000;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s}
+    .ob-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,230,118,.35)}
+    .ob-skip{background:none;border:none;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.7rem;cursor:pointer;margin-top:14px;text-decoration:underline;padding:4px}
+
+    /* ── Panel ── */
+    #notif-panel{position:fixed;top:60px;right:12px;z-index:500;width:min(330px,92vw);background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 16px 48px rgba(0,0,0,.75);transform:translateY(-20px) scale(.95);opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.34,1.56,.64,1);max-height:calc(100vh - 80px);overflow-y:auto}
     #notif-panel.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all}
     .np-title{font-size:1rem;font-weight:700;margin-bottom:14px}
     .np-label{font-family:'JetBrains Mono',monospace;font-size:.63rem;color:var(--muted);letter-spacing:.1em;margin-bottom:6px;text-transform:uppercase}
@@ -59,28 +115,41 @@
     .np-btn-green{background:linear-gradient(135deg,var(--accent),#00b300);color:#000}
     .np-btn-green:hover{box-shadow:0 0 20px rgba(0,230,118,.4);transform:translateY(-1px)}
     .np-btn-blue{background:rgba(0,176,255,.1);border:1px solid rgba(0,176,255,.25);color:var(--accent2)}
+    .np-btn-purple{background:rgba(156,39,176,.1);border:1px solid rgba(156,39,176,.28);color:#ce93d8}
     .np-btn-red{background:rgba(255,23,68,.08);border:1px solid rgba(255,23,68,.25);color:#ff6b6b}
-    /* Sync card */
-    .sync-card{border-radius:12px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--border);background:rgba(255,255,255,.03)}
-    .sync-card.ok{border-color:rgba(0,230,118,.4);background:rgba(0,230,118,.06)}
-    .sync-card.warn{border-color:rgba(255,109,0,.4);background:rgba(255,109,0,.06)}
-    .sync-card.err{border-color:rgba(255,23,68,.4);background:rgba(255,23,68,.06)}
-    .sc-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;font-size:.85rem}
-    .sc-row:last-child{margin-bottom:0}
-    .sc-lbl{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase}
-    .sc-val{font-weight:700}
-    .sync-card.ok .sc-val{color:var(--accent)}
-    .sync-card.warn .sc-val{color:var(--warn)}
-    .sync-card.err .sc-val{color:#ff5252}
-    .sub-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.07);margin-top:8px;overflow:hidden}
+
+    /* Dashboard card */
+    .dash-card{border-radius:14px;padding:14px 16px;margin-bottom:12px;border:1px solid var(--border);background:rgba(255,255,255,.03)}
+    .dash-card.ok{border-color:rgba(0,230,118,.4);background:rgba(0,230,118,.05)}
+    .dash-card.warn{border-color:rgba(255,109,0,.4);background:rgba(255,109,0,.05)}
+    .dash-card.err{border-color:rgba(255,23,68,.4);background:rgba(255,23,68,.05)}
+    .dc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .dc-lbl{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    .dc-badge{font-size:.75rem;font-weight:700;padding:2px 9px;border-radius:20px;background:rgba(0,230,118,.12);color:var(--accent)}
+    .dash-card.warn .dc-badge{background:rgba(255,109,0,.12);color:var(--warn)}
+    .dash-card.err .dc-badge{background:rgba(255,23,68,.12);color:#ff5252}
+    .dc-days-num{font-size:2.6rem;font-weight:700;line-height:1;color:var(--accent);margin-bottom:2px}
+    .dash-card.warn .dc-days-num{color:var(--warn)}
+    .dash-card.err .dc-days-num{color:#ff5252}
+    .dc-days-sub{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted)}
+    .dc-meta{display:flex;gap:14px;margin-top:12px}
+    .dc-meta-item{flex:1}
+    .dc-meta-lbl{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);text-transform:uppercase}
+    .dc-meta-val{font-size:.82rem;font-weight:600;margin-top:2px}
+    .sub-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.07);margin-top:10px;overflow:hidden}
     .sub-bar-fill{height:100%;border-radius:2px;transition:width .8s ease,background .4s}
-    .np-hint{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--muted);text-align:center;margin:8px 0;line-height:1.5}
+    .history-list{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+    .history-item{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:8px;background:rgba(0,230,118,.04);border:1px solid rgba(0,230,118,.08)}
+    .history-date{font-family:'JetBrains Mono',monospace;font-size:.67rem;color:var(--muted)}
+    .history-val{font-size:.75rem;color:var(--accent);font-weight:600}
+    .np-hint{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--muted);text-align:center;margin:6px 0 10px;line-height:1.5}
     .np-divider{height:1px;background:var(--border);margin:10px 0}
     .np-status{font-family:'JetBrains Mono',monospace;font-size:.72rem;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(0,230,118,.05);border:1px solid var(--border);display:none}
     .np-status.show{display:block}
     .np-status.ok{color:var(--accent);border-color:rgba(0,230,118,.3)}
     .np-status.warn{color:var(--warn);border-color:rgba(255,109,0,.3)}
     .np-status.err{color:#ff1744;border-color:rgba(255,23,68,.3)}
+
     /* Install banner */
     #install-banner{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(0,230,118,.25);border-radius:14px;padding:12px 16px;flex-direction:row;align-items:center;gap:12px;z-index:400;box-shadow:0 8px 32px rgba(0,0,0,.6);min-width:260px;max-width:90vw;animation:su .4s cubic-bezier(.34,1.56,.64,1)}
     @keyframes su{from{transform:translateX(-50%) translateY(80px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
@@ -97,6 +166,33 @@
 <body>
 <canvas id="bg-canvas"></canvas>
 
+<!-- ════════ ONBOARDING (показывается 1 раз) ════════ -->
+<div id="onboarding">
+  <div class="ob-slide active">
+    <div class="ob-emoji">⚡</div>
+    <div class="ob-title">Weltkind VPN</div>
+    <div class="ob-desc">Добро пожаловать!<br><br>Приложение для управления вашей <strong>VPN-подпиской</strong> — быстро и удобно прямо с телефона.</div>
+  </div>
+  <div class="ob-slide">
+    <div class="ob-emoji">📱</div>
+    <div class="ob-title">Войдите по номеру</div>
+    <div class="ob-desc">Введите номер телефона в формате <strong>79161234567</strong><br><br>Система найдёт вашу подписку и покажет статус оплаты.</div>
+  </div>
+  <div class="ob-slide">
+    <div class="ob-emoji">🔔</div>
+    <div class="ob-title">Уведомления</div>
+    <div class="ob-desc">Нажмите кнопку <strong>🔔</strong> в правом углу и подключите Telegram-бота.<br><br>Вы получите уведомление <strong>за 3 дня</strong> до конца подписки.</div>
+  </div>
+  <div class="ob-dots">
+    <div class="ob-dot active"></div>
+    <div class="ob-dot"></div>
+    <div class="ob-dot"></div>
+  </div>
+  <button class="ob-btn" id="ob-next-btn" onclick="obNext()">Далее →</button>
+  <button class="ob-skip" onclick="obFinish()">Пропустить</button>
+</div>
+
+<!-- ════════ SPLASH ════════ -->
 <div id="splash">
   <div class="vpn-orb">
     <div class="orb-ring"></div><div class="orb-ring"></div><div class="orb-ring"></div>
@@ -107,10 +203,17 @@
   <div class="splash-bar"><div class="splash-bar-fill"></div></div>
 </div>
 
+<!-- ════════ HEADER ════════ -->
 <header id="hdr">
-  <div class="hdr-brand">⚡ Weltkind</div>
+  <div class="hdr-left">
+    <div class="hdr-brand">⚡ Weltkind</div>
+    <div id="ip-chip" title="Ваш IP">
+      <span id="ip-flag">🌐</span>
+      <span id="ip-text">...</span>
+    </div>
+  </div>
   <div class="hdr-right">
-    <div class="conn-pill" onclick="togglePanel()" title="Статус подписки">
+    <div class="conn-pill" onclick="togglePanel()">
       <div class="conn-dot blink" id="conn-dot"></div>
       <span id="conn-text">загрузка...</span>
     </div>
@@ -120,36 +223,75 @@
   </div>
 </header>
 
+<div id="offline-bar">📡 Нет подключения — показаны кэшированные данные</div>
 <div id="dimmer" onclick="closePanel()"></div>
 
+<!-- ════════ PANEL ════════ -->
 <div id="notif-panel">
-  <div class="np-title">🔔 Уведомления о подписке</div>
+  <div class="np-title">📊 Моя подписка</div>
 
-  <!-- Карточка статуса (авто-синк) -->
-  <div id="sync-card" class="sync-card">
-    <div class="sc-row"><span class="sc-lbl">СТАТУС</span><span class="sc-val" id="sc-status">—</span></div>
-    <div class="sc-row"><span class="sc-lbl">ИСТЕКАЕТ</span><span class="sc-val" id="sc-expiry">—</span></div>
-    <div class="sc-row"><span class="sc-lbl">ОСТАЛОСЬ</span><span class="sc-val" id="sc-days">—</span></div>
+  <!-- Дашборд -->
+  <div id="dash-card" class="dash-card">
+    <div class="dc-head">
+      <span class="dc-lbl">Weltkind VPN</span>
+      <span class="dc-badge" id="dc-badge">—</span>
+    </div>
+    <div class="dc-days-num" id="dc-days">—</div>
+    <div class="dc-days-sub" id="dc-days-sub">дней до окончания</div>
+    <div class="dc-meta">
+      <div class="dc-meta-item">
+        <div class="dc-meta-lbl">Истекает</div>
+        <div class="dc-meta-val" id="dc-expiry">—</div>
+      </div>
+      <div class="dc-meta-item">
+        <div class="dc-meta-lbl">Синхронизировано</div>
+        <div class="dc-meta-val" id="dc-synced">—</div>
+      </div>
+    </div>
     <div class="sub-bar"><div class="sub-bar-fill" id="sub-fill" style="width:0%"></div></div>
   </div>
 
   <div id="np-hint" class="np-hint">⬇️ Войдите в аккаунт — данные синхронизируются автоматически</div>
 
+  <!-- История -->
+  <div id="history-section" style="display:none">
+    <div class="np-label">📋 История продлений</div>
+    <div class="history-list" id="history-list"></div>
+    <div style="height:8px"></div>
+  </div>
+
   <div class="np-divider"></div>
 
-  <!-- Ручной ввод -->
+  <button class="np-btn np-btn-blue" onclick="shareApp()">🔗 Поделиться приложением</button>
+  <button class="np-btn np-btn-purple" id="cal-btn" onclick="addToCalendar()" style="display:none">📅 Добавить в календарь</button>
+  <button class="np-btn np-btn-red" id="notif-off-btn" onclick="disableNotif()" style="display:none">🔕 Отключить уведомления</button>
+
+  <div class="np-divider"></div>
+
   <div class="np-section">
-    <div class="np-label">Или введите дату вручную</div>
+    <div class="np-label">Ввести дату вручную</div>
     <input type="date" id="np-date" class="np-input"/>
   </div>
-  <button class="np-btn np-btn-green" onclick="saveNotif()">💾 Сохранить и включить</button>
+  <button class="np-btn np-btn-green" onclick="saveNotif()">💾 Сохранить дату</button>
   <button class="np-btn np-btn-blue" onclick="testNotif()">🧪 Тестовое уведомление</button>
-  <button class="np-btn np-btn-red" id="notif-off-btn" onclick="disableNotif()" style="display:none">🔕 Отключить</button>
-
   <div id="np-status" class="np-status"></div>
 </div>
 
+<!-- ════════ FRAME ════════ -->
 <div id="frame-wrap">
+  <div id="pull-indicator">🔄</div>
+  <div id="offline-page">
+    <div class="offline-icon">📡</div>
+    <div class="offline-title">Нет подключения</div>
+    <div class="offline-sub">Проверьте интернет.<br>Данные подписки из кэша — ниже.</div>
+    <div class="offline-card" id="ol-card" style="display:none">
+      <div class="offline-card-title">Кэшированные данные</div>
+      <div class="offline-row"><span>Статус</span><span class="offline-val" id="ol-status">—</span></div>
+      <div class="offline-row"><span>Истекает</span><span class="offline-val" id="ol-expiry">—</span></div>
+      <div class="offline-row"><span>Осталось</span><span class="offline-val" id="ol-days">—</span></div>
+    </div>
+    <button class="offline-retry" onclick="retryConn()">🔄 Повторить</button>
+  </div>
   <iframe id="main-frame"
     src="https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec"
     title="Weltkind"
@@ -165,7 +307,7 @@
 </div>
 
 <script>
-/* ── Matrix canvas ── */
+/* ════ MATRIX BG ════ */
 (function(){
   const c=document.getElementById('bg-canvas'),ctx=c.getContext('2d');
   let cols,drops;const chars='01アイウエオカキクケ';
@@ -174,260 +316,301 @@
   resize();window.addEventListener('resize',resize);setInterval(draw,55);
 })();
 
-/* ── Constants ── */
-const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
+/* ════ ONBOARDING ════ */
+let obIdx=0;
+function obInit(){if(localStorage.getItem('onboarded'))document.getElementById('onboarding').classList.add('done');}
+function obNext(){
+  obIdx++;
+  if(obIdx>=3){obFinish();return;}
+  document.querySelectorAll('.ob-slide').forEach((s,i)=>s.classList.toggle('active',i===obIdx));
+  document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('active',i===obIdx));
+  if(obIdx===2)document.getElementById('ob-next-btn').textContent='Начать →';
+}
+function obFinish(){localStorage.setItem('onboarded','1');document.getElementById('onboarding').classList.add('done');}
 
-/* ── Iframe load ── */
+/* ════ IP WIDGET ════ */
+function flagEmoji(code){
+  if(!code||code.length!==2)return'🌐';
+  return String.fromCodePoint(...[...code.toUpperCase()].map(c=>0x1F1E6+c.charCodeAt(0)-65));
+}
+async function loadIP(){
+  const cached=sessionStorage.getItem('ip_data');
+  if(cached){applyIP(JSON.parse(cached));return;}
+  try{
+    const r=await fetch('https://ipapi.co/json/',{signal:AbortSignal.timeout(5000)});
+    const d=await r.json();
+    if(d.ip){
+      const data={ip:d.ip,country:d.country_code||'',city:d.city||''};
+      sessionStorage.setItem('ip_data',JSON.stringify(data));
+      applyIP(data);
+    }
+  }catch(e){document.getElementById('ip-text').textContent='VPN';}
+}
+function applyIP(d){
+  const parts=(d.ip||'').split('.');
+  const short=parts.length===4?`${parts[0]}.*.*.${parts[3]}`:d.ip;
+  document.getElementById('ip-flag').textContent=flagEmoji(d.country);
+  document.getElementById('ip-text').textContent=`${d.country} ${short}`.trim();
+  document.getElementById('ip-chip').classList.add('loaded');
+  document.getElementById('ip-chip').title=`IP: ${d.ip}${d.city?' · '+d.city:''}`;
+}
+
+/* ════ IFRAME ════ */
 const frame=document.getElementById('main-frame');
 const dot=document.getElementById('conn-dot');
 const txt=document.getElementById('conn-text');
-let splashTimer=setTimeout(()=>{
-  document.getElementById('splash').classList.add('out');
-  txt.textContent='медленно';
-},9000);
-
+let splashT=setTimeout(()=>{document.getElementById('splash').classList.add('out');txt.textContent='медленно';},9000);
 frame.addEventListener('load',()=>{
-  clearTimeout(splashTimer);
+  clearTimeout(splashT);
   frame.classList.add('loaded');
   setTimeout(()=>document.getElementById('splash').classList.add('out'),400);
-  // Восстанавливаем из localStorage
-  applyStoredSub(loadSub());
-  checkExpiry();
+  applyStoredSub(loadSub());checkExpiry();
 });
 
-/* ── SW ── */
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
-
-/* ── localStorage ── */
-function loadSub(){try{return JSON.parse(localStorage.getItem('vpn_s')||'{}')||{};}catch(e){return{};}}
-function saveSub(o){localStorage.setItem('vpn_s',JSON.stringify(o));}
-
-/* ── Date helpers ── */
-function toISO(str){
-  if(!str||str==='Не определено'||str==='Не оплачено') return null;
-  const p=str.split('.');
-  if(p.length===3) return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
-  const d=new Date(str);
-  return isNaN(d)?null:d.toISOString().slice(0,10);
-}
-function daysLeft(iso){
-  if(!iso) return null;
-  return Math.ceil((new Date(iso)-Date.now())/86400000);
+/* ════ SERVICE WORKER ════ */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+    if('periodicSync' in reg)reg.periodicSync.register('check-subscription',{minInterval:86400000}).catch(()=>{});
+  }).catch(()=>{});
+  navigator.serviceWorker.addEventListener('message',e=>{if(e.data?.type==='bg_check')checkExpiry();});
 }
 
-/* ══════════════════════════════════════════
-   ★ МЕТОД 1: postMessage от iframe (Apps Script)
-     Apps Script шлёт: window.top.postMessage({type:'weltkind_sub',...})
-   ══════════════════════════════════════════ */
-window.addEventListener('message',function(e){
-  if(!e.data||e.data.type!=='weltkind_sub') return;
-  console.log('[PWA] postMessage получен от iframe:', e.data);
-  handleSubData(e.data.expiryDate, e.data.status, e.data.phone, 'postMessage');
-});
-
-/* ══════════════════════════════════════════
-   ★ МЕТОД 2: MutationObserver — наблюдаем за
-     iframe URL через hash-трюк (fallback)
-   ══════════════════════════════════════════ */
-// Слушаем hashchange который может прийти из iframe через allow-top-navigation
-window.addEventListener('hashchange',function(){
-  const hash=location.hash;
-  if(hash.startsWith('#wpwa:')){
-    try{
-      const data=JSON.parse(decodeURIComponent(hash.slice(6)));
-      if(data.type==='sub') handleSubData(data.expiryDate,data.status,data.phone,'hash');
-    }catch(e){}
-    history.replaceState(null,'',location.pathname+location.search);
-  }
-});
-
-/* ── Обработка данных подписки (единая точка) ── */
-function handleSubData(expiryDate, status, phone, source){
-  console.log('[PWA] handleSubData source='+source, expiryDate, status, phone);
-  const iso=toISO(expiryDate);
-  if(!iso && status!=='Не оплачено') return; // игнорируем мусор
-
-  const prev=loadSub();
-  // totalDays — максимальный остаток дней (зафиксируем при первом получении)
-  let totalDays=prev.totalDays||30;
-  if(iso){const d=daysLeft(iso);if(d&&d>totalDays)totalDays=d;}
-
-  const sub={date:iso,displayDate:expiryDate,status,phone,totalDays,syncedAt:Date.now()};
-  saveSub(sub);
-  applyStoredSub(sub);
-  checkExpiry();
-  // Запрашиваем разрешение автоматически если подписка активна
-  if(iso && status==='Оплачено') autoAskPermission();
-}
-
-/* ── Обновляем шапку и карточку ── */
-function applyStoredSub(sub){
-  if(!sub||!sub.date){
-    dot.className='conn-dot blink';
-    dot.style.background='var(--warn)';
-    dot.style.boxShadow='';
-    txt.textContent='войдите в аккаунт';
-    return;
-  }
-  const days=daysLeft(sub.date);
-  dot.classList.remove('blink');
-  if(days===null){
-    txt.textContent='—';
-    dot.style.background='var(--muted)';
-  } else if(days<=0){
-    dot.style.background='#ff1744';
-    dot.style.boxShadow='0 0 8px #ff1744';
-    txt.textContent='истекла!';
-    document.getElementById('bell-badge').classList.add('show');
-  } else if(days<=3){
-    dot.style.background='var(--warn)';
-    dot.style.boxShadow='0 0 8px var(--warn)';
-    dot.classList.add('blink');
-    txt.textContent=days+' дн.';
-    document.getElementById('bell-badge').classList.add('show');
-  } else {
-    dot.style.background='var(--accent)';
-    dot.style.boxShadow='0 0 8px var(--accent)';
-    txt.textContent=days+' дн.';
-  }
-}
-
-/* ── Карточка в панели ── */
-function renderSyncCard(){
-  const sub=loadSub();
-  const card=document.getElementById('sync-card');
-  const hint=document.getElementById('np-hint');
-  const offBtn=document.getElementById('notif-off-btn');
-  const fill=document.getElementById('sub-fill');
-
-  if(!sub||!sub.date){
-    card.className='sync-card';
-    document.getElementById('sc-status').textContent='неизвестен';
-    document.getElementById('sc-expiry').textContent='—';
-    document.getElementById('sc-days').textContent='—';
-    fill.style.width='0%';
-    hint.style.display='block';
-    offBtn.style.display='none';
-    return;
-  }
-  hint.style.display='none';
-  offBtn.style.display='block';
-  document.getElementById('sc-expiry').textContent=new Date(sub.date).toLocaleDateString('ru-RU');
-  const days=daysLeft(sub.date);
-  if(days===null){card.className='sync-card';return;}
-  if(days<=0){
-    card.className='sync-card err';
-    document.getElementById('sc-status').textContent='❌ истекла';
-    document.getElementById('sc-days').textContent=Math.abs(days)+' дн. назад';
-    fill.style.width='100%';fill.style.background='#ff1744';
-  } else if(days<=3){
-    card.className='sync-card warn';
-    document.getElementById('sc-status').textContent='⚠️ скоро истекает';
-    document.getElementById('sc-days').textContent=days+' дн.';
-    fill.style.width=Math.round((3-days)/3*100)+'%';fill.style.background='var(--warn)';
-  } else {
-    card.className='sync-card ok';
-    document.getElementById('sc-status').textContent='✅ активна';
-    document.getElementById('sc-days').textContent=days+' дн.';
-    const pct=Math.max(5,Math.min(100,Math.round(days/(sub.totalDays||30)*100)));
-    fill.style.width=pct+'%';fill.style.background='var(--accent)';
-  }
-  if(Notification.permission==='granted') document.getElementById('bell-badge').classList.add('show');
-}
-
-/* ── Panel ── */
-function togglePanel(){
-  const p=document.getElementById('notif-panel'),d=document.getElementById('dimmer');
-  if(p.classList.contains('open')){closePanel();}
-  else{
-    p.classList.add('open');d.classList.add('show');
-    renderSyncCard();
-    const s=loadSub();
-    if(s.date) document.getElementById('np-date').value=s.date;
-  }
-}
-function closePanel(){
-  document.getElementById('notif-panel').classList.remove('open');
-  document.getElementById('dimmer').classList.remove('show');
-}
-
-/* ── Auto permission ── */
-async function autoAskPermission(){
-  if(Notification.permission==='default'){
-    const p=await Notification.requestPermission();
-    if(p==='granted'){
-      showSt('✅ Данные синхронизированы! Уведомлю за 3 дня до конца подписки.','ok');
-      document.getElementById('bell-badge').classList.add('show');
+/* ════ NETWORK ════ */
+function updateNet(){
+  const online=navigator.onLine;
+  document.getElementById('offline-bar').classList.toggle('show',!online);
+  document.getElementById('offline-page').classList.toggle('show',!online);
+  frame.style.display=online?'block':'none';
+  if(!online){
+    const sub=loadSub();
+    if(sub.date){
+      document.getElementById('ol-card').style.display='block';
+      document.getElementById('ol-status').textContent=sub.status||'—';
+      document.getElementById('ol-expiry').textContent=new Date(sub.date).toLocaleDateString('ru-RU');
+      const d=daysLeft(sub.date);
+      const el=document.getElementById('ol-days');
+      el.textContent=d===null?'—':d<=0?'истекла':d+' дн.';
+      el.className='offline-val'+(d!==null&&d<=0?' err':d!==null&&d<=3?' warn':'');
     }
   }
 }
+function retryConn(){if(navigator.onLine){updateNet();frame.src=frame.src;}}
+window.addEventListener('online',updateNet);
+window.addEventListener('offline',updateNet);
 
-/* ── Manual save ── */
-async function saveNotif(){
-  const date=document.getElementById('np-date').value;
-  if(!date){showSt('⚠️ Укажите дату','warn');return;}
-  let p=Notification.permission;
-  if(p==='default') p=await Notification.requestPermission();
-  if(p==='denied'){showSt('❌ Уведомления заблокированы браузером','err');return;}
-  const sub=loadSub();
-  sub.date=date;sub.totalDays=sub.totalDays||30;sub.savedAt=Date.now();
-  saveSub(sub);
-  applyStoredSub(sub);
-  renderSyncCard();
-  showSt('✅ Сохранено! Уведомлю за 3 дня до конца подписки.','ok');
-  document.getElementById('bell-badge').classList.add('show');
-  checkExpiry();
-}
-
-function disableNotif(){
-  saveSub({});applyStoredSub({});renderSyncCard();
-  document.getElementById('bell-badge').classList.remove('show');
-  document.getElementById('np-date').value='';
-  showSt('🔕 Уведомления отключены','warn');
-}
-
-/* ── Test notification ── */
-async function testNotif(){
-  let p=Notification.permission;
-  if(p==='default') p=await Notification.requestPermission();
-  if(p==='denied'){showSt('❌ Заблокировано браузером','err');return;}
-  setTimeout(()=>{
-    const n=new Notification('✅ Weltkind — тест',{
-      body:'Уведомления работают! Данные о подписке синхронизируются при входе в аккаунт.',
-      icon:'icons/icon-192.png',tag:'vpn-test'
-    });
-    n.onclick=()=>{window.focus();n.close();};
-  },500);
-  showSt('📬 Тестовое уведомление отправлено!','ok');
-}
-
-/* ── Check expiry & push notification ── */
-function checkExpiry(){
-  const sub=loadSub();
-  if(!sub.date||Notification.permission!=='granted') return;
-  const days=daysLeft(sub.date);
-  if(days===null||days>3) return;
-  const title=days<=0?'🚨 Подписка истекла!':`⚠️ Подписка истекает через ${days} дн.`;
-  const body=days<=0?'Продлите VPN прямо сейчас!':'Зайдите и продлите подписку.';
-  setTimeout(()=>{
-    const n=new Notification(title,{body,icon:'icons/icon-192.png',tag:'vpn-expiry',renotify:true,vibrate:[200,100,200]});
-    n.onclick=()=>{window.focus();n.close();};
-  },1500);
-  document.getElementById('bell-badge').classList.add('show');
-}
-
-function showSt(msg,type){
-  const e=document.getElementById('np-status');e.textContent=msg;e.className='np-status show '+type;
-}
-
-/* ── Init ── */
-document.addEventListener('DOMContentLoaded',()=>{
-  const sub=loadSub();
-  if(sub.date){applyStoredSub(sub);checkExpiry();}
-  setInterval(checkExpiry,3600000);
+/* ════ PULL-TO-REFRESH ════ */
+let ptY=0,ptDiff=0,ptOn=false;
+const PTR=65,pin=document.getElementById('pull-indicator');
+const fw=document.getElementById('frame-wrap');
+fw.addEventListener('touchstart',e=>{ptY=e.touches[0].clientY;ptOn=true;},{passive:true});
+fw.addEventListener('touchmove',e=>{
+  if(!ptOn||!navigator.onLine)return;
+  ptDiff=e.touches[0].clientY-ptY;
+  if(ptDiff>0&&ptDiff<PTR*1.8){
+    const p=Math.min(ptDiff/PTR,1);
+    pin.style.display='flex';
+    pin.style.opacity=p.toString();
+    pin.style.transform=`translateX(-50%) translateY(${-60+68*p}px) rotate(${p*180}deg)`;
+  }
+},{passive:true});
+fw.addEventListener('touchend',()=>{
+  if(!ptOn)return;ptOn=false;
+  if(ptDiff>=PTR&&navigator.onLine){
+    pin.classList.add('spinning');
+    frame.src=frame.src;
+    frame.addEventListener('load',()=>{pin.classList.remove('spinning');pin.style.opacity='0';setTimeout(()=>pin.style.display='none',400);},{once:true});
+  }else{pin.style.opacity='0';setTimeout(()=>pin.style.display='none',300);}
+  ptDiff=0;pin.style.transform='translateX(-50%) translateY(-60px)';
 });
 
-/* ── PWA install ── */
+/* ════ STORAGE ════ */
+function loadSub(){try{return JSON.parse(localStorage.getItem('vpn_s')||'{}')||{};}catch(e){return{};}}
+function saveSub(o){localStorage.setItem('vpn_s',JSON.stringify(o));}
+function loadHist(){try{return JSON.parse(localStorage.getItem('vpn_hist')||'[]');}catch(e){return[];}}
+function saveHist(a){localStorage.setItem('vpn_hist',JSON.stringify(a));}
+
+/* ════ DATE HELPERS ════ */
+function toISO(str){
+  if(!str||str==='Не определено'||str==='Не оплачено')return null;
+  const p=str.split('.');if(p.length===3)return`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+  const d=new Date(str);return isNaN(d)?null:d.toISOString().slice(0,10);
+}
+function daysLeft(iso){if(!iso)return null;return Math.ceil((new Date(iso)-Date.now())/86400000);}
+
+/* ════ BADGE ════ */
+function updateBadge(days){
+  if(!('setAppBadge' in navigator))return;
+  if(days===null){navigator.clearAppBadge().catch(()=>{});return;}
+  days<=0?navigator.setAppBadge(99).catch(()=>{}):days<=30?navigator.setAppBadge(days).catch(()=>{}):navigator.clearAppBadge().catch(()=>{});
+}
+
+/* ════ postMessage FROM IFRAME ════ */
+window.addEventListener('message',e=>{
+  if(!e.data||e.data.type!=='weltkind_sub')return;
+  console.log('[PWA] postMessage:',e.data);
+  handleSubData(e.data.expiryDate,e.data.status,e.data.phone);
+});
+
+/* ════ HANDLE SUB DATA ════ */
+function handleSubData(expiryDate,status,phone){
+  const iso=toISO(expiryDate);
+  const prev=loadSub();
+  let total=prev.totalDays||30;
+  if(iso){const d=daysLeft(iso);if(d&&d>total)total=d;}
+  const sub={date:iso,displayDate:expiryDate,status,phone,totalDays:total,syncedAt:Date.now()};
+  saveSub(sub);
+  // История: добавляем если дата новая и оплачено
+  if(iso&&iso!==prev.date&&status==='Оплачено'){
+    const hist=loadHist();
+    if(!hist.find(h=>h.date===iso)){hist.unshift({date:iso,savedAt:Date.now()});if(hist.length>10)hist.length=10;saveHist(hist);}
+  }
+  applyStoredSub(sub);checkExpiry();
+  if(iso&&status==='Оплачено')autoAskPerm();
+  if(document.getElementById('notif-panel').classList.contains('open'))renderDash();
+}
+
+/* ════ HEADER STATUS ════ */
+function applyStoredSub(sub){
+  if(!sub||!sub.date){dot.className='conn-dot blink';dot.style.background='var(--warn)';dot.style.boxShadow='';txt.textContent='войдите';updateBadge(null);return;}
+  const d=daysLeft(sub.date);dot.classList.remove('blink');updateBadge(d);
+  if(d===null){txt.textContent='—';dot.style.background='var(--muted)';}
+  else if(d<=0){dot.style.background='#ff1744';dot.style.boxShadow='0 0 8px #ff1744';dot.classList.add('blink');txt.textContent='истекла!';document.getElementById('bell-badge').classList.add('show');}
+  else if(d<=3){dot.style.background='var(--warn)';dot.style.boxShadow='0 0 8px var(--warn)';dot.classList.add('blink');txt.textContent=d+' дн.';document.getElementById('bell-badge').classList.add('show');}
+  else{dot.style.background='var(--accent)';dot.style.boxShadow='0 0 8px var(--accent)';txt.textContent=d+' дн.';}
+}
+
+/* ════ RENDER DASHBOARD ════ */
+function renderDash(){
+  const sub=loadSub();
+  const card=document.getElementById('dash-card');
+  const fill=document.getElementById('sub-fill');
+  const hint=document.getElementById('np-hint');
+  const histSec=document.getElementById('history-section');
+  const calBtn=document.getElementById('cal-btn');
+  const offBtn=document.getElementById('notif-off-btn');
+
+  if(!sub||!sub.date){
+    card.className='dash-card';
+    document.getElementById('dc-badge').textContent='—';
+    document.getElementById('dc-days').textContent='—';
+    document.getElementById('dc-days-sub').textContent='дней до окончания';
+    document.getElementById('dc-expiry').textContent='—';
+    document.getElementById('dc-synced').textContent='—';
+    fill.style.width='0%';hint.style.display='block';
+    offBtn.style.display='none';calBtn.style.display='none';histSec.style.display='none';
+    return;
+  }
+  hint.style.display='none';offBtn.style.display='block';calBtn.style.display='block';
+  document.getElementById('dc-expiry').textContent=new Date(sub.date).toLocaleDateString('ru-RU');
+  document.getElementById('dc-synced').textContent=sub.syncedAt?new Date(sub.syncedAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}):'—';
+
+  const d=daysLeft(sub.date);
+  if(d===null){card.className='dash-card';}
+  else if(d<=0){
+    card.className='dash-card err';
+    document.getElementById('dc-badge').textContent='❌ Истекла';
+    document.getElementById('dc-days').textContent=Math.abs(d);
+    document.getElementById('dc-days-sub').textContent='дней назад';
+    fill.style.width='100%';fill.style.background='#ff1744';
+  }else if(d<=3){
+    card.className='dash-card warn';
+    document.getElementById('dc-badge').textContent='⚠️ Скоро';
+    document.getElementById('dc-days').textContent=d;
+    document.getElementById('dc-days-sub').textContent='дня до окончания';
+    fill.style.width=Math.round((3-d)/3*100)+'%';fill.style.background='var(--warn)';
+  }else{
+    card.className='dash-card ok';
+    document.getElementById('dc-badge').textContent='✅ Активна';
+    document.getElementById('dc-days').textContent=d;
+    document.getElementById('dc-days-sub').textContent='дней до окончания';
+    const pct=Math.max(5,Math.min(100,Math.round(d/(sub.totalDays||30)*100)));
+    fill.style.width=pct+'%';fill.style.background='var(--accent)';
+  }
+
+  const hist=loadHist();
+  if(hist.length>0){
+    histSec.style.display='block';
+    document.getElementById('history-list').innerHTML=hist.slice(0,4).map(h=>`
+      <div class="history-item">
+        <span class="history-date">${new Date(h.savedAt).toLocaleDateString('ru-RU')}</span>
+        <span class="history-val">до ${new Date(h.date).toLocaleDateString('ru-RU')}</span>
+      </div>`).join('');
+  }else{histSec.style.display='none';}
+  if(Notification.permission==='granted')document.getElementById('bell-badge').classList.add('show');
+}
+
+/* ════ PANEL ════ */
+function togglePanel(){
+  const p=document.getElementById('notif-panel'),d=document.getElementById('dimmer');
+  if(p.classList.contains('open')){closePanel();}
+  else{p.classList.add('open');d.classList.add('show');renderDash();const s=loadSub();if(s.date)document.getElementById('np-date').value=s.date;}
+}
+function closePanel(){document.getElementById('notif-panel').classList.remove('open');document.getElementById('dimmer').classList.remove('show');}
+
+/* ════ SHARE ════ */
+async function shareApp(){
+  const data={title:'Weltkind VPN',text:'🔐 Быстрый и надёжный VPN — управляй подпиской прямо с телефона!',url:'https://weltkind666.github.io/777Weltkind777/'};
+  try{
+    if(navigator.share&&navigator.canShare&&navigator.canShare(data)){await navigator.share(data);}
+    else{await navigator.clipboard.writeText(data.url);showSt('🔗 Ссылка скопирована!','ok');}
+  }catch(e){if(e.name!=='AbortError'){navigator.clipboard.writeText(data.url).catch(()=>{});showSt('🔗 Ссылка скопирована!','ok');}}
+}
+
+/* ════ CALENDAR ════ */
+function addToCalendar(){
+  const sub=loadSub();if(!sub.date){showSt('⚠️ Сначала войдите в аккаунт','warn');return;}
+  const exp=new Date(sub.date);
+  const rem=new Date(exp);rem.setDate(rem.getDate()-3);
+  const fmt=d=>d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Weltkind VPN//RU','BEGIN:VEVENT',
+    `DTSTART:${fmt(rem)}`,`DTEND:${fmt(new Date(rem.getTime()+3600000))}`,
+    'SUMMARY:⚠️ Подписка Weltkind VPN истекает через 3 дня',
+    `DESCRIPTION:Истекает ${exp.toLocaleDateString('ru-RU')}. Продлить: https://weltkind666.github.io/777Weltkind777/`,
+    'BEGIN:VALARM','TRIGGER:-PT0M','ACTION:DISPLAY','DESCRIPTION:Продлите VPN!','END:VALARM',
+    'END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([ics],{type:'text/calendar'})),download:'weltkind.ics'});
+  a.click();URL.revokeObjectURL(a.href);
+  showSt('📅 Файл загружен — откройте его для добавления в календарь','ok');
+}
+
+/* ════ NOTIFICATIONS ════ */
+async function autoAskPerm(){
+  if(Notification.permission==='default'){const p=await Notification.requestPermission();if(p==='granted'){showSt('✅ Уведомлю за 3 дня до конца подписки!','ok');document.getElementById('bell-badge').classList.add('show');}}
+}
+async function saveNotif(){
+  const date=document.getElementById('np-date').value;if(!date){showSt('⚠️ Укажите дату','warn');return;}
+  let p=Notification.permission;if(p==='default')p=await Notification.requestPermission();
+  if(p==='denied'){showSt('❌ Заблокировано браузером','err');return;}
+  const sub=loadSub();sub.date=date;sub.totalDays=sub.totalDays||30;sub.savedAt=Date.now();
+  saveSub(sub);applyStoredSub(sub);renderDash();
+  showSt('✅ Сохранено!','ok');document.getElementById('bell-badge').classList.add('show');checkExpiry();
+}
+function disableNotif(){saveSub({});applyStoredSub({});renderDash();document.getElementById('bell-badge').classList.remove('show');document.getElementById('np-date').value='';updateBadge(null);showSt('🔕 Отключено','warn');}
+async function testNotif(){
+  let p=Notification.permission;if(p==='default')p=await Notification.requestPermission();
+  if(p==='denied'){showSt('❌ Заблокировано','err');return;}
+  setTimeout(()=>{const n=new Notification('✅ Weltkind — тест',{body:'Уведомления работают!',icon:'icons/icon-192.png',tag:'vpn-test'});n.onclick=()=>{window.focus();n.close();};},500);
+  showSt('📬 Отправлено!','ok');
+}
+function checkExpiry(){
+  const sub=loadSub();if(!sub.date||Notification.permission!=='granted')return;
+  const d=daysLeft(sub.date);if(d===null||d>3)return;
+  const title=d<=0?'🚨 Подписка истекла!':`⚠️ Подписка истекает через ${d} дн.`;
+  const body=d<=0?'Продлите VPN прямо сейчас!':'Зайдите и продлите подписку.';
+  setTimeout(()=>{const n=new Notification(title,{body,icon:'icons/icon-192.png',tag:'vpn-expiry',renotify:true,vibrate:[200,100,200]});n.onclick=()=>{window.focus();n.close();};},1500);
+  document.getElementById('bell-badge').classList.add('show');
+}
+function showSt(msg,type){const e=document.getElementById('np-status');e.textContent=msg;e.className='np-status show '+type;}
+
+/* ════ INIT ════ */
+document.addEventListener('DOMContentLoaded',()=>{
+  obInit();loadIP();updateNet();
+  const sub=loadSub();if(sub.date){applyStoredSub(sub);checkExpiry();}
+  setInterval(checkExpiry,3600000);
+  (function sched(){const now=new Date(),next=new Date(now);next.setHours(9,0,0,0);if(next<=now)next.setDate(next.getDate()+1);setTimeout(()=>{checkExpiry();sched();},next-now);})();
+});
+
+/* ════ PWA INSTALL ════ */
 let dp=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;setTimeout(()=>document.getElementById('install-banner').classList.add('show'),4000);});
 document.getElementById('install-btn').onclick=async()=>{document.getElementById('install-banner').classList.remove('show');if(dp){dp.prompt();await dp.userChoice;dp=null;}};
