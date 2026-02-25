@@ -614,6 +614,13 @@ function checkExpiry(){
 /* ════ TELEGRAM STATUS ════ */
 let tgBotUrl = 'https://t.me/WeltkindVPN_bot';
 
+function getTgUrl(phone) {
+  // Формируем ссылку с номером телефона — как в Apps Script
+  const p = (phone || '').replace(/\D/g, '');
+  if (p) return 'https://t.me/WeltkindVPN_bot?start=' + p;
+  return 'https://t.me/WeltkindVPN_bot';
+}
+
 function updateTgStatus(sub) {
   if (!sub) sub = loadSub();
   const chip = document.getElementById('tg-chip');
@@ -621,26 +628,29 @@ function updateTgStatus(sub) {
   if (!chip) return;
 
   const connected = !!sub.tgConnected;
-  tgBotUrl = sub.tgBotUrl || tgBotUrl;
+  // Строим URL с номером клиента — точно как в Apps Script
+  tgBotUrl = getTgUrl(sub.phone);
+
+  // Обновляем FAB ссылку
+  const fab = document.getElementById('fab-support');
+  if (fab) fab.href = tgBotUrl;
 
   if (connected) {
     chip.classList.add('connected');
     chipText.textContent = 'TG ✓';
-    chip.title = 'Telegram подключён — нажми для перехода в бота';
-    // Скрываем баннер если был показан
+    chip.title = 'Telegram подключён ✅';
     closeTgBanner();
   } else if (sub.phone) {
-    // Телефон известен но TG не подключён
     chip.classList.remove('connected');
     chipText.textContent = 'TG';
-    chip.title = 'Telegram не подключён — нажми чтобы подключить';
-    // Показываем баннер (только если не закрыт пользователем)
+    chip.title = 'Telegram не подключён — нажми для подключения';
     if (!sessionStorage.getItem('tg_banner_closed')) {
       setTimeout(() => showTgBanner(tgBotUrl), 1500);
     }
   } else {
     chip.classList.remove('connected');
     chipText.textContent = 'TG';
+    chip.title = 'Войдите чтобы подключить Telegram';
   }
 }
 
@@ -648,7 +658,7 @@ function fabTelegramClick(e) {
   e.preventDefault();
   haptic([30]);
   const sub = loadSub();
-  const url = sub.tgBotUrl || tgBotUrl;
+  const url = getTgUrl(sub.phone);
   window.open(url, '_blank');
   return false;
 }
@@ -657,7 +667,10 @@ function showTgBanner(url) {
   const banner = document.getElementById('tg-banner');
   const btn = document.getElementById('tg-banner-btn');
   if (!banner) return;
-  btn.href = url || tgBotUrl;
+  // URL уже содержит номер клиента
+  const sub = loadSub();
+  btn.href = url || getTgUrl(sub.phone);
+  btn.target = '_blank';
   banner.classList.add('show');
   // Автоскрытие через 12 сек
   setTimeout(() => banner.classList.remove('show'), 12000);
@@ -777,7 +790,7 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
 <div id="float-tooltip">Написать в поддержку</div>
 
 <!-- FAB Telegram support -->
-<a id="fab-support" href="https://t.me/WeltkindVPN_bot" target="_blank" onclick="haptic([30,20,60])" title="Написать в поддержку">
+<a id="fab-support" href="#" target="_blank" onclick="haptic([30,20,60])" title="Написать в поддержку">
   <div class="fab-pulse"></div>
   <span>✈️</span>
   <div class="fab-tooltip">Написать в поддержку</div>
