@@ -1,565 +1,689 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
- <meta charset="UTF-8"/>
- <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
- <meta name="theme-color" content="#050d14"/>
- <meta name="mobile-web-app-capable" content="yes"/>
- <meta name="apple-mobile-web-app-capable" content="yes"/>
- <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
- <meta name="apple-mobile-web-app-title" content="Weltkind"/>
- <link rel="manifest" href="manifest.json"/>
- <link rel="apple-touch-icon" href="icons/icon-192.png"/>
- <link rel="icon" href="icons/icon-192.png"/>
- <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet"/>
- <title>Weltkind</title>
- <style>
- :root {
- --bg:#050d14; --surface:#0a1929; --card:#0d2137;
- --accent:#00e676; --accent2:#00b0ff; --warn:#ff6d00;
- --text:#e0f7fa; --muted:#546e7a; --border:rgba(0,230,118,.12);
- }
- *{margin:0;padding:0;box-sizing:border-box}
- html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Rajdhani',sans-serif;color:var(--text)}
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#050d14"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Weltkind"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="icon" href="icons/icon-192.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+  <title>Weltkind</title>
+  <style>
+    :root{--bg:#050d14;--surface:#0a1929;--card:#0d2137;--accent:#00e676;--accent2:#00b0ff;--warn:#ff6d00;--text:#e0f7fa;--muted:#546e7a;--border:rgba(0,230,118,.12);}
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Rajdhani',sans-serif;color:var(--text)}
+    #bg-canvas{position:fixed;inset:0;z-index:0;opacity:.3}
+    #confetti-canvas{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none}
+    /* Splash */
+    #splash{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s ease}
+    #splash.out{opacity:0;pointer-events:none}
+    .vpn-orb{position:relative;width:140px;height:140px;margin-bottom:28px}
+    .orb-core{position:absolute;inset:30px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#00e676,#005f2d);box-shadow:0 0 40px rgba(0,230,118,.8);animation:op 2.5s ease-in-out infinite}
+    .orb-ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(0,230,118,.5);animation:re 2.5s ease-out infinite}
+    .orb-ring:nth-child(2){animation-delay:.8s}.orb-ring:nth-child(3){animation-delay:1.6s}
+    @keyframes op{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+    @keyframes re{0%{transform:scale(.6);opacity:.8}100%{transform:scale(1.7);opacity:0}}
+    .splash-brand{font-size:2.2rem;font-weight:700;letter-spacing:.08em;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .splash-sub{margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.15em}
+    .splash-bar{margin-top:32px;width:160px;height:2px;background:rgba(0,230,118,.12);border-radius:2px;overflow:hidden}
+    .splash-bar-fill{height:100%;width:0%;background:var(--accent);border-radius:2px;animation:bf 2.2s ease forwards}
+    @keyframes bf{to{width:100%}}
+    /* Header */
+    #hdr{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(5,13,20,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 14px;display:flex;align-items:center;justify-content:space-between;height:52px;gap:8px}
+    .hdr-brand{font-size:1.05rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;flex-shrink:0}
+    .hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    /* Timer pill */
+    #timer-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--accent);cursor:pointer;transition:all .3s;white-space:nowrap}
+    #timer-pill:hover{background:rgba(0,230,118,.15)}
+    #timer-pill.warn{background:rgba(255,109,0,.1);border-color:rgba(255,109,0,.35);color:var(--warn)}
+    #timer-pill.err{background:rgba(255,23,68,.1);border-color:rgba(255,23,68,.35);color:#ff5252}
+    .t-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+    .t-dot.blink{animation:blink 1.2s infinite}
+    .bell-btn{position:relative;width:34px;height:34px;border-radius:10px;background:rgba(0,176,255,.08);border:1px solid rgba(0,176,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:background .2s;flex-shrink:0}
+    .bell-btn:hover{background:rgba(0,176,255,.2)}
+    .bell-badge{position:absolute;top:3px;right:3px;width:8px;height:8px;background:var(--warn);border-radius:50%;border:1px solid var(--bg);display:none}
+    .bell-badge.show{display:block}
+    /* Offline bar */
+    #offline-bar{position:fixed;top:52px;left:0;right:0;z-index:190;background:#b71c1c;color:#fff;font-family:'JetBrains Mono',monospace;font-size:.7rem;text-align:center;padding:5px;display:none}
+    #offline-bar.show{display:block}
+    /* Frame */
+    #frame-wrap{position:fixed;top:52px;left:0;right:0;bottom:0;z-index:10;overflow:hidden}
+    #pull-indicator{position:absolute;top:0;left:50%;transform:translateX(-50%) translateY(-60px);width:36px;height:36px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:none;align-items:center;justify-content:center;font-size:1.1rem;z-index:20;pointer-events:none;opacity:0}
+    @keyframes spin{to{transform:translateX(-50%) translateY(8px) rotate(360deg)}}
+    #pull-indicator.spinning{animation:spin .6s linear infinite;display:flex}
+    #main-frame{width:100%;height:100%;border:none;display:block;opacity:0;transition:opacity .5s}
+    #main-frame.loaded{opacity:1}
+    /* Offline page */
+    #offline-page{position:absolute;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:15;padding:24px;text-align:center}
+    #offline-page.show{display:flex}
+    .offline-icon{font-size:3.5rem}.offline-title{font-size:1.4rem;font-weight:700}
+    .offline-sub{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--muted);line-height:1.6}
+    .offline-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 20px;width:100%;max-width:320px;text-align:left}
+    .offline-card-title{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+    .offline-row{display:flex;justify-content:space-between;font-size:.9rem;margin-bottom:6px}
+    .offline-row:last-child{margin-bottom:0}
+    .offline-val{font-weight:700;color:var(--accent)}.offline-val.warn{color:var(--warn)}.offline-val.err{color:#ff5252}
+    .offline-retry{margin-top:8px;padding:10px 24px;background:linear-gradient(135deg,var(--accent),#00b300);border:none;border-radius:100px;color:#000;font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer}
+    /* Onboarding */
+    #onboarding{position:fixed;inset:0;z-index:8888;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px}
+    #onboarding.done{display:none}
+    .ob-slide{display:none;flex-direction:column;align-items:center;text-align:center;max-width:320px;width:100%}
+    .ob-slide.active{display:flex;animation:fadeSlide .35s ease}
+    @keyframes fadeSlide{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+    .ob-emoji{font-size:4rem;margin-bottom:20px}
+    .ob-title{font-size:1.5rem;font-weight:700;margin-bottom:14px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .ob-desc{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--muted);line-height:1.75;max-width:280px}
+    .ob-desc strong{color:var(--text)}
+    .ob-dots{display:flex;gap:8px;margin:28px 0 22px}
+    .ob-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:all .3s}
+    .ob-dot.active{background:var(--accent);width:24px;border-radius:4px}
+    .ob-btn{padding:13px 40px;background:linear-gradient(135deg,var(--accent),#00b300);border:none;border-radius:100px;color:#000;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s}
+    .ob-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,230,118,.35)}
+    .ob-skip{background:none;border:none;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.7rem;cursor:pointer;margin-top:14px;text-decoration:underline;padding:4px}
+    /* Panel */
+    #notif-panel{position:fixed;top:60px;right:12px;z-index:500;width:min(330px,92vw);background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 16px 48px rgba(0,0,0,.75);transform:translateY(-20px) scale(.95);opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.34,1.56,.64,1);max-height:calc(100vh - 80px);overflow-y:auto}
+    #notif-panel.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all}
+    .np-title{font-size:1rem;font-weight:700;margin-bottom:14px}
+    .np-label{font-family:'JetBrains Mono',monospace;font-size:.63rem;color:var(--muted);letter-spacing:.1em;margin-bottom:6px;text-transform:uppercase}
+    .np-section{margin-bottom:12px}
+    .np-input{width:100%;padding:9px 12px;border-radius:9px;background:rgba(0,230,118,.05);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.8rem;outline:none;transition:border .2s}
+    .np-input:focus{border-color:var(--accent)}
+    .np-btn{width:100%;padding:10px;border-radius:10px;border:none;font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:8px}
+    .np-btn-green{background:linear-gradient(135deg,var(--accent),#00b300);color:#000}
+    .np-btn-green:hover{box-shadow:0 0 20px rgba(0,230,118,.4);transform:translateY(-1px)}
+    .np-btn-blue{background:rgba(0,176,255,.1);border:1px solid rgba(0,176,255,.25);color:var(--accent2)}
+    .np-btn-red{background:rgba(255,23,68,.08);border:1px solid rgba(255,23,68,.25);color:#ff6b6b}
 
- /* ── Splash ── */
- #bg-canvas{position:fixed;inset:0;z-index:0;opacity:.3}
- #splash{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s ease}
- #splash.out{opacity:0;pointer-events:none}
- .vpn-orb{position:relative;width:140px;height:140px;margin-bottom:28px}
- .orb-core{position:absolute;inset:30px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#00e676,#005f2d);box-shadow:0 0 40px rgba(0,230,118,.8);animation:op 2.5s ease-in-out infinite}
- .orb-ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(0,230,118,.5);animation:re 2.5s ease-out infinite}
- .orb-ring:nth-child(2){animation-delay:.8s}
- .orb-ring:nth-child(3){animation-delay:1.6s}
- @keyframes op{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
- @keyframes re{0%{transform:scale(.6);opacity:.8}100%{transform:scale(1.7);opacity:0}}
- .splash-brand{font-size:2.2rem;font-weight:700;letter-spacing:.08em;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
- .splash-sub{margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.15em}
- .splash-bar{margin-top:32px;width:160px;height:2px;background:rgba(0,230,118,.12);border-radius:2px;overflow:hidden}
- .splash-bar-fill{height:100%;width:0%;background:var(--accent);border-radius:2px;animation:bf 2.2s ease forwards}
- @keyframes bf{to{width:100%}}
+    /* ── Floating support button ── */
+    #fab-support{position:fixed;bottom:24px;right:16px;z-index:300;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0088cc,#006fa8);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 4px 20px rgba(0,136,204,.5);transition:transform .2s,box-shadow .2s;animation:fabIn .5s cubic-bezier(.34,1.56,.64,1) 2s both}
+    #fab-support:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(0,136,204,.7)}
+    #fab-support:active{transform:scale(.92)}
+    @keyframes fabIn{from{transform:scale(0) rotate(-180deg);opacity:0}to{transform:scale(1) rotate(0deg);opacity:1}}
+    #fab-tooltip{position:fixed;bottom:84px;right:16px;z-index:300;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--text);white-space:nowrap;pointer-events:none;opacity:0;transform:translateY(6px);transition:all .2s;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+    #fab-tooltip.show{opacity:1;transform:translateY(0)}
 
- /* ── Header ── */
- #hdr{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(5,13,20,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 12px;display:flex;align-items:center;justify-content:space-between;height:52px;gap:8px}
- .hdr-left{display:flex;align-items:center;gap:8px;flex-shrink:0}
- .hdr-brand{font-size:1.05rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
- .hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
- .conn-pill{display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--accent);cursor:pointer;transition:background .2s;white-space:nowrap}
- .conn-pill:hover{background:rgba(0,230,118,.15)}
- .conn-dot{width:6px;height:6px;border-radius:50%;background:var(--warn);transition:background .4s,box-shadow .4s;flex-shrink:0}
- @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
- .conn-dot.blink{animation:blink 2s infinite}
- .bell-btn{position:relative;width:34px;height:34px;border-radius:10px;background:rgba(0,176,255,.08);border:1px solid rgba(0,176,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:background .2s;flex-shrink:0}
- .bell-btn:hover{background:rgba(0,176,255,.2)}
- .bell-badge{position:absolute;top:3px;right:3px;width:8px;height:8px;background:var(--warn);border-radius:50%;border:1px solid var(--bg);display:none}
- .bell-badge.show{display:block}
+    /* ── Confetti canvas ── */
+    #confetti-canvas{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none}
+    /* Dashboard */
+    .dash-card{border-radius:14px;padding:14px 16px;margin-bottom:12px;border:1px solid var(--border);background:rgba(255,255,255,.03)}
+    .dash-card.ok{border-color:rgba(0,230,118,.4);background:rgba(0,230,118,.05)}
+    .dash-card.warn{border-color:rgba(255,109,0,.4);background:rgba(255,109,0,.05)}
+    .dash-card.err{border-color:rgba(255,23,68,.4);background:rgba(255,23,68,.05)}
+    .dc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .dc-lbl{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    .dc-badge{font-size:.75rem;font-weight:700;padding:2px 9px;border-radius:20px;background:rgba(0,230,118,.12);color:var(--accent)}
+    .dash-card.warn .dc-badge{background:rgba(255,109,0,.12);color:var(--warn)}
+    .dash-card.err .dc-badge{background:rgba(255,23,68,.12);color:#ff5252}
+    .dc-days-num{font-size:2.6rem;font-weight:700;line-height:1;color:var(--accent);margin-bottom:2px}
+    .dash-card.warn .dc-days-num{color:var(--warn)}.dash-card.err .dc-days-num{color:#ff5252}
+    .dc-days-sub{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted)}
+    .dc-meta{display:flex;gap:14px;margin-top:12px}
+    .dc-meta-item{flex:1}
+    .dc-meta-lbl{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);text-transform:uppercase}
+    .dc-meta-val{font-size:.82rem;font-weight:600;margin-top:2px}
+    .sub-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.07);margin-top:10px;overflow:hidden}
+    .sub-bar-fill{height:100%;border-radius:2px;transition:width .8s ease,background .4s}
+    .history-list{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+    .history-item{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:8px;background:rgba(0,230,118,.04);border:1px solid rgba(0,230,118,.08)}
+    .history-date{font-family:'JetBrains Mono',monospace;font-size:.67rem;color:var(--muted)}
+    .history-val{font-size:.75rem;color:var(--accent);font-weight:600}
+    .np-hint{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--muted);text-align:center;margin:6px 0 10px;line-height:1.5}
+    .np-divider{height:1px;background:var(--border);margin:10px 0}
+    .np-status{font-family:'JetBrains Mono',monospace;font-size:.72rem;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(0,230,118,.05);border:1px solid var(--border);display:none}
+    .np-status.show{display:block}
+    .np-status.ok{color:var(--accent);border-color:rgba(0,230,118,.3)}
+    .np-status.warn{color:var(--warn);border-color:rgba(255,109,0,.3)}
+    .np-status.err{color:#ff1744;border-color:rgba(255,23,68,.3)}
+    /* Install */
+    #install-banner{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(0,230,118,.25);border-radius:14px;padding:12px 16px;flex-direction:row;align-items:center;gap:12px;z-index:400;box-shadow:0 8px 32px rgba(0,0,0,.6);min-width:260px;max-width:90vw;animation:su .4s cubic-bezier(.34,1.56,.64,1)}
+    @keyframes su{from{transform:translateX(-50%) translateY(80px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+    #install-banner.show{display:flex}
+    .ib-icon{font-size:1.7rem}.ib-text{flex:1}
+    .ib-text strong{display:block;font-size:.95rem;font-weight:700}
+    .ib-text span{font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+    .ib-install{padding:8px 16px;background:linear-gradient(135deg,var(--accent),#00b300);border:none;border-radius:100px;color:#000;font-family:'Rajdhani',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer}
+    .ib-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem}
+    #dimmer{position:fixed;inset:0;z-index:450;background:rgba(0,0,0,.5);display:none;backdrop-filter:blur(2px)}
+    #dimmer.show{display:block}
+    /* Confetti canvas */
+    #confetti-canvas{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none}
+    /* Live timer glow when urgent */
+    .conn-pill.urgent{border-color:rgba(255,109,0,.5);background:rgba(255,109,0,.1)}
+    .conn-pill.urgent .conn-text-inner{color:var(--warn)}
+    .conn-pill.expired{border-color:rgba(255,23,68,.5);background:rgba(255,23,68,.1)}
+    .conn-pill.expired .conn-text-inner{color:#ff5252}
+  
+    #fab-support{position:fixed;bottom:24px;right:16px;z-index:300;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0088cc,#005f99);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 4px 20px rgba(0,136,204,.5);transition:transform .2s,box-shadow .2s;-webkit-tap-highlight-color:transparent}
+    #fab-support:hover{transform:scale(1.1)}
+    #fab-support:active{transform:scale(.93)}
+    .fab-pulse{position:absolute;inset:0;border-radius:50%;background:rgba(0,136,204,.35);animation:fabPulse 2.5s ease-out infinite}
+    @keyframes fabPulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.9);opacity:0}}
+    #fab-tooltip{position:absolute;right:60px;top:50%;transform:translateY(-50%);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-family:monospace;font-size:.68rem;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;color:var(--text)}
+    #fab-support:hover #fab-tooltip{opacity:1}
+    #confetti-canvas{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none}
 
- /* Offline bar */
- #offline-bar{position:fixed;top:52px;left:0;right:0;z-index:190;background:#b71c1c;color:#fff;font-family:'JetBrains Mono',monospace;font-size:.7rem;text-align:center;padding:5px;display:none;animation:slideDown .3s ease}
- #offline-bar.show{display:block}
- @keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
-
- /* ── Frame + Pull-to-refresh ── */
- #frame-wrap{position:fixed;top:52px;left:0;right:0;bottom:0;z-index:10;overflow:hidden}
- #pull-indicator{position:absolute;top:0;left:50%;transform:translateX(-50%) translateY(-60px);width:36px;height:36px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:none;align-items:center;justify-content:center;font-size:1.1rem;z-index:20;pointer-events:none;opacity:0;transition:opacity .2s}
- @keyframes spin{to{transform:translateX(-50%) translateY(8px) rotate(360deg)}}
- #pull-indicator.spinning{animation:spin .6s linear infinite;display:flex}
- #main-frame{width:100%;height:100%;border:none;display:block;opacity:0;transition:opacity .5s}
- #main-frame.loaded{opacity:1}
-
- /* Offline page */
- #offline-page{position:absolute;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:15;padding:24px;text-align:center}
- #offline-page.show{display:flex}
- .offline-icon{font-size:3.5rem}
- .offline-title{font-size:1.4rem;font-weight:700}
- .offline-sub{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--muted);line-height:1.6}
- .offline-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 20px;width:100%;max-width:320px;text-align:left}
- .offline-card-title{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
- .offline-row{display:flex;justify-content:space-between;font-size:.9rem;margin-bottom:6px}
- .offline-row:last-child{margin-bottom:0}
- .offline-val{font-weight:700;color:var(--accent)}
- .offline-val.warn{color:var(--warn)}
- .offline-val.err{color:#ff5252}
- .offline-retry{margin-top:8px;padding:10px 24px;background:linear-gradient(135deg,var(--accent),#00b300);border:none;border-radius:100px;color:#000;font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer}
-
- /* ── Onboarding ── */
- #onboarding{position:fixed;inset:0;z-index:8888;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px}
- #onboarding.done{display:none}
- .ob-slide{display:none;flex-direction:column;align-items:center;text-align:center;max-width:320px;width:100%}
- .ob-slide.active{display:flex;animation:fadeSlide .35s ease}
- @keyframes fadeSlide{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
- .ob-emoji{font-size:4rem;margin-bottom:20px}
- .ob-title{font-size:1.5rem;font-weight:700;margin-bottom:14px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
- .ob-desc{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--muted);line-height:1.75;max-width:280px}
- .ob-desc strong{color:var(--text)}
- .ob-dots{display:flex;gap:8px;margin:28px 0 22px}
- .ob-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:all .3s}
- .ob-dot.active{background:var(--accent);width:24px;border-radius:4px}
- .ob-btn{padding:13px 40px;background:linear-gradient(135deg,var(--accent),#00b300);border:none;border-radius:100px;color:#000;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s}
- .ob-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,230,118,.35)}
- .ob-skip{background:none;border:none;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.7rem;cursor:pointer;margin-top:14px;text-decoration:underline;padding:4px}
-
- /* ── Panel ── */
- #notif-panel{position:fixed;top:60px;right:12px;z-index:500;width:min(330px,92vw);background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 16px 48px rgba(0,0,0,.75);transform:translateY(-20px) scale(.95);opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.34,1.56,.64,1);max-height:calc(100vh - 80px);overflow-y:auto}
- #notif-panel.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all}
- .np-title{font-size:1rem;font-weight:700;margin-bottom:14px}
- .np-label{font-family:'JetBrains Mono',monospace;font-size:.63rem;color:var(--muted);letter-spacing:.1em;margin-bottom:6px;text-transform:uppercase}
- .np-section{margin-bottom:12px}
- .np-input{width:100%;padding:9px 12px;border-radius:9px;background:rgba(0,230,118,.05);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.8rem;outline:none;transition:border .2s}
- .np-input:focus{border-color:var(--accent)}
- .np-btn{width:100%;padding:10px;border-radius:10px;border:none;font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:8px}
- .np-btn-green{background:linear-gradient(135deg,var(--accent),#00b300);color:#000}
- .np-btn-green:hover{box-shadow:0 0 20px rgba(0,230,118,.4);transform:translateY(-1px)}
- .np-btn-blue{background:rgba(0,176,255,.1);border:1px solid rgba(0,176,255,.25);color:var(--accent2)}
- .np-btn-red{background:rgba(255,23,68,.08);border:1px solid rgba(255,23,68,.25);color:#ff6b6b}
-
- /* Dashboard card */
- .dash-card{border-radius:14px;padding:14px 16px;margin-bottom:12px;border:1px solid var(--border);background:rgba(255,255,255,.03)}
- .dash-card.ok{border-color:rgba(0,230,118,.4);background:rgba(0,230,118,.05)}
- .dash-card.warn{border-color:rgba(255,109,0,.4);background:rgba(255,109,0,.05)}
- .dash-card.err{border-color:rgba(255,23,68,.4);background:rgba(255,23,68,.05)}
- .dc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
- .dc-lbl{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
- .dc-badge{font-size:.75rem;font-weight:700;padding:2px 9px;border-radius:20px;background:rgba(0,230,118,.12);color:var(--accent)}
- .dash-card.warn .dc-badge{background:rgba(255,109,0,.12);color:var(--warn)}
- .dash-card.err .dc-badge{background:rgba(255,23,68,.12);color:#ff5252}
- .dc-days-num{font-size:2.6rem;font-weight:700;line-height:1;color:var(--accent);margin-bottom:2px}
- .dash-card.warn .dc-days-num{color:var(--warn)}
- .dash-card.err .dc-days-num{color:#ff5252}
- .dc-days-sub{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted)}
- .dc-meta{display:flex;gap:14px;margin-top:12px}
- .dc-meta-item{flex:1}
- .dc-meta-lbl{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);text-transform:uppercase}
- .dc-meta-val{font-size:.82rem;font-weight:600;margin-top:2px}
- .sub-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.07);margin-top:10px;overflow:hidden}
- .sub-bar-fill{height:100%;border-radius:2px;transition:width .8s ease,background .4s}
- .history-list{display:flex;flex-direction:column;gap:5px;margin-top:6px}
- .history-item{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:8px;background:rgba(0,230,118,.04);border:1px solid rgba(0,230,118,.08)}
- .history-date{font-family:'JetBrains Mono',monospace;font-size:.67rem;color:var(--muted)}
- .history-val{font-size:.75rem;color:var(--accent);font-weight:600}
- .np-hint{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--muted);text-align:center;margin:6px 0 10px;line-height:1.5}
- .np-divider{height:1px;background:var(--border);margin:10px 0}
- .np-status{font-family:'JetBrains Mono',monospace;font-size:.72rem;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(0,230,118,.05);border:1px solid var(--border);display:none}
- .np-status.show{display:block}
- .np-status.ok{color:var(--accent);border-color:rgba(0,230,118,.3)}
- .np-status.warn{color:var(--warn);border-color:rgba(255,109,0,.3)}
- .np-status.err{color:#ff1744;border-color:rgba(255,23,68,.3)}
-
- /* Install banner */
- #install-banner{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(0,230,118,.25);border-radius:14px;padding:12px 16px;flex-direction:row;align-items:center;gap:12px;z-index:400;box-shadow:0 8px 32px rgba(0,0,0,.6);min-width:260px;max-width:90vw;animation:su .4s cubic-bezier(.34,1.56,.64,1)}
- @keyframes su{from{transform:translateX(-50%) translateY(80px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
- #install-banner.show{display:flex}
- .ib-icon{font-size:1.7rem}.ib-text{flex:1}
- .ib-text strong{display:block;font-size:.95rem;font-weight:700}
- .ib-text span{font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
- .ib-install{padding:8px 16px;background:linear-gradient(135deg,var(--accent),#00b300);border:none;border-radius:100px;color:#000;font-family:'Rajdhani',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer}
- .ib-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem}
- #dimmer{position:fixed;inset:0;z-index:450;background:rgba(0,0,0,.5);display:none;backdrop-filter:blur(2px)}
- #dimmer.show{display:block}
- </style>
+    #float-support{position:fixed;bottom:24px;right:16px;z-index:300;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0088cc,#006aaa);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 4px 20px rgba(0,136,204,.5);transition:transform .2s,box-shadow .2s;animation:float-bob 3s ease-in-out infinite}
+    #float-support:hover{transform:scale(1.12) translateY(-3px)!important;box-shadow:0 8px 28px rgba(0,136,204,.7)}
+    @keyframes float-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+    #float-tooltip{position:fixed;bottom:84px;right:16px;z-index:301;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text);white-space:nowrap;opacity:0;pointer-events:none;transform:translateY(4px);transition:all .25s;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+    #float-support:hover+#float-tooltip{opacity:1;transform:translateY(0)}
+</style>
 </head>
 <body>
+<canvas id="confetti-canvas"></canvas>
 <canvas id="bg-canvas"></canvas>
+<canvas id="confetti-canvas"></canvas>
 
-<!-- ════════ ONBOARDING (показывается 1 раз) ════════ -->
+<!-- ONBOARDING -->
 <div id="onboarding">
- <div class="ob-slide active">
- <div class="ob-emoji">⚡</div>
- <div class="ob-title">Weltkind</div>
- <div class="ob-desc">Добро пожаловать!<br><br>Приложение для управления вашей <strong>подпиской</strong> — быстро и удобно прямо с телефона.</div>
- </div>
- <div class="ob-slide">
- <div class="ob-emoji">📱</div>
- <div class="ob-title">Войдите по номеру</div>
- <div class="ob-desc">Введите номер телефона в формате <strong>79161234567</strong><br><br>Система найдёт вашу подписку и покажет статус оплаты.</div>
- </div>
- <div class="ob-slide">
- <div class="ob-emoji">🔔</div>
- <div class="ob-title">Уведомления</div>
- <div class="ob-desc">Нажмите кнопку <strong>🔔</strong> в правом углу и подключите Telegram-бота.<br><br>Вы получите уведомление <strong>за 3 дня</strong> до конца подписки.</div>
- </div>
- <div class="ob-dots">
- <div class="ob-dot active"></div>
- <div class="ob-dot"></div>
- <div class="ob-dot"></div>
- </div>
- <button class="ob-btn" id="ob-next-btn" onclick="obNext()">Далее →</button>
- <button class="ob-skip" onclick="obFinish()">Пропустить</button>
+  <div class="ob-slide active">
+    <div class="ob-emoji">⚡</div>
+    <div class="ob-title">Weltkind</div>
+    <div class="ob-desc">Добро пожаловать!<br><br>Приложение для управления вашей <strong>подпиской</strong> — быстро и удобно прямо с телефона.</div>
+  </div>
+  <div class="ob-slide">
+    <div class="ob-emoji">📱</div>
+    <div class="ob-title">Войдите по номеру</div>
+    <div class="ob-desc">Введите номер телефона в формате <strong>79161234567</strong><br><br>Система найдёт вашу подписку и покажет статус.</div>
+  </div>
+  <div class="ob-slide">
+    <div class="ob-emoji">🔔</div>
+    <div class="ob-title">Уведомления</div>
+    <div class="ob-desc">Нажмите кнопку <strong>🔔</strong> в правом углу и подключите Telegram-бота.<br><br>Уведомление придёт <strong>за 3 дня</strong> до конца подписки.</div>
+  </div>
+  <div class="ob-dots">
+    <div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div>
+  </div>
+  <button class="ob-btn" id="ob-next-btn" onclick="obNext()">Далее →</button>
+  <button class="ob-skip" onclick="obFinish()">Пропустить</button>
 </div>
 
-<!-- ════════ SPLASH ════════ -->
+<!-- SPLASH -->
 <div id="splash">
- <div class="vpn-orb">
- <div class="orb-ring"></div><div class="orb-ring"></div><div class="orb-ring"></div>
- <div class="orb-core"></div>
- </div>
- <div class="splash-brand">WELTKIND</div>
- <div class="splash-sub">SECURE · PRIVATE · FAST</div>
- <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+  <div class="vpn-orb">
+    <div class="orb-ring"></div><div class="orb-ring"></div><div class="orb-ring"></div>
+    <div class="orb-core"></div>
+  </div>
+  <div class="splash-brand">WELTKIND</div>
+  <div class="splash-sub">SECURE · PRIVATE · FAST</div>
+  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
 </div>
 
-<!-- ════════ HEADER ════════ -->
+<!-- HEADER -->
 <header id="hdr">
- <div class="hdr-left">
- <div class="hdr-brand">⚡ Weltkind</div>
- </div>
- <div class="hdr-right">
- <div class="conn-pill" onclick="togglePanel()">
- <div class="conn-dot blink" id="conn-dot"></div>
- <span id="conn-text">загрузка...</span>
- </div>
- <div class="bell-btn" onclick="togglePanel()">🔔
- <div class="bell-badge" id="bell-badge"></div>
- </div>
- </div>
+  <div class="hdr-brand">⚡ Weltkind</div>
+  <div class="hdr-right">
+    <div id="timer-pill" onclick="haptic();togglePanel()">
+      <div class="t-dot" id="t-dot"></div>
+      <span id="timer-text">загрузка...</span>
+    </div>
+    <div class="bell-btn" onclick="haptic();togglePanel()">🔔
+      <div class="bell-badge" id="bell-badge"></div>
+    </div>
+  </div>
 </header>
 
 <div id="offline-bar">📡 Нет подключения — показаны кэшированные данные</div>
 <div id="dimmer" onclick="closePanel()"></div>
 
-<!-- ════════ PANEL ════════ -->
+<!-- PANEL -->
 <div id="notif-panel">
- <div class="np-title">📊 Моя подписка</div>
-
- <!-- Дашборд -->
- <div id="dash-card" class="dash-card">
- <div class="dc-head">
- <span class="dc-lbl">Weltkind</span>
- <span class="dc-badge" id="dc-badge">—</span>
- </div>
- <div class="dc-days-num" id="dc-days">—</div>
- <div class="dc-days-sub" id="dc-days-sub">дней до окончания</div>
- <div class="dc-meta">
- <div class="dc-meta-item">
- <div class="dc-meta-lbl">Истекает</div>
- <div class="dc-meta-val" id="dc-expiry">—</div>
- </div>
- <div class="dc-meta-item">
- <div class="dc-meta-lbl">Синхронизировано</div>
- <div class="dc-meta-val" id="dc-synced">—</div>
- </div>
- </div>
- <div class="sub-bar"><div class="sub-bar-fill" id="sub-fill" style="width:0%"></div></div>
- </div>
-
- <div id="np-hint" class="np-hint">⬇️ Войдите в аккаунт — данные синхронизируются автоматически</div>
-
- <!-- История -->
- <div id="history-section" style="display:none">
- <div class="np-label">📋 История продлений</div>
- <div class="history-list" id="history-list"></div>
- <div style="height:8px"></div>
- </div>
-
- <div class="np-divider"></div>
-
- <button class="np-btn np-btn-blue" onclick="shareApp()">🔗 Поделиться приложением</button>
- <button class="np-btn np-btn-red" id="notif-off-btn" onclick="disableNotif()" style="display:none">🔕 Отключить уведомления</button>
-
- <div class="np-divider"></div>
-
- <div class="np-section">
- <div class="np-label">Ввести дату вручную</div>
- <input type="date" id="np-date" class="np-input"/>
- </div>
- <button class="np-btn np-btn-green" onclick="saveNotif()">💾 Сохранить дату</button>
- <button class="np-btn np-btn-blue" onclick="testNotif()">🧪 Тестовое уведомление</button>
- <div id="np-status" class="np-status"></div>
+  <div class="np-title">📊 Моя подписка</div>
+  <div id="dash-card" class="dash-card">
+    <div class="dc-head">
+      <span class="dc-lbl">Weltkind</span>
+      <span class="dc-badge" id="dc-badge">—</span>
+    </div>
+    <div class="dc-days-num" id="dc-days">—</div>
+    <div class="dc-days-sub" id="dc-days-sub">дней до окончания</div>
+    <div class="dc-meta">
+      <div class="dc-meta-item">
+        <div class="dc-meta-lbl">Истекает</div>
+        <div class="dc-meta-val" id="dc-expiry">—</div>
+      </div>
+      <div class="dc-meta-item">
+        <div class="dc-meta-lbl">Синхронизировано</div>
+        <div class="dc-meta-val" id="dc-synced">—</div>
+      </div>
+    </div>
+    <div class="sub-bar"><div class="sub-bar-fill" id="sub-fill" style="width:0%"></div></div>
+  </div>
+  <div id="np-hint" class="np-hint">⬇️ Войдите в аккаунт — данные синхронизируются автоматически</div>
+  <div id="history-section" style="display:none">
+    <div class="np-label">📋 История продлений</div>
+    <div class="history-list" id="history-list"></div>
+    <div style="height:8px"></div>
+  </div>
+  <div class="np-divider"></div>
+  <button class="np-btn np-btn-blue" onclick="haptic();shareApp()">🔗 Поделиться приложением</button>
+  <button class="np-btn np-btn-red" id="notif-off-btn" onclick="haptic();disableNotif()" style="display:none">🔕 Отключить уведомления</button>
+  <div class="np-divider"></div>
+  <div class="np-section">
+    <div class="np-label">Ввести дату вручную</div>
+    <input type="date" id="np-date" class="np-input"/>
+  </div>
+  <button class="np-btn np-btn-green" onclick="haptic('medium');saveNotif()">💾 Сохранить дату</button>
+  <button class="np-btn np-btn-blue" onclick="haptic();testNotif()">🧪 Тестовое уведомление</button>
+  <div id="np-status" class="np-status"></div>
 </div>
 
-<!-- ════════ FRAME ════════ -->
+<!-- FRAME -->
 <div id="frame-wrap">
- <div id="pull-indicator">🔄</div>
- <div id="offline-page">
- <div class="offline-icon">📡</div>
- <div class="offline-title">Нет подключения</div>
- <div class="offline-sub">Проверьте интернет.<br>Данные подписки из кэша — ниже.</div>
- <div class="offline-card" id="ol-card" style="display:none">
- <div class="offline-card-title">Кэшированные данные</div>
- <div class="offline-row"><span>Статус</span><span class="offline-val" id="ol-status">—</span></div>
- <div class="offline-row"><span>Истекает</span><span class="offline-val" id="ol-expiry">—</span></div>
- <div class="offline-row"><span>Осталось</span><span class="offline-val" id="ol-days">—</span></div>
- </div>
- <button class="offline-retry" onclick="retryConn()">🔄 Повторить</button>
- </div>
- <iframe id="main-frame"
- src="https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec"
- title="Weltkind"
- sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation allow-modals">
- </iframe>
+  <div id="pull-indicator">🔄</div>
+  <div id="offline-page">
+    <div class="offline-icon">📡</div>
+    <div class="offline-title">Нет подключения</div>
+    <div class="offline-sub">Проверьте интернет.<br>Кэшированные данные — ниже.</div>
+    <div class="offline-card" id="ol-card" style="display:none">
+      <div class="offline-card-title">Последние данные</div>
+      <div class="offline-row"><span>Статус</span><span class="offline-val" id="ol-status">—</span></div>
+      <div class="offline-row"><span>Истекает</span><span class="offline-val" id="ol-expiry">—</span></div>
+      <div class="offline-row"><span>Осталось</span><span class="offline-val" id="ol-days">—</span></div>
+    </div>
+    <button class="offline-retry" onclick="haptic();retryConn()">🔄 Повторить</button>
+  </div>
+  <iframe id="main-frame"
+    src="https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec"
+    title="Weltkind"
+    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation allow-modals">
+  </iframe>
 </div>
 
 <div id="install-banner">
- <div class="ib-icon">📲</div>
- <div class="ib-text"><strong>Установить приложение</strong><span>Работает как нативное</span></div>
- <button class="ib-install" id="install-btn">Установить</button>
- <button class="ib-close" onclick="document.getElementById('install-banner').classList.remove('show')">✕</button>
+  <div class="ib-icon">📲</div>
+  <div class="ib-text"><strong>Установить приложение</strong><span>Работает как нативное</span></div>
+  <button class="ib-install" id="install-btn">Установить</button>
+  <button class="ib-close" onclick="document.getElementById('install-banner').classList.remove('show')">✕</button>
 </div>
 
 <script>
-/* ════ MATRIX BG ════ */
+/* MATRIX */
 (function(){
- const c=document.getElementById('bg-canvas'),ctx=c.getContext('2d');
- let cols,drops;const chars='01アイウエオカキクケ';
- function resize(){c.width=innerWidth;c.height=innerHeight;cols=Math.floor(c.width/18);drops=Array(cols).fill(1);}
- function draw(){ctx.fillStyle='rgba(5,13,20,.06)';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#00e676';ctx.font='13px monospace';for(let i=0;i<drops.length;i++){ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*18,drops[i]*18);if(drops[i]*18>c.height&&Math.random()>.975)drops[i]=0;drops[i]++;}}
- resize();window.addEventListener('resize',resize);setInterval(draw,55);
+  const c=document.getElementById('bg-canvas'),ctx=c.getContext('2d');
+  let cols,drops;const chars='01アイウエオカキクケ';
+  function resize(){c.width=innerWidth;c.height=innerHeight;cols=Math.floor(c.width/18);drops=Array(cols).fill(1);}
+  function draw(){ctx.fillStyle='rgba(5,13,20,.06)';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#00e676';ctx.font='13px monospace';for(let i=0;i<drops.length;i++){ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*18,drops[i]*18);if(drops[i]*18>c.height&&Math.random()>.975)drops[i]=0;drops[i]++;}}
+  resize();window.addEventListener('resize',resize);setInterval(draw,55);
 })();
 
-/* ════ ONBOARDING ════ */
+/* HAPTIC */
+function haptic(t='light'){
+  if(!navigator.vibrate)return;
+  ({light:[8],medium:[15],heavy:[25,10,25],success:[10,50,10,50,20]})[t]&&navigator.vibrate(({light:[8],medium:[15],heavy:[25,10,25],success:[10,50,10,50,20]})[t]);
+}
+
+/* CONFETTI */
+const cc=document.getElementById('confetti-canvas'),ccx=cc.getContext('2d');
+let cp=[],ca=null;
+function launchConfetti(){
+  cc.width=innerWidth;cc.height=innerHeight;cc.style.display='block';
+  const colors=['#00e676','#00b0ff','#ff6d00','#e040fb','#ffeb3b','#ff4081'];
+  cp=Array.from({length:160},()=>({
+    x:Math.random()*innerWidth,y:-10-Math.random()*innerHeight*.3,
+    w:6+Math.random()*8,h:4+Math.random()*6,
+    color:colors[Math.floor(Math.random()*colors.length)],
+    vx:(Math.random()-.5)*4,vy:2+Math.random()*5,
+    rot:Math.random()*360,rotV:(Math.random()-.5)*6,opacity:1
+  }));
+  if(ca)cancelAnimationFrame(ca);
+  animC();haptic('success');
+  setTimeout(()=>{cc.style.display='none';cp=[];},4500);
+}
+function animC(){
+  ccx.clearRect(0,0,cc.width,cc.height);
+  let alive=false;
+  cp.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;p.rot+=p.rotV;p.vy+=0.12;
+    if(p.y>innerHeight*.75)p.opacity-=0.025;
+    if(p.opacity>0)alive=true;
+    ccx.save();ccx.globalAlpha=Math.max(0,p.opacity);
+    ccx.translate(p.x,p.y);ccx.rotate(p.rot*Math.PI/180);
+    ccx.fillStyle=p.color;ccx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+    ccx.restore();
+  });
+  if(alive)ca=requestAnimationFrame(animC);else cc.style.display='none';
+}
+
+/* ONBOARDING */
 let obIdx=0;
 function obInit(){if(localStorage.getItem('onboarded'))document.getElementById('onboarding').classList.add('done');}
 function obNext(){
- obIdx++;
- if(obIdx>=3){obFinish();return;}
- document.querySelectorAll('.ob-slide').forEach((s,i)=>s.classList.toggle('active',i===obIdx));
- document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('active',i===obIdx));
- if(obIdx===2)document.getElementById('ob-next-btn').textContent='Начать →';
+  haptic();obIdx++;
+  if(obIdx>=3){obFinish();return;}
+  document.querySelectorAll('.ob-slide').forEach((s,i)=>s.classList.toggle('active',i===obIdx));
+  document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('active',i===obIdx));
+  if(obIdx===2)document.getElementById('ob-next-btn').textContent='Начать →';
 }
-function obFinish(){localStorage.setItem('onboarded','1');document.getElementById('onboarding').classList.add('done');}
+function obFinish(){haptic('medium');localStorage.setItem('onboarded','1');document.getElementById('onboarding').classList.add('done');}
 
-/* ════ IFRAME ════ */
+/* IFRAME */
 const frame=document.getElementById('main-frame');
-const dot=document.getElementById('conn-dot');
-const txt=document.getElementById('conn-text');
-let splashT=setTimeout(()=>{document.getElementById('splash').classList.add('out');txt.textContent='медленно';},9000);
+let sT=setTimeout(()=>document.getElementById('splash').classList.add('out'),9000);
 frame.addEventListener('load',()=>{
- clearTimeout(splashT);
- frame.classList.add('loaded');
- setTimeout(()=>document.getElementById('splash').classList.add('out'),400);
- applyStoredSub(loadSub());checkExpiry();
+  clearTimeout(sT);frame.classList.add('loaded');
+  setTimeout(()=>document.getElementById('splash').classList.add('out'),400);
+  startTimer();
 });
 
-/* ════ SERVICE WORKER ════ */
+/* SW */
+let swReg=null;
 if('serviceWorker' in navigator){
- navigator.serviceWorker.register('sw.js').then(reg=>{
- if('periodicSync' in reg)reg.periodicSync.register('check-subscription',{minInterval:86400000}).catch(()=>{});
- }).catch(()=>{});
- navigator.serviceWorker.addEventListener('message',e=>{if(e.data?.type==='bg_check')checkExpiry();});
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+    swReg=reg;
+    if('periodicSync' in reg)reg.periodicSync.register('check-subscription',{minInterval:86400000}).catch(()=>{});
+  }).catch(()=>{});
+  navigator.serviceWorker.addEventListener('message',e=>{if(e.data?.type==='bg_check')checkExpiry();});
 }
 
-/* ════ NETWORK ════ */
+/* ════ SW NOTIFY — настоящие мобильные уведомления ════ */
+async function swNotify(title,body,tag='weltkind'){
+  if(Notification.permission!=='granted')return;
+  // Сохраняем данные для фонового синка
+  try{
+    const sub=loadSub();
+    if(sub.date){const cache=await caches.open('Weltkind-v4');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
+  }catch(e){}
+  // Показываем через SW — приходит как настоящий пуш на мобильном
+  const reg=swReg||await navigator.serviceWorker.getRegistration();
+  if(reg?.active){
+    reg.active.postMessage({type:'SHOW_NOTIFICATION',title,body,tag});
+  } else {
+    // Fallback десктоп
+    try{const n=new Notification(title,{body,icon:'icons/icon-192.png',tag});n.onclick=()=>{window.focus();n.close();};}catch(e){}
+  }
+}
+
+/* NETWORK */
 function updateNet(){
- const online=navigator.onLine;
- document.getElementById('offline-bar').classList.toggle('show',!online);
- document.getElementById('offline-page').classList.toggle('show',!online);
- frame.style.display=online?'block':'none';
- if(!online){
- const sub=loadSub();
- if(sub.date){
- document.getElementById('ol-card').style.display='block';
- document.getElementById('ol-status').textContent=sub.status||'—';
- document.getElementById('ol-expiry').textContent=new Date(sub.date).toLocaleDateString('ru-RU');
- const d=daysLeft(sub.date);
- const el=document.getElementById('ol-days');
- el.textContent=d===null?'—':d<=0?'истекла':d+' дн.';
- el.className='offline-val'+(d!==null&&d<=0?' err':d!==null&&d<=3?' warn':'');
- }
- }
+  const on=navigator.onLine;
+  document.getElementById('offline-bar').classList.toggle('show',!on);
+  document.getElementById('offline-page').classList.toggle('show',!on);
+  frame.style.display=on?'block':'none';
+  if(!on){
+    const sub=loadSub();
+    if(sub.date){
+      document.getElementById('ol-card').style.display='block';
+      document.getElementById('ol-status').textContent=sub.status||'—';
+      document.getElementById('ol-expiry').textContent=new Date(sub.date).toLocaleDateString('ru-RU');
+      const d=daysLeft(sub.date);
+      const el=document.getElementById('ol-days');
+      el.textContent=d===null?'—':d<=0?'истекла':d+' дн.';
+      el.className='offline-val'+(d!==null&&d<=0?' err':d!==null&&d<=3?' warn':'');
+    }
+  }
 }
 function retryConn(){if(navigator.onLine){updateNet();frame.src=frame.src;}}
 window.addEventListener('online',updateNet);
 window.addEventListener('offline',updateNet);
 
-/* ════ PULL-TO-REFRESH ════ */
-let ptY=0,ptDiff=0,ptOn=false;
-const PTR=65,pin=document.getElementById('pull-indicator');
-const fw=document.getElementById('frame-wrap');
+/* PULL-TO-REFRESH */
+let ptY=0,ptD=0,ptOn=false;
+const PTR=65,pin=document.getElementById('pull-indicator'),fw=document.getElementById('frame-wrap');
 fw.addEventListener('touchstart',e=>{ptY=e.touches[0].clientY;ptOn=true;},{passive:true});
 fw.addEventListener('touchmove',e=>{
- if(!ptOn||!navigator.onLine)return;
- ptDiff=e.touches[0].clientY-ptY;
- if(ptDiff>0&&ptDiff<PTR*1.8){
- const p=Math.min(ptDiff/PTR,1);
- pin.style.display='flex';
- pin.style.opacity=p.toString();
- pin.style.transform=`translateX(-50%) translateY(${-60+68*p}px) rotate(${p*180}deg)`;
- }
+  if(!ptOn||!navigator.onLine)return;
+  ptD=e.touches[0].clientY-ptY;
+  if(ptD>0&&ptD<PTR*1.8){const p=Math.min(ptD/PTR,1);pin.style.display='flex';pin.style.opacity=p;pin.style.transform=`translateX(-50%) translateY(${-60+68*p}px) rotate(${p*180}deg)`;}
 },{passive:true});
 fw.addEventListener('touchend',()=>{
- if(!ptOn)return;ptOn=false;
- if(ptDiff>=PTR&&navigator.onLine){
- pin.classList.add('spinning');
- frame.src=frame.src;
- frame.addEventListener('load',()=>{pin.classList.remove('spinning');pin.style.opacity='0';setTimeout(()=>pin.style.display='none',400);},{once:true});
- }else{pin.style.opacity='0';setTimeout(()=>pin.style.display='none',300);}
- ptDiff=0;pin.style.transform='translateX(-50%) translateY(-60px)';
+  if(!ptOn)return;ptOn=false;
+  if(ptD>=PTR&&navigator.onLine){haptic('medium');pin.classList.add('spinning');frame.src=frame.src;frame.addEventListener('load',()=>{pin.classList.remove('spinning');pin.style.opacity='0';setTimeout(()=>pin.style.display='none',400);},{once:true});}
+  else{pin.style.opacity='0';setTimeout(()=>pin.style.display='none',300);}
+  ptD=0;pin.style.transform='translateX(-50%) translateY(-60px)';
 });
 
-/* ════ STORAGE ════ */
+/* STORAGE */
 function loadSub(){try{return JSON.parse(localStorage.getItem('vpn_s')||'{}')||{};}catch(e){return{};}}
 function saveSub(o){localStorage.setItem('vpn_s',JSON.stringify(o));}
 function loadHist(){try{return JSON.parse(localStorage.getItem('vpn_hist')||'[]');}catch(e){return[];}}
 function saveHist(a){localStorage.setItem('vpn_hist',JSON.stringify(a));}
 
-/* ════ DATE HELPERS ════ */
+/* DATE */
 function toISO(str){
- if(!str||str==='Не определено'||str==='Не оплачено')return null;
- const p=str.split('.');if(p.length===3)return`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
- const d=new Date(str);return isNaN(d)?null:d.toISOString().slice(0,10);
+  if(!str||str==='Не определено'||str==='Не оплачено')return null;
+  const p=str.split('.');if(p.length===3)return`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+  const d=new Date(str);return isNaN(d)?null:d.toISOString().slice(0,10);
 }
 function daysLeft(iso){if(!iso)return null;return Math.ceil((new Date(iso)-Date.now())/86400000);}
-
-/* ════ BADGE ════ */
-function updateBadge(days){
- if(!('setAppBadge' in navigator))return;
- if(days===null){navigator.clearAppBadge().catch(()=>{});return;}
- days<=0?navigator.setAppBadge(99).catch(()=>{}):days<=30?navigator.setAppBadge(days).catch(()=>{}):navigator.clearAppBadge().catch(()=>{});
+/* BADGE */
+function updateBadge(d){
+  if(!('setAppBadge' in navigator))return;
+  d===null?navigator.clearAppBadge().catch(()=>{}):d<=0?navigator.setAppBadge(99).catch(()=>{}):d<=30?navigator.setAppBadge(d).catch(()=>{}):navigator.clearAppBadge().catch(()=>{});
 }
 
-/* ════ postMessage FROM IFRAME ════ */
+/* LIVE TIMER */
+let timerIv=null;
+function tickTimer(){
+  const sub=loadSub();
+  const pill=document.getElementById('timer-pill');
+  const tdot=document.getElementById('t-dot');
+  const ttxt=document.getElementById('timer-text');
+  if(!sub||!sub.date){
+    pill.className='';tdot.className='t-dot';ttxt.textContent='войдите';
+    updateBadge(null);return;
+  }
+  const msLeft=new Date(sub.date)-Date.now();
+  const days=Math.floor(msLeft/86400000);
+  updateBadge(days);
+  if(msLeft<=0){
+    pill.className='err';tdot.className='t-dot err';ttxt.textContent='истекла!';
+    document.getElementById('bell-badge').classList.add('show');
+  } else if(days<=7){
+    const h=Math.floor((msLeft%86400000)/3600000);
+    const m=Math.floor((msLeft%3600000)/60000);
+    const s=Math.floor((msLeft%60000)/1000);
+    const pad=n=>String(n).padStart(2,'0');
+    ttxt.textContent=days>0?`${days}д ${pad(h)}ч ${pad(m)}м`:`${pad(h)}:${pad(m)}:${pad(s)}`;
+    pill.className=days<=3?'err':'warn';
+    tdot.className=days<=3?'t-dot err':'t-dot warn';
+    document.getElementById('bell-badge').classList.add('show');
+  } else {
+    pill.className='';tdot.className='t-dot ok';ttxt.textContent=days+' дн.';
+  }
+}
+function startTimer(){if(timerIv)clearInterval(timerIv);tickTimer();timerIv=setInterval(tickTimer,1000);}
+
+/* postMessage */
 window.addEventListener('message',e=>{
- if(!e.data||e.data.type!=='weltkind_sub')return;
- console.log('[PWA] postMessage:',e.data);
- handleSubData(e.data.expiryDate,e.data.status,e.data.phone);
+  if(!e.data||e.data.type!=='weltkind_sub')return;
+  handleSubData(e.data.expiryDate,e.data.status,e.data.phone);
 });
 
-/* ════ HANDLE SUB DATA ════ */
+/* HANDLE DATA */
 function handleSubData(expiryDate,status,phone){
- const iso=toISO(expiryDate);
- const prev=loadSub();
- let total=prev.totalDays||30;
- if(iso){const d=daysLeft(iso);if(d&&d>total)total=d;}
- const sub={date:iso,displayDate:expiryDate,status,phone,totalDays:total,syncedAt:Date.now()};
- saveSub(sub);
- // История: добавляем если дата новая и оплачено
- if(iso&&iso!==prev.date&&status==='Оплачено'){
- const hist=loadHist();
- if(!hist.find(h=>h.date===iso)){hist.unshift({date:iso,savedAt:Date.now()});if(hist.length>10)hist.length=10;saveHist(hist);}
- }
- applyStoredSub(sub);checkExpiry();
- if(iso&&status==='Оплачено')autoAskPerm();
- if(document.getElementById('notif-panel').classList.contains('open'))renderDash();
+  const iso=toISO(expiryDate);
+  const prev=loadSub();
+  let total=prev.totalDays||30;
+  if(iso){const d=daysLeft(iso);if(d&&d>total)total=d;}
+  const sub={date:iso,displayDate:expiryDate,status,phone,totalDays:total,syncedAt:Date.now()};
+  saveSub(sub);
+  // Конфетти при НОВОЙ дате оплаты
+  if(iso&&iso!==prev.date&&status==='Оплачено'){
+    const hist=loadHist();
+    if(!hist.find(h=>h.date===iso)){hist.unshift({date:iso,savedAt:Date.now()});if(hist.length>10)hist.length=10;saveHist(hist);}
+    setTimeout(launchConfetti,400);
+  }
+  startTimer();checkExpiry();
+  if(iso&&status==='Оплачено')autoAskPerm();
+  if(document.getElementById('notif-panel').classList.contains('open'))renderDash();
 }
 
-/* ════ HEADER STATUS ════ */
-function applyStoredSub(sub){
- if(!sub||!sub.date){dot.className='conn-dot blink';dot.style.background='var(--warn)';dot.style.boxShadow='';txt.textContent='войдите';updateBadge(null);return;}
- const d=daysLeft(sub.date);dot.classList.remove('blink');updateBadge(d);
- if(d===null){txt.textContent='—';dot.style.background='var(--muted)';}
- else if(d<=0){dot.style.background='#ff1744';dot.style.boxShadow='0 0 8px #ff1744';dot.classList.add('blink');txt.textContent='истекла!';document.getElementById('bell-badge').classList.add('show');}
- else if(d<=3){dot.style.background='var(--warn)';dot.style.boxShadow='0 0 8px var(--warn)';dot.classList.add('blink');txt.textContent=d+' дн.';document.getElementById('bell-badge').classList.add('show');}
- else{dot.style.background='var(--accent)';dot.style.boxShadow='0 0 8px var(--accent)';txt.textContent=d+' дн.';}
-}
-
-/* ════ RENDER DASHBOARD ════ */
+/* DASHBOARD */
 function renderDash(){
- const sub=loadSub();
- const card=document.getElementById('dash-card');
- const fill=document.getElementById('sub-fill');
- const hint=document.getElementById('np-hint');
- const histSec=document.getElementById('history-section');
- const offBtn=document.getElementById('notif-off-btn');
-
- if(!sub||!sub.date){
- card.className='dash-card';
- document.getElementById('dc-badge').textContent='—';
- document.getElementById('dc-days').textContent='—';
- document.getElementById('dc-days-sub').textContent='дней до окончания';
- document.getElementById('dc-expiry').textContent='—';
- document.getElementById('dc-synced').textContent='—';
- fill.style.width='0%';hint.style.display='block';
- offBtn.style.display='none';histSec.style.display='none';
- return;
- }
- hint.style.display='none';offBtn.style.display='block';
- document.getElementById('dc-expiry').textContent=new Date(sub.date).toLocaleDateString('ru-RU');
- document.getElementById('dc-synced').textContent=sub.syncedAt?new Date(sub.syncedAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}):'—';
-
- const d=daysLeft(sub.date);
- if(d===null){card.className='dash-card';}
- else if(d<=0){
- card.className='dash-card err';
- document.getElementById('dc-badge').textContent='❌ Истекла';
- document.getElementById('dc-days').textContent=Math.abs(d);
- document.getElementById('dc-days-sub').textContent='дней назад';
- fill.style.width='100%';fill.style.background='#ff1744';
- }else if(d<=3){
- card.className='dash-card warn';
- document.getElementById('dc-badge').textContent='⚠️ Скоро';
- document.getElementById('dc-days').textContent=d;
- document.getElementById('dc-days-sub').textContent='дня до окончания';
- fill.style.width=Math.round((3-d)/3*100)+'%';fill.style.background='var(--warn)';
- }else{
- card.className='dash-card ok';
- document.getElementById('dc-badge').textContent='✅ Активна';
- document.getElementById('dc-days').textContent=d;
- document.getElementById('dc-days-sub').textContent='дней до окончания';
- const pct=Math.max(5,Math.min(100,Math.round(d/(sub.totalDays||30)*100)));
- fill.style.width=pct+'%';fill.style.background='var(--accent)';
- }
-
- const hist=loadHist();
- if(hist.length>0){
- histSec.style.display='block';
- document.getElementById('history-list').innerHTML=hist.slice(0,4).map(h=>`
- <div class="history-item">
- <span class="history-date">${new Date(h.savedAt).toLocaleDateString('ru-RU')}</span>
- <span class="history-val">до ${new Date(h.date).toLocaleDateString('ru-RU')}</span>
- </div>`).join('');
- }else{histSec.style.display='none';}
- if(Notification.permission==='granted')document.getElementById('bell-badge').classList.add('show');
+  const sub=loadSub(),card=document.getElementById('dash-card'),fill=document.getElementById('sub-fill');
+  const hint=document.getElementById('np-hint'),histSec=document.getElementById('history-section'),offBtn=document.getElementById('notif-off-btn');
+  if(!sub||!sub.date){
+    card.className='dash-card';['dc-badge','dc-days','dc-expiry','dc-synced'].forEach(id=>document.getElementById(id).textContent='—');
+    document.getElementById('dc-days-sub').textContent='дней до окончания';
+    fill.style.width='0%';hint.style.display='block';offBtn.style.display='none';histSec.style.display='none';return;
+  }
+  hint.style.display='none';offBtn.style.display='block';
+  document.getElementById('dc-expiry').textContent=new Date(sub.date).toLocaleDateString('ru-RU');
+  document.getElementById('dc-synced').textContent=sub.syncedAt?new Date(sub.syncedAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}):'—';
+  const d=daysLeft(sub.date);
+  if(d===null){card.className='dash-card';}
+  else if(d<=0){card.className='dash-card err';document.getElementById('dc-badge').textContent='❌ Истекла';document.getElementById('dc-days').textContent=Math.abs(d);document.getElementById('dc-days-sub').textContent='дней назад';fill.style.width='100%';fill.style.background='#ff1744';}
+  else if(d<=3){card.className='dash-card warn';document.getElementById('dc-badge').textContent='⚠️ Скоро';document.getElementById('dc-days').textContent=d;document.getElementById('dc-days-sub').textContent='дня до окончания';fill.style.width=Math.round((3-d)/3*100)+'%';fill.style.background='var(--warn)';}
+  else{card.className='dash-card ok';document.getElementById('dc-badge').textContent='✅ Активна';document.getElementById('dc-days').textContent=d;document.getElementById('dc-days-sub').textContent='дней до окончания';fill.style.width=Math.max(5,Math.min(100,Math.round(d/(sub.totalDays||30)*100)))+'%';fill.style.background='var(--accent)';}
+  const hist=loadHist();
+  if(hist.length>0){histSec.style.display='block';document.getElementById('history-list').innerHTML=hist.slice(0,4).map(h=>`<div class="history-item"><span class="history-date">${new Date(h.savedAt).toLocaleDateString('ru-RU')}</span><span class="history-val">до ${new Date(h.date).toLocaleDateString('ru-RU')}</span></div>`).join('');}
+  else histSec.style.display='none';
+  if(Notification.permission==='granted')document.getElementById('bell-badge').classList.add('show');
 }
 
-/* ════ PANEL ════ */
+/* PANEL */
 function togglePanel(){
- const p=document.getElementById('notif-panel'),d=document.getElementById('dimmer');
- if(p.classList.contains('open')){closePanel();}
- else{p.classList.add('open');d.classList.add('show');renderDash();const s=loadSub();if(s.date)document.getElementById('np-date').value=s.date;}
+  const p=document.getElementById('notif-panel'),d=document.getElementById('dimmer');
+  if(p.classList.contains('open')){closePanel();}
+  else{p.classList.add('open');d.classList.add('show');renderDash();const s=loadSub();if(s.date)document.getElementById('np-date').value=s.date;}
 }
-function closePanel(){document.getElementById('notif-panel').classList.remove('open');document.getElementById('dimmer').classList.remove('show');}
+function closePanel(){haptic();document.getElementById('notif-panel').classList.remove('open');document.getElementById('dimmer').classList.remove('show');}
 
-/* ════ SHARE ════ */
+/* SHARE */
 async function shareApp(){
- const data={title:'Weltkind',text:'🔐 Управляй подпиской прямо с телефона!',url:'https://weltkind666.github.io/777Weltkind777/'};
- try{
- if(navigator.share&&navigator.canShare&&navigator.canShare(data)){await navigator.share(data);}
- else{await navigator.clipboard.writeText(data.url);showSt('🔗 Ссылка скопирована!','ok');}
- }catch(e){if(e.name!=='AbortError'){navigator.clipboard.writeText(data.url).catch(()=>{});showSt('🔗 Ссылка скопирована!','ok');}}
+  const data={title:'Weltkind',text:'⚡ Управляй подпиской прямо с телефона!',url:'https://weltkind666.github.io/777Weltkind777/'};
+  try{if(navigator.share&&navigator.canShare&&navigator.canShare(data)){await navigator.share(data);}else{await navigator.clipboard.writeText(data.url);showSt('🔗 Ссылка скопирована!','ok');}}
+  catch(e){if(e.name!=='AbortError'){navigator.clipboard.writeText(data.url).catch(()=>{});showSt('🔗 Ссылка скопирована!','ok');}}
 }
 
-/* ════ NOTIFICATIONS ════ */
+/* NOTIFICATIONS */
 async function autoAskPerm(){
- if(Notification.permission==='default'){const p=await Notification.requestPermission();if(p==='granted'){showSt('✅ Уведомлю за 3 дня до конца подписки!','ok');document.getElementById('bell-badge').classList.add('show');}}
+  if(Notification.permission==='default'){const p=await Notification.requestPermission();if(p==='granted'){showSt('✅ Уведомлю за 3 дня до конца!','ok');document.getElementById('bell-badge').classList.add('show');}}
 }
 async function saveNotif(){
- const date=document.getElementById('np-date').value;if(!date){showSt('⚠️ Укажите дату','warn');return;}
- let p=Notification.permission;if(p==='default')p=await Notification.requestPermission();
- if(p==='denied'){showSt('❌ Заблокировано браузером','err');return;}
- const sub=loadSub();sub.date=date;sub.totalDays=sub.totalDays||30;sub.savedAt=Date.now();
- saveSub(sub);applyStoredSub(sub);renderDash();
- showSt('✅ Сохранено!','ok');document.getElementById('bell-badge').classList.add('show');checkExpiry();
+  const date=document.getElementById('np-date').value;if(!date){showSt('⚠️ Укажите дату','warn');return;}
+  let p=Notification.permission;if(p==='default')p=await Notification.requestPermission();
+  if(p==='denied'){showSt('❌ Заблокировано браузером','err');return;}
+  const sub=loadSub();sub.date=date;sub.totalDays=sub.totalDays||30;sub.savedAt=Date.now();
+  saveSub(sub);startTimer();renderDash();showSt('✅ Сохранено!','ok');document.getElementById('bell-badge').classList.add('show');checkExpiry();
 }
-function disableNotif(){saveSub({});applyStoredSub({});renderDash();document.getElementById('bell-badge').classList.remove('show');document.getElementById('np-date').value='';updateBadge(null);showSt('🔕 Отключено','warn');}
+function disableNotif(){saveSub({});startTimer();renderDash();document.getElementById('bell-badge').classList.remove('show');document.getElementById('np-date').value='';updateBadge(null);showSt('🔕 Отключено','warn');}
 async function testNotif(){
- let p=Notification.permission;if(p==='default')p=await Notification.requestPermission();
- if(p==='denied'){showSt('❌ Заблокировано','err');return;}
- setTimeout(()=>{const n=new Notification('✅ Weltkind — тест',{body:'Уведомления работают!',icon:'icons/icon-192.png',tag:'vpn-test'});n.onclick=()=>{window.focus();n.close();};},500);
- showSt('📬 Отправлено!','ok');
+  let p=Notification.permission;if(p==='default')p=await Notification.requestPermission();
+  if(p==='denied'){showSt('❌ Заблокировано — разреши уведомления в настройках браузера','err');return;}
+  haptic([50]);
+  setTimeout(()=>swNotify('✅ Weltkind — тест','Уведомления работают! Это настоящий пуш.','wpwa-test'),300);
+  showSt('📬 Отправлено через Service Worker — появится как пуш-уведомление на телефоне','ok');
 }
 function checkExpiry(){
- const sub=loadSub();if(!sub.date||Notification.permission!=='granted')return;
- const d=daysLeft(sub.date);if(d===null||d>3)return;
- const title=d<=0?'🚨 Подписка истекла!':`⚠️ Подписка истекает через ${d} дн.`;
- const body=d<=0?'Продлите подписку прямо сейчас!':'Зайдите и продлите подписку.';
- setTimeout(()=>{const n=new Notification(title,{body,icon:'icons/icon-192.png',tag:'vpn-expiry',renotify:true,vibrate:[200,100,200]});n.onclick=()=>{window.focus();n.close();};},1500);
- document.getElementById('bell-badge').classList.add('show');
+  const sub=loadSub();if(!sub.date||Notification.permission!=='granted')return;
+  const d=daysLeft(sub.date);if(d===null||d>3)return;
+  const title=d<=0?'🚨 Подписка истекла!':`⚠️ Истекает через ${d} дн.`;
+  setTimeout(()=>{const n=new Notification(title,{body:d<=0?'Продлите прямо сейчас!':'Зайдите и продлите.',icon:'icons/icon-192.png',tag:'w-exp',renotify:true,vibrate:[200,100,200]});n.onclick=()=>{window.focus();n.close();};},1500);
+  document.getElementById('bell-badge').classList.add('show');
 }
 function showSt(msg,type){const e=document.getElementById('np-status');e.textContent=msg;e.className='np-status show '+type;}
 
-/* ════ INIT ════ */
-document.addEventListener('DOMContentLoaded',()=>{
- obInit();updateNet();
- const sub=loadSub();if(sub.date){applyStoredSub(sub);checkExpiry();}
- setInterval(checkExpiry,3600000);
- (function sched(){const now=new Date(),next=new Date(now);next.setHours(9,0,0,0);if(next<=now)next.setDate(next.getDate()+1);setTimeout(()=>{checkExpiry();sched();},next-now);})();
+/* ════ HAPTIC FEEDBACK ════ */
+function haptic(pattern=[30]){
+  if(navigator.vibrate) navigator.vibrate(pattern);
+}
+// Добавляем haptic на все кнопки
+document.addEventListener('click',e=>{
+  if(e.target.closest('.np-btn,.ob-btn,.bell-btn,.conn-pill,.offline-retry,.ib-install')){
+    haptic([25]);
+  }
 });
 
-/* ════ PWA INSTALL ════ */
+/* ════ CONFETTI ════ */
+function launchConfetti(){
+  const canvas=document.getElementById('confetti-canvas');
+  canvas.style.display='block';
+  canvas.width=innerWidth;canvas.height=innerHeight;
+  const ctx=canvas.getContext('2d');
+  const pieces=[];
+  const colors=['#00e676','#00b0ff','#ff6d00','#fff176','#f48fb1','#80deea'];
+  for(let i=0;i<120;i++){
+    pieces.push({
+      x:Math.random()*canvas.width, y:-10-Math.random()*200,
+      w:6+Math.random()*8, h:3+Math.random()*5,
+      color:colors[Math.floor(Math.random()*colors.length)],
+      angle:Math.random()*Math.PI*2, spin:(.5-Math.random())*.15,
+      vx:(.5-Math.random())*4, vy:2+Math.random()*4,
+      alpha:1
+    });
+  }
+  let frame=0;
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let alive=false;
+    for(const p of pieces){
+      p.x+=p.vx;p.y+=p.vy;p.angle+=p.spin;
+      if(frame>60)p.alpha=Math.max(0,p.alpha-.012);
+      if(p.alpha>0){alive=true;}
+      ctx.save();ctx.globalAlpha=p.alpha;
+      ctx.translate(p.x+p.w/2,p.y+p.h/2);ctx.rotate(p.angle);
+      ctx.fillStyle=p.color;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+    }
+    if(alive){frame++;requestAnimationFrame(draw);}
+    else{canvas.style.display='none';ctx.clearRect(0,0,canvas.width,canvas.height);}
+  }
+  draw();
+  haptic([50,30,80,30,50]);
+}
+
+/* ════ LIVE TIMER ════ */
+let timerInterval=null;
+function startLiveTimer(){
+  if(timerInterval)clearInterval(timerInterval);
+  function tick(){
+    const sub=loadSub();
+    if(!sub.date){
+      clearInterval(timerInterval);timerInterval=null;return;
+    }
+    const ms=new Date(sub.date)-Date.now();
+    const days=Math.floor(ms/86400000);
+    const pill=document.getElementById('hdr').querySelector('.conn-pill');
+    if(ms<=0){
+      txt.textContent='истекла!';
+      pill.className='conn-pill expired';
+    } else if(days<=7){
+      // Показываем живой обратный отсчёт
+      const h=Math.floor((ms%86400000)/3600000);
+      const m=Math.floor((ms%3600000)/60000);
+      const s=Math.floor((ms%60000)/1000);
+      if(days>0) txt.textContent=`${days}д ${h}ч ${String(m).padStart(2,'0')}м`;
+      else txt.textContent=`${h}ч ${String(m).padStart(2,'0')}м ${String(s).padStart(2,'0')}с`;
+      pill.className='conn-pill urgent';
+    } else {
+      // Обычный режим — просто дни
+      txt.textContent=days+' дн.';
+      pill.className='conn-pill';
+    }
+  }
+  tick();
+  timerInterval=setInterval(tick,1000);
+}
+
+function openSupport(){window.open('https://t.me/WeltkindVPN','_blank');}
+
+/* INIT */
+document.addEventListener('DOMContentLoaded',()=>{
+  obInit();updateNet();startTimer();
+  if(loadSub().date)checkExpiry();
+  setInterval(checkExpiry,3600000);
+  (function sched(){const now=new Date(),next=new Date(now);next.setHours(9,0,0,0);if(next<=now)next.setDate(next.getDate()+1);setTimeout(()=>{checkExpiry();sched();},next-now);})();
+});
+
+/* INSTALL */
 let dp=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;setTimeout(()=>document.getElementById('install-banner').classList.add('show'),4000);});
-document.getElementById('install-btn').onclick=async()=>{document.getElementById('install-banner').classList.remove('show');if(dp){dp.prompt();await dp.userChoice;dp=null;}};
+document.getElementById('install-btn').onclick=async()=>{haptic('medium');document.getElementById('install-banner').classList.remove('show');if(dp){dp.prompt();await dp.userChoice;dp=null;}};
 window.addEventListener('appinstalled',()=>document.getElementById('install-banner').classList.remove('show'));
 </script>
+<!-- ── Confetti ── -->
+<canvas id="confetti-canvas"></canvas>
+
+<!-- ── Float support button ── -->
+<button id="float-support" onclick="haptic();openSupport()" title="Поддержка">💬</button>
+<div id="float-tooltip">Написать в поддержку</div>
+
 </body>
 </html>

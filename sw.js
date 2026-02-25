@@ -1,4 +1,4 @@
-const CACHE = 'Weltkind-v3';
+const CACHE = 'Weltkind-v4';
 const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -14,21 +14,15 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Google Apps Script и внешние API — только сеть
   if (
     e.request.url.includes('script.google.com') ||
     e.request.url.includes('googleapis.com') ||
-    e.request.url.includes('ipapi.co') ||
     e.request.url.includes('fonts.googleapis.com') ||
     e.request.url.includes('fonts.gstatic.com')
   ) {
-    e.respondWith(
-      fetch(e.request).catch(() => new Response('Offline', { status: 503 }))
-    );
+    e.respondWith(fetch(e.request).catch(() => new Response('Offline', { status: 503 })));
     return;
   }
-
-  // Для остального — cache-first, потом сеть
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
@@ -41,26 +35,68 @@ self.addEventListener('fetch', e => {
   );
 });
 
+// ★ Главное — показ уведомления через SW (работает на мобильном!)
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SHOW_NOTIFICATION') {
+    const { title, body, tag } = e.data;
+    e.waitUntil(
+      self.registration.showNotification(title, {
+        body,
+        icon: './icons/icon-192.png',
+        badge: './icons/icon-192.png',
+        tag: tag || 'weltkind',
+        renotify: true,
+        vibrate: [200, 100, 200],
+        data: { url: './' }
+      })
+    );
+  }
+
+  // Фоновая проверка от periodicsync
+  if (e.data?.type === 'bg_check') {
+    checkSubBackground();
+  }
+});
+
+// Клик по уведомлению — открыть/сфокусировать приложение
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil(
-    clients.matchAll({ type: 'window' }).then(list => {
-      if (list.length > 0) return list[0].focus();
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const app = list.find(c => c.url.includes(self.location.origin));
+      if (app) return app.focus();
       return clients.openWindow('./');
     })
   );
 });
 
-// Periodic background sync (Android Chrome)
+// Периодический фоновый синк (Android Chrome)
 self.addEventListener('periodicsync', e => {
-  if (e.tag === 'check-subscription') {
-    e.waitUntil(checkSubInBackground());
-  }
+  if (e.tag === 'check-subscription') e.waitUntil(checkSubBackground());
 });
 
-async function checkSubInBackground() {
-  const cache = await caches.open(CACHE);
-  // Просто оповещаем клиентов что нужно проверить подписку
-  const all = await clients.matchAll();
-  all.forEach(c => c.postMessage({ type: 'bg_check' }));
+async function checkSubBackground() {
+  // Читаем данные из кэша (сохранены через Cache API)
+  try {
+    const cache = await caches.open(CACHE);
+    const resp = await cache.match('weltkind-sub-data');
+    if (!resp) return;
+    const sub = await resp.json();
+    if (!sub?.date) return;
+
+    const days = Math.ceil((new Date(sub.date) - Date.now()) / 86400000);
+    if (days <= 3 && days >= -7) {
+      const title = days <= 0 ? '🚨 Подписка истекла!' : `⚠️ Подписка истекает через ${days} дн.`;
+      const body = days <= 0 ? 'Продлите подписку прямо сейчас!' : 'Осталось совсем немного — продлите подписку.';
+      await self.registration.showNotification(title, {
+        body,
+        icon: './icons/icon-192.png',
+        badge: './icons/icon-192.png',
+        tag: 'sub-expiry',
+        renotify: true,
+        vibrate: [200, 100, 200, 100, 200],
+        data: { url: './' }
+      });
+    }
+  } catch(e) {}
 }
