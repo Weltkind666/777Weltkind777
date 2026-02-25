@@ -97,32 +97,6 @@
 <body>
 <canvas id="bg-canvas"></canvas>
 
-<!-- ════════ ONBOARDING (показывается 1 раз) ════════ -->
-<div id="onboarding">
-  <div class="ob-slide active">
-    <div class="ob-emoji">⚡</div>
-    <div class="ob-title">Weltkind VPN</div>
-    <div class="ob-desc">Добро пожаловать!<br><br>Приложение для управления вашей <strong>VPN-подпиской</strong> — быстро и удобно прямо с телефона.</div>
-  </div>
-  <div class="ob-slide">
-    <div class="ob-emoji">📱</div>
-    <div class="ob-title">Войдите по номеру</div>
-    <div class="ob-desc">Введите номер телефона в формате <strong>79161234567</strong><br><br>Система найдёт вашу подписку и покажет статус оплаты.</div>
-  </div>
-  <div class="ob-slide">
-    <div class="ob-emoji">🔔</div>
-    <div class="ob-title">Уведомления</div>
-    <div class="ob-desc">Нажмите кнопку <strong>🔔</strong> в правом углу и подключите Telegram-бота.<br><br>Вы получите уведомление <strong>за 3 дня</strong> до конца подписки.</div>
-  </div>
-  <div class="ob-dots">
-    <div class="ob-dot active"></div>
-    <div class="ob-dot"></div>
-    <div class="ob-dot"></div>
-  </div>
-  <button class="ob-btn" id="ob-next-btn" onclick="obNext()">Далее →</button>
-  <button class="ob-skip" onclick="obFinish()">Пропустить</button>
-</div>
-
 <div id="splash">
   <div class="vpn-orb">
     <div class="orb-ring"></div><div class="orb-ring"></div><div class="orb-ring"></div>
@@ -169,7 +143,6 @@
     <input type="date" id="np-date" class="np-input"/>
   </div>
   <button class="np-btn np-btn-green" onclick="saveNotif()">💾 Сохранить и включить</button>
-  <button class="np-btn np-btn-blue" onclick="shareApp()">🔗 Поделиться приложением</button>
   <button class="np-btn np-btn-blue" onclick="testNotif()">🧪 Тестовое уведомление</button>
   <button class="np-btn np-btn-red" id="notif-off-btn" onclick="disableNotif()" style="display:none">🔕 Отключить</button>
 
