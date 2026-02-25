@@ -151,6 +151,34 @@
     .ib-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem}
     #dimmer{position:fixed;inset:0;z-index:450;background:rgba(0,0,0,.5);display:none;backdrop-filter:blur(2px)}
     #dimmer.show{display:block}
+
+    /* ── Telegram chip in header ── */
+    #tg-chip{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;background:rgba(84,110,122,.12);border:1px solid rgba(84,110,122,.25);font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);cursor:pointer;transition:all .3s;white-space:nowrap;text-decoration:none}
+    #tg-chip.connected{background:rgba(0,176,255,.1);border-color:rgba(0,176,255,.35);color:var(--accent2)}
+    #tg-chip.connected:hover{background:rgba(0,176,255,.18)}
+    #tg-chip:not(.connected):hover{background:rgba(84,110,122,.2)}
+    .tg-chip-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
+    #tg-chip.connected .tg-chip-dot{background:var(--accent2)}
+
+    /* ── FAB support button ── */
+    #fab-support{position:fixed;bottom:24px;right:18px;z-index:300;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0088cc,#006daa);box-shadow:0 4px 20px rgba(0,136,204,.5);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;transition:transform .2s,box-shadow .2s;text-decoration:none}
+    #fab-support:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(0,136,204,.7)}
+    #fab-support:active{transform:scale(.95)}
+    #fab-support .fab-pulse{position:absolute;inset:-4px;border-radius:50%;border:2px solid rgba(0,136,204,.4);animation:fabPulse 2s ease-out infinite}
+    @keyframes fabPulse{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.5);opacity:0}}
+    #fab-support .fab-tooltip{position:absolute;right:60px;background:rgba(13,33,55,.95);border:1px solid rgba(0,176,255,.2);color:var(--text);padding:6px 10px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:.65rem;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;top:50%;transform:translateY(-50%)}
+    #fab-support:hover .fab-tooltip{opacity:1}
+
+    /* ── Telegram connect banner ── */
+    #tg-banner{position:fixed;bottom:90px;left:12px;right:12px;z-index:290;background:var(--card);border:1px solid rgba(0,176,255,.3);border-radius:14px;padding:12px 14px;display:none;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.6);animation:bannerUp .4s cubic-bezier(.34,1.56,.64,1)}
+    #tg-banner.show{display:flex}
+    @keyframes bannerUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .tg-banner-icon{font-size:1.8rem;flex-shrink:0}
+    .tg-banner-text{flex:1;min-width:0}
+    .tg-banner-text strong{display:block;font-size:.9rem;font-weight:700;margin-bottom:2px}
+    .tg-banner-text span{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted)}
+    .tg-banner-btn{padding:8px 14px;background:linear-gradient(135deg,#0088cc,#006daa);border:none;border-radius:100px;color:#fff;font-family:'Rajdhani',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;text-decoration:none;display:block}
+    .tg-banner-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:4px;flex-shrink:0}
     /* Confetti canvas */
     #confetti-canvas{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none}
     /* Live timer glow when urgent */
@@ -219,6 +247,10 @@
 <header id="hdr">
   <div class="hdr-brand">⚡ Weltkind</div>
   <div class="hdr-right">
+    <a id="tg-chip" href="#" onclick="return fabTelegramClick(event)" title="Telegram уведомления">
+      <div class="tg-chip-dot"></div>
+      <span id="tg-chip-text">TG</span>
+    </a>
     <div id="timer-pill" onclick="haptic();togglePanel()">
       <div class="t-dot" id="t-dot"></div>
       <span id="timer-text">загрузка...</span>
@@ -492,16 +524,16 @@ function startTimer(){if(timerIv)clearInterval(timerIv);tickTimer();timerIv=setI
 /* postMessage */
 window.addEventListener('message',e=>{
   if(!e.data||e.data.type!=='weltkind_sub')return;
-  handleSubData(e.data.expiryDate,e.data.status,e.data.phone);
+  handleSubData(e.data.expiryDate,e.data.status,e.data.phone,e.data.telegramConnected,e.data.telegramBotUrl);
 });
 
 /* HANDLE DATA */
-function handleSubData(expiryDate,status,phone){
+function handleSubData(expiryDate,status,phone,telegramConnected,telegramBotUrl){
   const iso=toISO(expiryDate);
   const prev=loadSub();
   let total=prev.totalDays||30;
   if(iso){const d=daysLeft(iso);if(d&&d>total)total=d;}
-  const sub={date:iso,displayDate:expiryDate,status,phone,totalDays:total,syncedAt:Date.now()};
+  const sub={date:iso,displayDate:expiryDate,status,phone,totalDays:total,syncedAt:Date.now(),tgConnected:!!telegramConnected,tgBotUrl:telegramBotUrl||'https://t.me/WeltkindVPN_bot'};
   saveSub(sub);
   // Конфетти при НОВОЙ дате оплаты
   if(iso&&iso!==prev.date&&status==='Оплачено'){
@@ -510,6 +542,7 @@ function handleSubData(expiryDate,status,phone){
     setTimeout(launchConfetti,400);
   }
   startTimer();checkExpiry();
+  updateTgStatus(sub);
   if(iso&&status==='Оплачено')autoAskPerm();
   if(document.getElementById('notif-panel').classList.contains('open'))renderDash();
 }
@@ -578,6 +611,64 @@ function checkExpiry(){
   setTimeout(()=>{const n=new Notification(title,{body:d<=0?'Продлите прямо сейчас!':'Зайдите и продлите.',icon:'icons/icon-192.png',tag:'w-exp',renotify:true,vibrate:[200,100,200]});n.onclick=()=>{window.focus();n.close();};},1500);
   document.getElementById('bell-badge').classList.add('show');
 }
+/* ════ TELEGRAM STATUS ════ */
+let tgBotUrl = 'https://t.me/WeltkindVPN_bot';
+
+function updateTgStatus(sub) {
+  if (!sub) sub = loadSub();
+  const chip = document.getElementById('tg-chip');
+  const chipText = document.getElementById('tg-chip-text');
+  if (!chip) return;
+
+  const connected = !!sub.tgConnected;
+  tgBotUrl = sub.tgBotUrl || tgBotUrl;
+
+  if (connected) {
+    chip.classList.add('connected');
+    chipText.textContent = 'TG ✓';
+    chip.title = 'Telegram подключён — нажми для перехода в бота';
+    // Скрываем баннер если был показан
+    closeTgBanner();
+  } else if (sub.phone) {
+    // Телефон известен но TG не подключён
+    chip.classList.remove('connected');
+    chipText.textContent = 'TG';
+    chip.title = 'Telegram не подключён — нажми чтобы подключить';
+    // Показываем баннер (только если не закрыт пользователем)
+    if (!sessionStorage.getItem('tg_banner_closed')) {
+      setTimeout(() => showTgBanner(tgBotUrl), 1500);
+    }
+  } else {
+    chip.classList.remove('connected');
+    chipText.textContent = 'TG';
+  }
+}
+
+function fabTelegramClick(e) {
+  e.preventDefault();
+  haptic([30]);
+  const sub = loadSub();
+  const url = sub.tgBotUrl || tgBotUrl;
+  window.open(url, '_blank');
+  return false;
+}
+
+function showTgBanner(url) {
+  const banner = document.getElementById('tg-banner');
+  const btn = document.getElementById('tg-banner-btn');
+  if (!banner) return;
+  btn.href = url || tgBotUrl;
+  banner.classList.add('show');
+  // Автоскрытие через 12 сек
+  setTimeout(() => banner.classList.remove('show'), 12000);
+}
+
+function closeTgBanner() {
+  const banner = document.getElementById('tg-banner');
+  if (banner) banner.classList.remove('show');
+  sessionStorage.setItem('tg_banner_closed', '1');
+}
+
 function showSt(msg,type){const e=document.getElementById('np-status');e.textContent=msg;e.className='np-status show '+type;}
 
 /* ════ HAPTIC FEEDBACK ════ */
@@ -667,7 +758,7 @@ function openSupport(){window.open('https://t.me/WeltkindVPN','_blank');}
 /* INIT */
 document.addEventListener('DOMContentLoaded',()=>{
   obInit();updateNet();startTimer();
-  if(loadSub().date)checkExpiry();
+  const _sub=loadSub();if(_sub.date){checkExpiry();updateTgStatus(_sub);}
   setInterval(checkExpiry,3600000);
   (function sched(){const now=new Date(),next=new Date(now);next.setHours(9,0,0,0);if(next<=now)next.setDate(next.getDate()+1);setTimeout(()=>{checkExpiry();sched();},next-now);})();
 });
@@ -685,5 +776,22 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
 <button id="float-support" onclick="haptic();openSupport()" title="Поддержка">💬</button>
 <div id="float-tooltip">Написать в поддержку</div>
 
+<!-- FAB Telegram support -->
+<a id="fab-support" href="https://t.me/WeltkindVPN_bot" target="_blank" onclick="haptic([30,20,60])" title="Написать в поддержку">
+  <div class="fab-pulse"></div>
+  <span>✈️</span>
+  <div class="fab-tooltip">Написать в поддержку</div>
+</a>
+
+<!-- Telegram connect banner -->
+<div id="tg-banner">
+  <div class="tg-banner-icon">📲</div>
+  <div class="tg-banner-text">
+    <strong>Подключи Telegram</strong>
+    <span>Получай уведомления об оплате</span>
+  </div>
+  <a id="tg-banner-btn" class="tg-banner-btn" href="#" target="_blank">Подключить</a>
+  <button class="tg-banner-close" onclick="closeTgBanner()">✕</button>
+</div>
 </body>
 </html>
