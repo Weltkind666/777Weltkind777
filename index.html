@@ -151,76 +151,7 @@
     .ib-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem}
     #dimmer{position:fixed;inset:0;z-index:450;background:rgba(0,0,0,.5);display:none;backdrop-filter:blur(2px)}
     #dimmer.show{display:block}
-    /* ── Proxy button in header ── */
-    #proxy-btn{display:none;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;background:rgba(0,176,255,.06);border:1px solid rgba(0,176,255,.2);font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);cursor:pointer;transition:all .3s;white-space:nowrap;flex-shrink:0}
-    #proxy-btn.show{display:flex}
-    #proxy-btn.active{background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.35);color:var(--accent)}
-    #proxy-btn.inactive{background:rgba(255,109,0,.06);border-color:rgba(255,109,0,.25);color:var(--warn)}
-    #proxy-btn-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
-    #proxy-btn.active #proxy-btn-dot{background:var(--accent)}
-    #proxy-btn.inactive #proxy-btn-dot{background:var(--warn);animation:blink 2s infinite}
 
-    /* ── Proxy Modal ── */
-    #proxy-modal{position:fixed;inset:0;z-index:6000;display:none;align-items:flex-end;justify-content:center;padding-bottom:0}
-    #proxy-modal.show{display:flex}
-    #proxy-modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px)}
-    #proxy-modal-box{position:relative;z-index:1;width:100%;max-width:480px;background:var(--card);border-radius:24px 24px 0 0;padding:24px 20px 32px;max-height:90vh;overflow-y:auto;animation:slideUp .35s cubic-bezier(.34,1.56,.64,1)}
-    @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-    .pm-handle{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin:0 auto 20px}
-    .pm-title{font-size:1.2rem;font-weight:700;margin-bottom:4px}
-    .pm-sub{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);margin-bottom:20px}
-
-    /* Active proxy card */
-    .pm-active-card{background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.3);border-radius:14px;padding:16px;margin-bottom:16px}
-    .pm-active-status{display:flex;align-items:center;gap:8px;margin-bottom:12px}
-    .pm-active-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
-    .pm-active-label{font-size:.95rem;font-weight:700;color:var(--accent)}
-    .pm-active-note{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);line-height:1.6;margin-bottom:14px}
-    .pm-connect-btn{width:100%;padding:13px;background:linear-gradient(135deg,#0088cc,#006daa);border:none;border-radius:100px;color:#fff;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s;display:flex;align-items:center;justify-content:center;gap:8px}
-    .pm-connect-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,136,204,.4)}
-
-    /* Order proxy card */
-    .pm-order-card{background:rgba(255,109,0,.05);border:1px solid rgba(255,109,0,.2);border-radius:14px;padding:16px;margin-bottom:16px}
-    .pm-price-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-    .pm-price{font-size:1.5rem;font-weight:700;color:var(--warn)}
-    .pm-price-period{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted)}
-    .pm-order-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--warn),#cc5500);border:none;border-radius:100px;color:#fff;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s;margin-bottom:10px}
-    .pm-order-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(255,109,0,.4)}
-
-    /* Rules */
-    .pm-rules{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:14px}
-    .pm-rules-title{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
-    .pm-rule{display:flex;gap:10px;margin-bottom:8px;font-size:.82rem;line-height:1.5}
-    .pm-rule:last-child{margin-bottom:0}
-    .pm-rule-icon{flex-shrink:0;margin-top:1px}
-    .pm-rule-warn{color:#ff5252}
-
-    /* ── Proxy block ── */
-    .proxy-card{border-radius:14px;padding:14px 16px;margin-bottom:12px;border:1px solid rgba(0,176,255,.2);background:rgba(0,176,255,.04);position:relative;overflow:hidden}
-    .proxy-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-    .proxy-title{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-    .proxy-status{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700}
-    .proxy-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .4s,box-shadow .4s}
-    .proxy-dot.online{background:var(--accent);box-shadow:0 0 8px var(--accent)}
-    .proxy-dot.checking{background:var(--warn);animation:blink 1s infinite}
-    .proxy-dot.offline{background:#ff1744;box-shadow:0 0 6px #ff1744}
-    .proxy-ping{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted);margin-bottom:10px}
-    .proxy-ping .ping-val{font-weight:700;transition:color .3s}
-    .proxy-ping .ping-val.fast{color:var(--accent)}
-    .proxy-ping .ping-val.med{color:var(--warn)}
-    .proxy-ping .ping-val.slow{color:#ff5252}
-    .proxy-info{display:flex;gap:10px;margin-bottom:12px}
-    .proxy-info-item{flex:1;background:rgba(0,0,0,.2);border-radius:8px;padding:6px 8px}
-    .proxy-info-lbl{font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--muted);text-transform:uppercase;margin-bottom:2px}
-    .proxy-info-val{font-size:.75rem;font-weight:600;font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .proxy-btn{width:100%;padding:10px;border-radius:10px;border:none;font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#0088cc,#006daa);color:#fff;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
-    .proxy-btn:hover{box-shadow:0 0 20px rgba(0,136,204,.45);transform:translateY(-1px)}
-    .proxy-refresh{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.75rem;font-family:'JetBrains Mono',monospace;padding:4px 8px;border-radius:6px;transition:color .2s;margin-top:6px;display:block;width:100%;text-align:center}
-    .proxy-refresh:hover{color:var(--accent2)}
-    .ping-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.07);margin-bottom:12px;overflow:hidden}
-    .ping-bar-fill{height:100%;border-radius:2px;width:0%;transition:width .6s ease,background .4s}
-
-    /* ── Telegram chip in header ── */
     /* ── Telegram chip in header ── */
     #tg-chip{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;background:rgba(84,110,122,.12);border:1px solid rgba(84,110,122,.25);font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);cursor:pointer;transition:all .3s;white-space:nowrap;text-decoration:none}
     #tg-chip.connected{background:rgba(0,176,255,.1);border-color:rgba(0,176,255,.35);color:var(--accent2)}
@@ -315,10 +246,6 @@
 <!-- HEADER -->
 <header id="hdr">
   <div class="hdr-brand">⚡ Weltkind</div>
-    <button id="proxy-btn" onclick="openProxyModal()" title="Telegram без VPN">
-      <div id="proxy-btn-dot"></div>
-      <span id="proxy-btn-text">TG без VPN</span>
-    </button>
   <div class="hdr-right">
     <a id="tg-chip" href="#" onclick="return fabTelegramClick(event)" title="Telegram уведомления">
       <div class="tg-chip-dot"></div>
@@ -365,39 +292,6 @@
     <div class="history-list" id="history-list"></div>
     <div style="height:8px"></div>
   </div>
-  <!-- Proxy block -->
-  <div class="proxy-card" id="proxy-card">
-    <div class="proxy-head">
-      <span class="proxy-title">📡 Прокси Telegram</span>
-      <div class="proxy-status">
-        <div class="proxy-dot checking" id="proxy-dot"></div>
-        <span id="proxy-status-text">проверка...</span>
-      </div>
-    </div>
-    <div class="ping-bar"><div class="ping-bar-fill" id="ping-bar-fill"></div></div>
-    <div class="proxy-ping">Задержка: <span class="ping-val" id="proxy-ping-val">—</span> мс</div>
-    <div class="proxy-info">
-      <div class="proxy-info-item">
-        <div class="proxy-info-lbl">Сервер</div>
-        <div class="proxy-info-val" id="proxy-server">204.77.1.235</div>
-      </div>
-      <div class="proxy-info-item">
-        <div class="proxy-info-lbl">Порт</div>
-        <div class="proxy-info-val">30458</div>
-      </div>
-      <div class="proxy-info-item">
-        <div class="proxy-info-lbl">Тип</div>
-        <div class="proxy-info-val">SOCKS5</div>
-      </div>
-    </div>
-    <a class="proxy-btn" id="proxy-connect-btn"
-      href="https://t.me/socks?server=204.77.1.235&port=30458&user=Weltkind&pass=7Weltkind7"
-      target="_blank" onclick="haptic([30,20,60]);updateProxyBtnHref()">
-      ✈️ Подключить прокси в Telegram
-    </a>
-    <button class="proxy-refresh" onclick="checkProxy()">🔄 Обновить пинг</button>
-  </div>
-
   <div class="np-divider"></div>
   <button class="np-btn np-btn-blue" onclick="haptic();shareApp()">🔗 Поделиться приложением</button>
   <button class="np-btn np-btn-red" id="notif-off-btn" onclick="haptic();disableNotif()" style="display:none">🔕 Отключить уведомления</button>
@@ -630,16 +524,16 @@ function startTimer(){if(timerIv)clearInterval(timerIv);tickTimer();timerIv=setI
 /* postMessage */
 window.addEventListener('message',e=>{
   if(!e.data||e.data.type!=='weltkind_sub')return;
-  handleSubData(e.data.expiryDate,e.data.status,e.data.phone,e.data.telegramConnected,e.data.telegramBotUrl,e.data.proxy);
+  handleSubData(e.data.expiryDate,e.data.status,e.data.phone,e.data.telegramConnected,e.data.telegramBotUrl);
 });
 
 /* HANDLE DATA */
-function handleSubData(expiryDate,status,phone,telegramConnected,telegramBotUrl,proxy){
+function handleSubData(expiryDate,status,phone,telegramConnected,telegramBotUrl){
   const iso=toISO(expiryDate);
   const prev=loadSub();
   let total=prev.totalDays||30;
   if(iso){const d=daysLeft(iso);if(d&&d>total)total=d;}
-  const sub={date:iso,displayDate:expiryDate,status,phone,totalDays:total,syncedAt:Date.now(),tgConnected:!!telegramConnected,tgBotUrl:telegramBotUrl||'https://t.me/WeltkindVPN_bot',proxy:proxy||null};
+  const sub={date:iso,displayDate:expiryDate,status,phone,totalDays:total,syncedAt:Date.now(),tgConnected:!!telegramConnected,tgBotUrl:telegramBotUrl||'https://t.me/WeltkindVPN_bot'};
   saveSub(sub);
   // Конфетти при НОВОЙ дате оплаты
   if(iso&&iso!==prev.date&&status==='Оплачено'){
@@ -649,7 +543,6 @@ function handleSubData(expiryDate,status,phone,telegramConnected,telegramBotUrl,
   }
   startTimer();checkExpiry();
   updateTgStatus(sub);
-  updateProxyStatus(sub.proxyUrl);
   if(iso&&status==='Оплачено')autoAskPerm();
   if(document.getElementById('notif-panel').classList.contains('open'))renderDash();
 }
@@ -681,13 +574,7 @@ function renderDash(){
 function togglePanel(){
   const p=document.getElementById('notif-panel'),d=document.getElementById('dimmer');
   if(p.classList.contains('open')){closePanel();}
-  else{
-    p.classList.add('open');d.classList.add('show');
-    renderDash();
-    const s=loadSub();if(s.date)document.getElementById('np-date').value=s.date;
-    // Проверяем прокси при каждом открытии панели
-    checkProxy();
-  }
+  else{p.classList.add('open');d.classList.add('show');renderDash();const s=loadSub();if(s.date)document.getElementById('np-date').value=s.date;}
 }
 function closePanel(){haptic();document.getElementById('notif-panel').classList.remove('open');document.getElementById('dimmer').classList.remove('show');}
 
@@ -724,138 +611,6 @@ function checkExpiry(){
   setTimeout(()=>{const n=new Notification(title,{body:d<=0?'Продлите прямо сейчас!':'Зайдите и продлите.',icon:'icons/icon-192.png',tag:'w-exp',renotify:true,vibrate:[200,100,200]});n.onclick=()=>{window.focus();n.close();};},1500);
   document.getElementById('bell-badge').classList.add('show');
 }
-/* ════ PROXY PING ════ */
-function getProxyData() {
-  // Берём из сохранённых данных подписки, fallback на дефолт
-  const sub = loadSub();
-  const p = sub.proxy || {};
-  return {
-    server: p.server || '204.77.1.235',
-    port:   p.port   || '30458',
-    user:   p.user   || 'Weltkind',
-    pass:   p.pass   || '7Weltkind7',
-    tgLink: p.tgLink || 'https://t.me/socks?server=204.77.1.235&port=30458&user=Weltkind&pass=7Weltkind7'
-  };
-}
-
-function updateProxyBtnHref() {
-  const pd = getProxyData();
-  const btn = document.getElementById('proxy-connect-btn');
-  if (btn) btn.href = pd.tgLink;
-}
-
-async function checkProxy() {
-  const dot = document.getElementById('proxy-dot');
-  const statusTxt = document.getElementById('proxy-status-text');
-  const pingVal = document.getElementById('proxy-ping-val');
-  const barFill = document.getElementById('ping-bar-fill');
-  if (!dot) return;
-
-  // Получаем актуальные данные прокси и обновляем UI
-  const pd = getProxyData();
-  const serverEl = document.getElementById('proxy-server');
-  if (serverEl) serverEl.textContent = pd.server;
-  const btnEl = document.getElementById('proxy-connect-btn');
-  if (btnEl) btnEl.href = pd.tgLink;
-
-  // Состояние: проверяем
-  dot.className = 'proxy-dot checking';
-  statusTxt.textContent = 'проверка...';
-  pingVal.textContent = '—';
-  pingVal.className = 'ping-val';
-  barFill.style.width = '0%';
-
-  const ping = await measurePing(pd.server, parseInt(pd.port));
-
-  if (ping === null) {
-    // Недоступен
-    dot.className = 'proxy-dot offline';
-    statusTxt.textContent = 'недоступен';
-    pingVal.textContent = '—';
-    pingVal.className = 'ping-val slow';
-    barFill.style.width = '100%';
-    barFill.style.background = '#ff1744';
-  } else {
-    dot.className = 'proxy-dot online';
-    pingVal.textContent = ping;
-    // Цвет по скорости
-    if (ping < 80) {
-      statusTxt.textContent = 'онлайн 🟢';
-      pingVal.className = 'ping-val fast';
-      barFill.style.background = 'var(--accent)';
-      barFill.style.width = Math.max(10, Math.min(40, ping / 2)) + '%';
-    } else if (ping < 200) {
-      statusTxt.textContent = 'онлайн 🟡';
-      pingVal.className = 'ping-val med';
-      barFill.style.background = 'var(--warn)';
-      barFill.style.width = Math.min(70, ping / 3) + '%';
-    } else {
-      statusTxt.textContent = 'медленно 🔴';
-      pingVal.className = 'ping-val slow';
-      barFill.style.background = '#ff5252';
-      barFill.style.width = '85%';
-    }
-  }
-}
-
-async function measurePing(host, port) {
-  // Метод 1: fetch с no-cors — измеряем RTT до TCP-соединения
-  // SOCKS5 порт не отвечает на HTTP, но время до ошибки = реальная задержка
-  const attempts = 3;
-  const results = [];
-
-  for (let i = 0; i < attempts; i++) {
-    try {
-      const t0 = performance.now();
-      // Используем image ping — более надёжный чем fetch для cross-origin
-      await new Promise((resolve, reject) => {
-        const img = new Image();
-        const timeout = setTimeout(() => { img.src = ''; reject(new Error('timeout')); }, 4000);
-        img.onload = img.onerror = () => { clearTimeout(timeout); resolve(); };
-        // Добавляем случайный параметр чтобы не кэшировалось
-        img.src = `https://${host}:${port}/favicon.ico?_=${Date.now() + i}`;
-      });
-      results.push(Math.round(performance.now() - t0));
-    } catch(e) {
-      // Ошибка соединения — но время до ошибки это и есть RTT
-      // Если timeout (4сек) — сервер недоступен
-      // Если быстрая ошибка — сервер живой но не HTTP
-      const elapsed = Math.round(performance.now() - (performance.now() - 100));
-      // Повторяем с fetch чтобы поймать время ошибки
-      try {
-        const t1 = performance.now();
-        await fetch(`https://${host}:${port}/`, {
-          mode: 'no-cors',
-          signal: AbortSignal.timeout(3000),
-          cache: 'no-store'
-        });
-        results.push(Math.round(performance.now() - t1));
-      } catch(e2) {
-        if (e2.name === 'TimeoutError' || e2.name === 'AbortError') {
-          // Реальный таймаут — сервер недоступен или порт закрыт
-          // Не добавляем в results
-        } else {
-          // Network error — быстрый отказ = сервер живой
-          // e2 = TypeError: Failed to fetch — значит порт ответил отказом
-          // Это означает сервер ОНЛАЙН, просто не HTTP
-          const roughPing = Math.round(performance.now() - t1);
-          if (roughPing < 3000) results.push(roughPing);
-        }
-      }
-    }
-    // Пауза между попытками
-    if (i < attempts - 1) await new Promise(r => setTimeout(r, 200));
-  }
-
-  if (results.length === 0) return null;
-  // Берём медиану
-  results.sort((a, b) => a - b);
-  return results[Math.floor(results.length / 2)];
-}
-
-// Запускаем проверку когда панель открывается
-const _origTogglePanel = typeof togglePanel !== 'undefined' ? togglePanel : null;
-
 /* ════ TELEGRAM STATUS ════ */
 let tgBotUrl = 'https://t.me/WeltkindVPN_bot';
 
@@ -926,87 +681,6 @@ function closeTgBanner() {
   if (banner) banner.classList.remove('show');
   sessionStorage.setItem('tg_banner_closed', '1');
 }
-
-/* ════ PROXY TELEGRAM ════ */
-let currentProxyUrl = '';
-
-function updateProxyStatus(proxyUrl) {
-  currentProxyUrl = proxyUrl || '';
-  const btn = document.getElementById('proxy-btn');
-  const btnText = document.getElementById('proxy-btn-text');
-  if (!btn) return;
-
-  // Показываем кнопку только если клиент залогинен
-  const sub = loadSub();
-  if (!sub.phone) return;
-
-  btn.classList.add('show');
-
-  if (currentProxyUrl) {
-    btn.className = 'show active';
-    btn.classList.add('show');
-    btnText.textContent = 'TG без VPN ✓';
-  } else {
-    btn.className = 'inactive';
-    btn.classList.add('show');
-    btnText.textContent = 'TG без VPN';
-  }
-}
-
-function openProxyModal() {
-  haptic([30]);
-  const modal = document.getElementById('proxy-modal');
-  const sub = loadSub();
-
-  // Показываем нужный блок
-  document.getElementById('pm-active').style.display = 'none';
-  document.getElementById('pm-order').style.display = 'none';
-  document.getElementById('pm-noauth').style.display = 'none';
-
-  if (!sub.phone) {
-    document.getElementById('pm-noauth').style.display = 'block';
-  } else if (currentProxyUrl) {
-    document.getElementById('pm-active').style.display = 'block';
-    // Устанавливаем ссылку
-    const link = document.getElementById('pm-connect-link');
-    link.href = currentProxyUrl;
-  } else {
-    document.getElementById('pm-order').style.display = 'block';
-  }
-
-  modal.classList.add('show');
-}
-
-function closeProxyModal() {
-  document.getElementById('proxy-modal').classList.remove('show');
-}
-
-function orderProxy() {
-  haptic([30, 20, 60]);
-  const sub = loadSub();
-  const phone = sub.phone || '';
-  // Открываем Telegram бота с командой заказа прокси
-  const msg = encodeURIComponent('Хочу заказать прокси для Telegram (100₽/мес). Мой номер: ' + phone);
-  window.open('https://t.me/WeltkindVPN_bot?start=proxy_' + phone, '_blank');
-  closeProxyModal();
-  // Показываем подсказку
-  showSt('📩 Открываем Telegram — напишите боту для заказа прокси', 'ok');
-}
-
-// Закрытие по свайпу вниз
-(function() {
-  let startY = 0;
-  document.addEventListener('touchstart', e => {
-    const box = document.getElementById('proxy-modal-box');
-    if (box && box.contains(e.target)) startY = e.touches[0].clientY;
-  }, { passive: true });
-  document.addEventListener('touchend', e => {
-    if (!startY) return;
-    const diff = e.changedTouches[0].clientY - startY;
-    if (diff > 80) closeProxyModal();
-    startY = 0;
-  }, { passive: true });
-})();
 
 function showSt(msg,type){const e=document.getElementById('np-status');e.textContent=msg;e.className='np-status show '+type;}
 
@@ -1097,7 +771,7 @@ function openSupport(){window.open('https://t.me/WeltkindVPN','_blank');}
 /* INIT */
 document.addEventListener('DOMContentLoaded',()=>{
   obInit();updateNet();startTimer();
-  const _sub=loadSub();if(_sub.date){checkExpiry();updateTgStatus(_sub);updateProxyStatus(_sub.proxyUrl);}
+  const _sub=loadSub();if(_sub.date){checkExpiry();updateTgStatus(_sub);}
   setInterval(checkExpiry,3600000);
   (function sched(){const now=new Date(),next=new Date(now);next.setHours(9,0,0,0);if(next<=now)next.setDate(next.getDate()+1);setTimeout(()=>{checkExpiry();sched();},next-now);})();
 });
@@ -1132,73 +806,5 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
   <a id="tg-banner-btn" class="tg-banner-btn" href="#" target="_blank">Подключить</a>
   <button class="tg-banner-close" onclick="closeTgBanner()">✕</button>
 </div>
-<!-- ════ PROXY MODAL ════ -->
-<div id="proxy-modal">
-  <div id="proxy-modal-bg" onclick="closeProxyModal()"></div>
-  <div id="proxy-modal-box">
-    <div class="pm-handle"></div>
-    <div class="pm-title">📡 Telegram без VPN</div>
-    <div class="pm-sub">Прокси-сервер Weltkind для Telegram</div>
-
-    <!-- Блок когда прокси активен -->
-    <div id="pm-active" style="display:none">
-      <div class="pm-active-card">
-        <div class="pm-active-status">
-          <div class="pm-active-dot"></div>
-          <div class="pm-active-label">Прокси подключён ✅</div>
-        </div>
-        <div class="pm-active-note">
-          Нажми кнопку ниже — Telegram автоматически предложит подключить прокси.<br>
-          Достаточно нажать <strong>Подключить</strong> в Telegram.
-        </div>
-        <a id="pm-connect-link" href="#" target="_blank" onclick="haptic([30,20,60])">
-          <button class="pm-connect-btn">✈️ Подключить к Telegram</button>
-        </a>
-      </div>
-      <div class="pm-rules">
-        <div class="pm-rules-title">📋 Условия использования</div>
-        <div class="pm-rule"><span class="pm-rule-icon">✅</span><span>Сообщения, фото, видео, файлы — работают полностью</span></div>
-        <div class="pm-rule"><span class="pm-rule-icon">✅</span><span>Каналы, группы, боты — работают</span></div>
-        <div class="pm-rule"><span class="pm-rule-icon">✅</span><span>Загрузка и скачивание файлов — работает</span></div>
-        <div class="pm-rule"><span class="pm-rule-icon pm-rule-warn">❌</span><span class="pm-rule-warn">Голосовые и видеозвонки — не работают (ограничение прокси)</span></div>
-        <div class="pm-rule"><span class="pm-rule-icon pm-rule-warn">⚠️</span><span>Строго <strong>1 устройство</strong> — прокси персональный</span></div>
-        <div class="pm-rule"><span class="pm-rule-icon pm-rule-warn">🚫</span><span>Передача ссылки третьим лицам — автоматическое отключение без возврата средств</span></div>
-        <div class="pm-rule"><span class="pm-rule-icon">💡</span><span>При подозрительной активности — отключение без предупреждения</span></div>
-      </div>
-    </div>
-
-    <!-- Блок когда прокси не заказан -->
-    <div id="pm-order" style="display:none">
-      <div class="pm-order-card">
-        <div class="pm-price-row">
-          <div>
-            <div class="pm-price">100 ₽ <span style="font-size:1rem">/мес</span></div>
-            <div class="pm-price-period">Персональный прокси для Telegram</div>
-          </div>
-          <span style="font-size:2rem">📡</span>
-        </div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);line-height:1.7;margin-bottom:14px">
-          Telegram работает без VPN — сообщения, файлы, каналы.<br>
-          Персональная ссылка только для тебя.
-        </div>
-        <button class="pm-order-btn" onclick="orderProxy()">📩 Заказать за 100 ₽/мес</button>
-      </div>
-      <div class="pm-rules">
-        <div class="pm-rules-title">📋 Что работает / не работает</div>
-        <div class="pm-rule"><span class="pm-rule-icon">✅</span><span>Сообщения, фото, видео, файлы</span></div>
-        <div class="pm-rule"><span class="pm-rule-icon">✅</span><span>Каналы, группы, боты</span></div>
-        <div class="pm-rule"><span class="pm-rule-icon pm-rule-warn">❌</span><span class="pm-rule-warn">Голосовые и видеозвонки — не поддерживаются</span></div>
-        <div class="pm-rule"><span class="pm-rule-icon pm-rule-warn">⚠️</span><span>Строго <strong>1 устройство</strong> — не передавать</span></div>
-        <div class="pm-rule"><span class="pm-rule-icon pm-rule-warn">🚫</span><span>За распространение ссылки — отключение без предупреждения</span></div>
-      </div>
-    </div>
-
-    <!-- Пока нет данных (не залогинен) -->
-    <div id="pm-noauth" style="font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--muted);text-align:center;padding:20px 0">
-      Войдите в аккаунт чтобы проверить статус прокси
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
