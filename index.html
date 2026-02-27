@@ -280,9 +280,9 @@
 <header id="hdr">
   <div class="hdr-brand">⚡ Weltkind</div>
   <div class="hdr-right">
-    <button id="proxy-btn" onclick="openProxyModal()" title="Telegram без VPN">
+    <button id="proxy-btn" onclick="openProxyModal()" title="Telegram без VPN используйте прокси SOCKS5">
       <div id="proxy-btn-dot"></div>
-      <span id="proxy-btn-text">Telegram без VPN</span>
+      <span id="proxy-btn-text">Telegram без VPN используйте прокси SOCKS5</span>
     </button>
     <a id="tg-chip" href="#" onclick="return fabTelegramClick(event)" title="Telegram уведомления">
       <div class="tg-chip-dot"></div>
@@ -560,7 +560,13 @@ function startTimer(){if(timerIv)clearInterval(timerIv);tickTimer();timerIv=setI
 
 /* postMessage */
 window.addEventListener('message',e=>{
-  if(!e.data||e.data.type!=='weltkind_sub')return;
+  if(!e.data)return;
+  // Заявка на прокси от клиента — пересылаем в Apps Script фрейм для уведомления админа
+  if(e.data.type==='weltkind_proxy_order'){
+    // Apps Script сам обработает через свой listener в Index_apps_script.html
+    return;
+  }
+  if(e.data.type!=='weltkind_sub')return;
   handleSubData(e.data.expiryDate,e.data.status,e.data.phone,e.data.telegramConnected,e.data.telegramBotUrl,e.data.proxyUrl);
 });
 
@@ -765,9 +771,39 @@ function orderProxy() {
   haptic([30,20,60]);
   const sub = loadSub();
   const phone = sub.phone || '';
-  window.open('https://t.me/WeltkindVPN_bot?start=proxy_' + phone, '_blank');
+  if (!phone) { showSt('Войдите в аккаунт', 'err'); return; }
+
+  // Отправляем уведомление админу через postMessage в Apps Script фрейм
+  try {
+    window.top.postMessage({ type: 'weltkind_proxy_order', phone: phone }, '*');
+  } catch(e) {}
+  try {
+    if (window.parent !== window.top) window.parent.postMessage({ type: 'weltkind_proxy_order', phone: phone }, '*');
+  } catch(e) {}
+
+  // Показываем клиенту подтверждение
   closeProxyModal();
-  showSt('📩 Открываем Telegram — напишите боту для заказа прокси','ok');
+  setTimeout(showProxyOrderConfirm, 150);
+}
+
+function showProxyOrderConfirm() {
+  const modal = document.getElementById('proxy-modal');
+  const box = document.getElementById('proxy-modal-box');
+  // Сохраняем оригинальный контент для восстановления
+  box.innerHTML = `
+    <div class="pm-handle"></div>
+    <div style="text-align:center;padding:20px 0 10px">
+      <div style="font-size:3rem;margin-bottom:14px">📩</div>
+      <div style="font-size:1.1rem;font-weight:700;margin-bottom:10px">Заявка отправлена!</div>
+      <div style="font-size:.82rem;color:var(--muted);line-height:1.8;margin-bottom:24px">
+        Администратор получил вашу заявку<br>и свяжется с вами в ближайшее время.
+      </div>
+      <button onclick="closeProxyModal()" style="width:100%;padding:13px;background:linear-gradient(135deg,var(--accent),#00b860);border:none;border-radius:100px;color:#fff;font-weight:700;cursor:pointer;font-size:.95rem">
+        ✅ Понятно
+      </button>
+    </div>
+  `;
+  modal.classList.add('show');
 }
 
 // Свайп вниз закрывает модальное окно
