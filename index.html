@@ -55,9 +55,6 @@
     #pull-indicator.spinning{animation:spin .6s linear infinite;display:flex}
     #main-frame{width:100%;height:100%;border:none;display:block;opacity:0;transition:opacity .5s}
     #main-frame.loaded{opacity:1}
-    /* Overlay будит PWA рендер — скрывается после первого касания */
-    #frame-wake-overlay{position:absolute;inset:0;z-index:5;background:transparent;pointer-events:none}
-    #frame-wake-overlay.active{pointer-events:all}
     /* Offline page */
     #offline-page{position:absolute;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:15;padding:24px;text-align:center}
     #offline-page.show{display:flex}
@@ -378,8 +375,6 @@
     title="Weltkind"
     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation allow-modals allow-pointer-lock allow-presentation">
   </iframe>
-  <!-- Прозрачный overlay — "будит" PWA рендер при касании внутри iframe -->
-  <div id="frame-wake-overlay"></div>
 </div>
 
 <div id="install-banner">
@@ -661,8 +656,6 @@ function obFinish(){haptic('medium');_lsSet('onboarded','1');document.getElement
 /* IFRAME */
 const frame=document.getElementById('main-frame');
 
-// Принудительно показываем iframe через 3.5 сек — Google Apps Script
-// иногда не стреляет событие load в PWA/Chrome без взаимодействия с экраном
 let frameForced = false;
 function forceShowFrame(){
   if(frameForced) return;
@@ -670,47 +663,61 @@ function forceShowFrame(){
   frame.classList.add('loaded');
   document.getElementById('splash').classList.add('out');
   startTimer();
+  // После загрузки — даём iframe фокус чтобы разморозить google.script.run
+  focusFrame();
 }
 
-// ── Периодический wake рендера пока frame не загружен ──
-// Каждые 600мс принудительно будим рендер — это убирает зависание
-// лоадера внутри iframe без касания экрана
-let wakeInterval = setInterval(()=>{
-  if(frameForced){ clearInterval(wakeInterval); return; }
-  wakeRender();
-  // Также делаем микро-скролл frame-wrap — ещё один способ разбудить рендер
-  const fw = document.getElementById('frame-wrap');
-  if(fw){ fw.scrollTop = 1; fw.scrollTop = 0; }
-}, 600);
+// ── ГЛАВНЫЙ ФИКС: принудительный фокус iframe ──
+// Chrome PWA замораживает google.script.run callbacks в cross-origin iframe
+// пока iframe не имеет фокуса. Решение — programmatically фокусируем iframe.
+function focusFrame(){
+  try {
+    frame.focus();
+    frame.contentWindow && frame.contentWindow.focus();
+  } catch(e){}
+  
+  // Дополнительно — симулируем pointer event на iframe
+  // Это разблокирует очередь microtasks в замороженном контексте
+  const rect = frame.getBoundingClientRect();
+  if(rect.width > 0){
+    const evt = new PointerEvent('pointermove', {
+      bubbles: true, cancelable: true,
+      clientX: rect.left + rect.width/2,
+      clientY: rect.top + rect.height/2
+    });
+    frame.dispatchEvent(evt);
+  }
+}
 
-// load событие — штатный путь
+// Повторяем фокус каждые 800мс — на случай если пользователь
+// нажал Войти и ждёт ответа. Фокус держим пока postMessage не придёт.
+let focusTimer = null;
+function startFocusLoop(){
+  stopFocusLoop();
+  focusTimer = setInterval(focusFrame, 800);
+  // Останавливаем через 30 сек
+  setTimeout(stopFocusLoop, 30000);
+}
+function stopFocusLoop(){
+  if(focusTimer){ clearInterval(focusTimer); focusTimer = null; }
+}
+
+// Запускаем loop фокуса при загрузке frame
 frame.addEventListener('load', ()=>{
-  clearInterval(wakeInterval);
   forceShowFrame();
+  startFocusLoop();
 });
 
-// Fallback 1: через 3.5 сек показываем в любом случае (фикс зависания в PWA)
+// Fallback: показать frame через 3.5 сек
 let sT = setTimeout(()=>{
-  if(isTgWebView && !frameForced){
-    showTgOpenBrowser();
-  } else {
-    forceShowFrame();
-  }
+  if(isTgWebView && !frameForced){ showTgOpenBrowser(); }
+  else { forceShowFrame(); startFocusLoop(); }
 }, 3500);
 
-// Fallback 2: при любом касании/клике — форсируем показ (фикс PWA зависания)
-function onUserInteract(){
-  if(!frameForced){
-    forceShowFrame();
-    clearTimeout(sT);
-  }
-  document.removeEventListener('touchstart', onUserInteract);
-  document.removeEventListener('click', onUserInteract);
-}
-document.addEventListener('touchstart', onUserInteract, {passive:true, once:true});
-document.addEventListener('click', onUserInteract, {once:true});
+document.addEventListener('touchstart', ()=>{
+  if(!frameForced){ forceShowFrame(); clearTimeout(sT); }
+}, {passive:true, once:true});
 
-// Fallback 3: visibilitychange — когда пользователь возвращается на вкладку
 document.addEventListener('visibilitychange', ()=>{
   if(!document.hidden && !frameForced) forceShowFrame();
 }, {once:true});
@@ -858,48 +865,13 @@ function tickTimer(){
 }
 function startTimer(){if(timerIv)clearInterval(timerIv);tickTimer();timerIv=setInterval(tickTimer,1000);}
 
-/* ════ WAKE RENDER — будим PWA рендер при получении postMessage ════
- * Проблема: Chrome PWA замораживает рендеринг iframe-контента пока нет
- * пользовательского жеста. postMessage приходит, JS выполняется, но
- * страница визуально не обновляется (лоадер висит). 
- * Решение: при получении сообщения кратковременно активируем overlay
- * поверх iframe — это регистрируется как "user gesture area" и будит рендер.
- */
-function wakeRender(cb){
-  const overlay=document.getElementById('frame-wake-overlay');
-  if(!overlay){cb&&cb();return;}
-  
-  // Активируем overlay на 1 кадр
-  overlay.classList.add('active');
-  
-  // Синтетически двигаем pointer через overlay — Chrome считает это активностью
-  const rect=overlay.getBoundingClientRect();
-  const cx=rect.left+rect.width/2;
-  const cy=rect.top+rect.height/2;
-  
-  // Создаём цепочку rAF чтобы гарантировать перерисовку
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-      overlay.classList.remove('active');
-      // Принудительный reflow
-      document.body.style.transform='translateZ(0)';
-      requestAnimationFrame(()=>{
-        document.body.style.transform='';
-        cb&&cb();
-      });
-    });
-  });
-}
-
 /* postMessage */
 window.addEventListener('message',e=>{
   if(!e.data)return;
   if(e.data.type==='weltkind_proxy_order') return;
   if(e.data.type!=='weltkind_sub')return;
-  // Будим рендер ПЕРЕД обработкой данных
-  wakeRender(()=>{
-    handleSubData(e.data.expiryDate,e.data.status,e.data.phone,e.data.telegramConnected,e.data.telegramBotUrl,e.data.proxyUrl);
-  });
+  stopFocusLoop(); // данные пришли — фокус больше не нужен
+  handleSubData(e.data.expiryDate,e.data.status,e.data.phone,e.data.telegramConnected,e.data.telegramBotUrl,e.data.proxyUrl);
 });
 
 /* HANDLE DATA */
