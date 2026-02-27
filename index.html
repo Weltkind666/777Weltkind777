@@ -55,6 +55,9 @@
     #pull-indicator.spinning{animation:spin .6s linear infinite;display:flex}
     #main-frame{width:100%;height:100%;border:none;display:block;opacity:0;transition:opacity .5s}
     #main-frame.loaded{opacity:1}
+    /* Overlay будит PWA рендер — скрывается после первого касания */
+    #frame-wake-overlay{position:absolute;inset:0;z-index:5;background:transparent;pointer-events:none}
+    #frame-wake-overlay.active{pointer-events:all}
     /* Offline page */
     #offline-page{position:absolute;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:15;padding:24px;text-align:center}
     #offline-page.show{display:flex}
@@ -375,6 +378,8 @@
     title="Weltkind"
     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation allow-modals allow-pointer-lock allow-presentation">
   </iframe>
+  <!-- Прозрачный overlay — "будит" PWA рендер при касании внутри iframe -->
+  <div id="frame-wake-overlay"></div>
 </div>
 
 <div id="install-banner">
@@ -667,8 +672,20 @@ function forceShowFrame(){
   startTimer();
 }
 
+// ── Периодический wake рендера пока frame не загружен ──
+// Каждые 600мс принудительно будим рендер — это убирает зависание
+// лоадера внутри iframe без касания экрана
+let wakeInterval = setInterval(()=>{
+  if(frameForced){ clearInterval(wakeInterval); return; }
+  wakeRender();
+  // Также делаем микро-скролл frame-wrap — ещё один способ разбудить рендер
+  const fw = document.getElementById('frame-wrap');
+  if(fw){ fw.scrollTop = 1; fw.scrollTop = 0; }
+}, 600);
+
 // load событие — штатный путь
 frame.addEventListener('load', ()=>{
+  clearInterval(wakeInterval);
   forceShowFrame();
 });
 
@@ -841,16 +858,48 @@ function tickTimer(){
 }
 function startTimer(){if(timerIv)clearInterval(timerIv);tickTimer();timerIv=setInterval(tickTimer,1000);}
 
+/* ════ WAKE RENDER — будим PWA рендер при получении postMessage ════
+ * Проблема: Chrome PWA замораживает рендеринг iframe-контента пока нет
+ * пользовательского жеста. postMessage приходит, JS выполняется, но
+ * страница визуально не обновляется (лоадер висит). 
+ * Решение: при получении сообщения кратковременно активируем overlay
+ * поверх iframe — это регистрируется как "user gesture area" и будит рендер.
+ */
+function wakeRender(cb){
+  const overlay=document.getElementById('frame-wake-overlay');
+  if(!overlay){cb&&cb();return;}
+  
+  // Активируем overlay на 1 кадр
+  overlay.classList.add('active');
+  
+  // Синтетически двигаем pointer через overlay — Chrome считает это активностью
+  const rect=overlay.getBoundingClientRect();
+  const cx=rect.left+rect.width/2;
+  const cy=rect.top+rect.height/2;
+  
+  // Создаём цепочку rAF чтобы гарантировать перерисовку
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      overlay.classList.remove('active');
+      // Принудительный reflow
+      document.body.style.transform='translateZ(0)';
+      requestAnimationFrame(()=>{
+        document.body.style.transform='';
+        cb&&cb();
+      });
+    });
+  });
+}
+
 /* postMessage */
 window.addEventListener('message',e=>{
   if(!e.data)return;
-  // Заявка на прокси от клиента — пересылаем в Apps Script фрейм для уведомления админа
-  if(e.data.type==='weltkind_proxy_order'){
-    // Apps Script сам обработает через свой listener в Index_apps_script.html
-    return;
-  }
+  if(e.data.type==='weltkind_proxy_order') return;
   if(e.data.type!=='weltkind_sub')return;
-  handleSubData(e.data.expiryDate,e.data.status,e.data.phone,e.data.telegramConnected,e.data.telegramBotUrl,e.data.proxyUrl);
+  // Будим рендер ПЕРЕД обработкой данных
+  wakeRender(()=>{
+    handleSubData(e.data.expiryDate,e.data.status,e.data.phone,e.data.telegramConnected,e.data.telegramBotUrl,e.data.proxyUrl);
+  });
 });
 
 /* HANDLE DATA */
