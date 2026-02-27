@@ -18,6 +18,7 @@
     *{margin:0;padding:0;box-sizing:border-box}
     html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Rajdhani',sans-serif;color:var(--text)}
     #bg-canvas{position:fixed;inset:0;z-index:0;opacity:.3}
+    #confetti-canvas{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none}
     /* Splash */
     #splash{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s ease}
     #splash.out{opacity:0;pointer-events:none}
@@ -107,6 +108,7 @@
 
     /* ── Confetti canvas ── */
     #confetti-canvas{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none}
+    /* Dashboard */
     .dash-card{border-radius:14px;padding:14px 16px;margin-bottom:12px;border:1px solid var(--border);background:rgba(255,255,255,.03)}
     .dash-card.ok{border-color:rgba(0,230,118,.4);background:rgba(0,230,118,.05)}
     .dash-card.warn{border-color:rgba(255,109,0,.4);background:rgba(255,109,0,.05)}
@@ -196,7 +198,23 @@
     .conn-pill.urgent .conn-text-inner{color:var(--warn)}
     .conn-pill.expired{border-color:rgba(255,23,68,.5);background:rgba(255,23,68,.1)}
     .conn-pill.expired .conn-text-inner{color:#ff5252}
-    /* Live timer glow when urgent */
+  
+    #fab-support{position:fixed;bottom:24px;right:16px;z-index:300;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0088cc,#005f99);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 4px 20px rgba(0,136,204,.5);transition:transform .2s,box-shadow .2s;-webkit-tap-highlight-color:transparent}
+    #fab-support:hover{transform:scale(1.1)}
+    #fab-support:active{transform:scale(.93)}
+    .fab-pulse{position:absolute;inset:0;border-radius:50%;background:rgba(0,136,204,.35);animation:fabPulse 2.5s ease-out infinite}
+    @keyframes fabPulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.9);opacity:0}}
+    #fab-tooltip{position:absolute;right:60px;top:50%;transform:translateY(-50%);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-family:monospace;font-size:.68rem;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;color:var(--text)}
+    #fab-support:hover #fab-tooltip{opacity:1}
+    #confetti-canvas{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none}
+
+    #float-support{position:fixed;bottom:24px;right:16px;z-index:300;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0088cc,#006aaa);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 4px 20px rgba(0,136,204,.5);transition:transform .2s,box-shadow .2s;animation:float-bob 3s ease-in-out infinite}
+    #float-support:hover{transform:scale(1.12) translateY(-3px)!important;box-shadow:0 8px 28px rgba(0,136,204,.7)}
+    @keyframes float-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+    #float-tooltip{position:fixed;bottom:84px;right:16px;z-index:301;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text);white-space:nowrap;opacity:0;pointer-events:none;transform:translateY(4px);transition:all .25s;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+    #float-support:hover+#float-tooltip{opacity:1;transform:translateY(0)}
+
+    /* ── Прокси кнопка в шапке ── */
     #proxy-btn{display:flex;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;background:rgba(255,50,50,.08);border:1px solid rgba(255,70,70,.35);font-family:'JetBrains Mono',monospace;font-size:.58rem;color:rgba(255,90,90,.9);cursor:pointer;transition:all .3s;white-space:nowrap;flex-shrink:0;line-height:1;max-width:100px;overflow:hidden;text-overflow:ellipsis}
     #proxy-btn:hover{background:rgba(255,50,50,.15);color:#ff7070}
     #proxy-btn.active{background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.4);color:var(--accent)}
@@ -233,6 +251,7 @@
 <body>
 <canvas id="confetti-canvas"></canvas>
 <canvas id="bg-canvas"></canvas>
+<canvas id="confetti-canvas"></canvas>
 
 <!-- ONBOARDING -->
 <div id="onboarding">
@@ -376,7 +395,7 @@
 })();
 
 
-/* ════ WIRE SPLASH ANIMATION ════ */
+/* ════ ORBITAL SPLASH ANIMATION ════ */
 (function(){
   const cv = document.getElementById('wire-canvas');
   if(!cv) return;
@@ -384,195 +403,71 @@
   const W = 200, H = 200, CX = 100, CY = 100;
   cv.width = W; cv.height = H;
 
-  // Каждый провод: левый конец (оборванный) и правый конец (оборванный), встречаются в центре
-  const NUM = 6;
-  let t = 0;
-  let connected = false;
-  let connectTime = 0;
-  let sparkLife = 0;
-  let rafId;
-
-  // Провода: угол, длина до центра, смещение y-конца, цвет
-  const wires = Array.from({length: NUM}, (_, i) => {
-    const angle = (Math.PI * 2 / NUM) * i;
-    const r = 72 + (i % 3) * 8;
-    // Оборванный конец: начинается снаружи, идёт к центру
-    return {
-      angle,
-      r,
-      color: i % 2 === 0 ? '#00e676' : '#00b0ff',
-      // случайное "дрожание" оборванного конца
-      jitter: Math.random() * Math.PI * 2,
-      jitterSpeed: 0.08 + Math.random() * 0.06,
-      thickness: 2 + (i % 3),
-      progress: 0, // 0 → 1: провод "ползёт" к центру
-      phase: i * 0.18, // задержка старта
-    };
-  });
-
-  // Точка соединения в центре — маленький разъём
-  function drawConnector(alpha) {
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    // Outer glow
-    const grd = ctx.createRadialGradient(CX,CY,0, CX,CY,22);
-    grd.addColorStop(0,'rgba(0,230,118,0.9)');
-    grd.addColorStop(0.4,'rgba(0,230,118,0.4)');
-    grd.addColorStop(1,'rgba(0,230,118,0)');
-    ctx.beginPath(); ctx.arc(CX,CY,22,0,Math.PI*2);
-    ctx.fillStyle = grd; ctx.fill();
-    // Core circle
-    ctx.beginPath(); ctx.arc(CX,CY,7,0,Math.PI*2);
-    ctx.fillStyle = '#00e676'; ctx.shadowColor='#00e676'; ctx.shadowBlur=14;
-    ctx.fill();
-    // Ring
-    ctx.beginPath(); ctx.arc(CX,CY,11,0,Math.PI*2);
-    ctx.strokeStyle='rgba(0,230,118,0.7)'; ctx.lineWidth=1.5;
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function drawSpark(x, y, color, life) {
-    const sparks = 8;
-    ctx.save();
-    for(let i=0;i<sparks;i++){
-      const a = (Math.PI*2/sparks)*i + life*3;
-      const len = (4 + Math.random()*10) * life;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + Math.cos(a)*len, y + Math.sin(a)*len);
-      ctx.strokeStyle = i%2===0 ? '#00e676' : '#fff176';
-      ctx.lineWidth = 1.5 * life;
-      ctx.globalAlpha = life * 0.9;
-      ctx.shadowColor = '#00e676';
-      ctx.shadowBlur = 6;
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  function easeInOut(t){ return t<0.5 ? 2*t*t : -1+(4-2*t)*t; }
+  const C1 = '#00e676', C2 = '#00b0ff', C3 = '#7c5cfc';
+  const orbs = [
+    { r: 72, spd:  1.4, sz: 8,   col: C1, off: 0,              trail: 12 },
+    { r: 50, spd: -2.1, sz: 6,   col: C2, off: Math.PI * 0.65, trail: 10 },
+    { r: 30, spd:  3.2, sz: 4.5, col: C3, off: Math.PI * 1.35, trail: 8  },
+  ];
+  let t = 0, rafId;
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    t += 0.016;
+    t += 0.030;
 
-    // Advance each wire progress
-    wires.forEach((w, i) => {
-      const startT = w.phase * 2.2;
-      if(t > startT) {
-        const elapsed = t - startT;
-        w.progress = Math.min(1, elapsed / 1.4);
-      }
-    });
+    /* ── пульсирующее ядро ── */
+    const p = 0.72 + 0.28 * Math.sin(t * 2.8);
+    const cr = 14 * p;
 
-    const allConnected = wires.every(w => w.progress >= 1);
-    if(allConnected && !connected) {
-      connected = true;
-      connectTime = t;
-      sparkLife = 1;
-    }
-    if(connected) {
-      sparkLife = Math.max(0, 1 - (t - connectTime) / 1.2);
-    }
+    const g = ctx.createRadialGradient(CX, CY, 0, CX, CY, cr * 3.5);
+    g.addColorStop(0, 'rgba(0,230,118,.65)');
+    g.addColorStop(0.45, 'rgba(0,176,255,.25)');
+    g.addColorStop(1, 'rgba(0,230,118,0)');
+    ctx.beginPath(); ctx.arc(CX, CY, cr * 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = g; ctx.fill();
 
-    // Draw each wire
-    wires.forEach((w) => {
-      if(w.progress <= 0) return;
+    ctx.beginPath(); ctx.arc(CX, CY, cr, 0, Math.PI * 2);
+    ctx.fillStyle = C1; ctx.shadowColor = C1; ctx.shadowBlur = 22;
+    ctx.fill();
 
-      const tip = easeInOut(w.progress);
-      // Wire goes from outer point inward toward center
-      const startX = CX + Math.cos(w.angle) * w.r;
-      const startY = CY + Math.sin(w.angle) * w.r;
+    /* кольцо вокруг ядра */
+    ctx.beginPath(); ctx.arc(CX, CY, cr + 5, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0,230,118,.45)'; ctx.lineWidth = 1.5;
+    ctx.shadowBlur = 8; ctx.stroke(); ctx.shadowBlur = 0;
 
-      // Current tip position (moving toward center)
-      const tipX = startX + (CX - startX) * tip;
-      const tipY = startY + (CY - startY) * tip;
+    /* ── орбиты и частицы ── */
+    orbs.forEach(function(o) {
+      const ang = t * o.spd + o.off;
 
-      // Draw wire body with slight curve (torn wire effect)
-      ctx.save();
-      ctx.beginPath();
-      // Control point offset for torn/bent look
-      const bend = Math.sin(w.angle + 1.2) * 18 * (1 - tip * 0.7);
-      const cpX = (startX + tipX) / 2 + Math.cos(w.angle + Math.PI/2) * bend;
-      const cpY = (startY + tipY) / 2 + Math.sin(w.angle + Math.PI/2) * bend;
-      ctx.moveTo(startX, startY);
-      ctx.quadraticCurveTo(cpX, cpY, tipX, tipY);
+      /* пунктирная дорожка */
+      ctx.beginPath(); ctx.arc(CX, CY, o.r, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,.07)'; ctx.lineWidth = 1;
+      ctx.setLineDash([4, 7]); ctx.stroke(); ctx.setLineDash([]);
 
-      // Glow effect
-      ctx.shadowColor = w.color;
-      ctx.shadowBlur = 8;
-      ctx.strokeStyle = w.color;
-      ctx.lineWidth = w.thickness;
-      ctx.lineCap = 'round';
-      ctx.globalAlpha = 0.9;
-      ctx.stroke();
-
-      // Wire insulation (darker inner line)
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      ctx.quadraticCurveTo(cpX, cpY, tipX, tipY);
-      ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-      ctx.lineWidth = w.thickness - 1;
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 0.4;
-      ctx.stroke();
-
-      // Torn/frayed end — small sparks at tip if not yet connected
-      if(w.progress < 1) {
-        const jitter = Math.sin(t * 12 + w.jitter) * 3;
-        const jitter2 = Math.cos(t * 15 + w.jitter) * 2;
-        for(let s = 0; s < 3; s++) {
-          const sx = tipX + (Math.random()-0.5)*6;
-          const sy = tipY + (Math.random()-0.5)*6;
-          ctx.beginPath();
-          ctx.moveTo(tipX + jitter, tipY + jitter2);
-          ctx.lineTo(sx, sy);
-          ctx.strokeStyle = s===1 ? '#fff' : w.color;
-          ctx.lineWidth = 0.8;
-          ctx.globalAlpha = 0.6 + Math.random()*0.4;
-          ctx.shadowColor = w.color;
-          ctx.shadowBlur = 4;
-          ctx.stroke();
-        }
-      }
-
-      ctx.restore();
-    });
-
-    // Connector in center
-    const connAlpha = Math.min(1, Math.max(...wires.map(w=>w.progress)));
-    if(connAlpha > 0) drawConnector(connAlpha);
-
-    // Connection spark burst
-    if(connected && sparkLife > 0) {
-      drawSpark(CX, CY, '#00e676', sparkLife);
-    }
-
-    // Pulse rings after connection
-    if(connected) {
-      const age = t - connectTime;
-      for(let r = 0; r < 3; r++) {
-        const rAge = (age - r*0.25);
-        if(rAge <= 0) continue;
-        const rad = rAge * 35;
-        const alpha = Math.max(0, 0.6 - rAge * 0.5);
-        if(alpha <= 0) continue;
-        ctx.save();
+      /* хвост */
+      for (let i = o.trail; i >= 1; i--) {
+        const a = ang - i * 0.15;
+        const alpha = (1 - i / o.trail) * 0.6;
+        const sr = o.sz * (1 - i / o.trail * 0.68);
         ctx.beginPath();
-        ctx.arc(CX, CY, rad, 0, Math.PI*2);
-        ctx.strokeStyle = '#00e676';
-        ctx.lineWidth = 1.5;
-        ctx.globalAlpha = alpha;
-        ctx.shadowColor = '#00e676';
-        ctx.shadowBlur = 8;
-        ctx.stroke();
-        ctx.restore();
+        ctx.arc(CX + Math.cos(a) * o.r, CY + Math.sin(a) * o.r, sr, 0, Math.PI * 2);
+        ctx.globalAlpha = alpha; ctx.fillStyle = o.col; ctx.fill();
       }
-    }
+      ctx.globalAlpha = 1;
+
+      /* голова с glow */
+      const hx = CX + Math.cos(ang) * o.r;
+      const hy = CY + Math.sin(ang) * o.r;
+      ctx.beginPath(); ctx.arc(hx, hy, o.sz, 0, Math.PI * 2);
+      ctx.fillStyle = o.col; ctx.shadowColor = o.col; ctx.shadowBlur = 16;
+      ctx.fill(); ctx.shadowBlur = 0;
+
+      /* маленький блик на голове */
+      ctx.beginPath(); ctx.arc(hx - o.sz * 0.3, hy - o.sz * 0.3, o.sz * 0.35, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fill();
+    });
 
     rafId = requestAnimationFrame(draw);
-    // Stop after splash fades
     if(document.getElementById('splash').classList.contains('out')) {
       cancelAnimationFrame(rafId);
     }
@@ -647,24 +542,14 @@ function forceShowFrame(){
 }
 
 frame.addEventListener('load', ()=>{ forceShowFrame(); });
-frame.addEventListener('error', ()=>{ forceShowFrame(); });
-
-// Polling fallback: если load не сработал (бывает в PWA/iOS/Safari)
-const _framePoll = setInterval(()=>{
-  try {
-    // Если iframe уже в DOM и не пустой — считаем загруженным
-    if(frame.contentWindow) { forceShowFrame(); clearInterval(_framePoll); }
-  } catch(e) { forceShowFrame(); clearInterval(_framePoll); }
-}, 500);
-setTimeout(()=>clearInterval(_framePoll), 6000);
 
 let sT = setTimeout(()=>{
   if(isTgWebView && !frameForced){ showTgOpenBrowser(); }
   else { forceShowFrame(); }
-}, 1500);
+}, 3500);
 
 document.addEventListener('touchstart', ()=>{
-  if(!frameForced){ forceShowFrame(); clearTimeout(sT); clearInterval(_framePoll); }
+  if(!frameForced){ forceShowFrame(); clearTimeout(sT); }
 }, {passive:true, once:true});
 
 document.addEventListener('visibilitychange', ()=>{
@@ -708,7 +593,7 @@ async function swNotify(title,body,tag='weltkind'){
   // Сохраняем данные для фонового синка
   try{
     const sub=loadSub();
-    if(sub.date){const cache=await caches.open('Weltkind-v5');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
+    if(sub.date){const cache=await caches.open('Weltkind-v4');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
   }catch(e){}
   // Показываем через SW — приходит как настоящий пуш на мобильном
   const reg=swReg||await navigator.serviceWorker.getRegistration();
