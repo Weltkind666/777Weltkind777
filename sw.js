@@ -1,4 +1,4 @@
-const CACHE = 'Weltkind-v4';
+const CACHE = 'Weltkind-v5';
 const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -14,6 +14,7 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Google APIs и шрифты — всегда из сети, без кэша
   if (
     e.request.url.includes('script.google.com') ||
     e.request.url.includes('googleapis.com') ||
@@ -23,6 +24,28 @@ self.addEventListener('fetch', e => {
     e.respondWith(fetch(e.request).catch(() => new Response('Offline', { status: 503 })));
     return;
   }
+
+  // index.html — ВСЕГДА сначала сеть, кэш только если нет интернета
+  // Это исправляет зависание при входе: SW не отдаёт устаревшую версию
+  const url = e.request.url;
+  const isHtml = url.endsWith('/') || url.includes('index.html') ||
+                 url === self.location.origin + '/' ||
+                 url === self.registration.scope;
+  if (isHtml) {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          // Обновляем кэш свежей версией
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+
+  // Всё остальное (иконки, manifest, sw) — кэш первый, сеть как fallback
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
