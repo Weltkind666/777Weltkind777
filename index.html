@@ -40,8 +40,9 @@
     .t-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
     @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
     .t-dot.blink{animation:blink 1.2s infinite}
-    .bell-btn{position:relative;width:34px;height:34px;border-radius:10px;background:rgba(0,176,255,.08);border:1px solid rgba(0,176,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:background .2s;flex-shrink:0}
+    .bell-btn{position:relative;padding:0 9px;height:34px;border-radius:10px;background:rgba(0,176,255,.08);border:1px solid rgba(0,176,255,.2);display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-size:.85rem;transition:background .2s;flex-shrink:0;font-family:'JetBrains Mono',monospace;color:var(--accent2);white-space:nowrap}
     .bell-btn:hover{background:rgba(0,176,255,.2)}
+    .bell-btn .bell-label{font-size:.55rem;letter-spacing:.04em;opacity:.8}
     .bell-badge{position:absolute;top:3px;right:3px;width:8px;height:8px;background:var(--warn);border-radius:50%;border:1px solid var(--bg);display:none}
     .bell-badge.show{display:block}
     /* Offline bar */
@@ -94,6 +95,8 @@
     .np-btn-green:hover{box-shadow:0 0 20px rgba(0,230,118,.4);transform:translateY(-1px)}
     .np-btn-blue{background:rgba(0,176,255,.1);border:1px solid rgba(0,176,255,.25);color:var(--accent2)}
     .np-btn-red{background:rgba(255,23,68,.08);border:1px solid rgba(255,23,68,.25);color:#ff6b6b}
+    .np-btn-cache{background:rgba(120,120,120,.08);border:1px solid rgba(150,150,150,.2);color:#90a4ae}
+    .np-btn-cache:hover{background:rgba(255,23,68,.08);border-color:rgba(255,23,68,.25);color:#ff6b6b}
 
     /* ── Floating support button ── */
     #fab-support{position:fixed;bottom:24px;right:16px;z-index:300;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0088cc,#006fa8);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 4px 20px rgba(0,136,204,.5);transition:transform .2s,box-shadow .2s;animation:fabIn .5s cubic-bezier(.34,1.56,.64,1) 2s both}
@@ -182,7 +185,7 @@
       #proxy-btn{max-width:76px;font-size:.52rem;padding:3px 7px}
       #tg-chip{min-width:28px;padding:3px 6px;font-size:.52rem}
       #timer-pill{padding:3px 7px;font-size:.55rem}
-      .bell-btn{width:30px;height:30px;font-size:.85rem}
+      .bell-btn{padding:0 7px;height:30px;font-size:.8rem}
     }
     /* Live timer glow when urgent */
     .conn-pill.urgent{border-color:rgba(255,109,0,.5);background:rgba(255,109,0,.1)}
@@ -257,9 +260,9 @@
     <div class="ob-desc">Введите номер телефона в формате <strong>79161234567</strong><br><br>Система найдёт вашу подписку и покажет статус.</div>
   </div>
   <div class="ob-slide">
-    <div class="ob-emoji">🔔</div>
+    <div class="ob-emoji">⚙️</div>
     <div class="ob-title">Уведомления</div>
-    <div class="ob-desc">Нажмите кнопку <strong>🔔</strong> в правом углу и подключите Telegram-бота.<br><br>Уведомление придёт <strong>за 3 дня</strong> до конца подписки.</div>
+    <div class="ob-desc">Нажмите кнопку <strong>⚙️ Настройки</strong> в правом углу и подключите Telegram-бота.<br><br>Уведомление придёт <strong>за 3 дня</strong> до конца подписки.</div>
   </div>
   <div class="ob-dots">
     <div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div>
@@ -292,7 +295,9 @@
       <div class="t-dot" id="t-dot"></div>
       <span id="timer-text">загрузка...</span>
     </div>
-    <div class="bell-btn" onclick="haptic();togglePanel()">🔔
+    <div class="bell-btn" onclick="haptic();togglePanel()" title="Настройки и подписка">
+      <span>⚙️</span>
+      <span class="bell-label">Настройки</span>
       <div class="bell-badge" id="bell-badge"></div>
     </div>
   </div>
@@ -340,6 +345,8 @@
   <button class="np-btn np-btn-green" onclick="haptic('medium');saveNotif()">💾 Сохранить дату</button>
   <button class="np-btn np-btn-blue" onclick="haptic();testNotif()">🧪 Тестовое уведомление</button>
   <div id="np-status" class="np-status"></div>
+  <div class="np-divider"></div>
+  <button class="np-btn np-btn-cache" onclick="haptic('medium');clearAllCache()">⚙️ Очистить кэш</button>
 </div>
 
 <!-- FRAME -->
@@ -1144,6 +1151,44 @@ function openUrl(url){try{var w=window.open(url,'_blank');if(!w||w.closed){locat
 function openSupport(){openUrl('https://t.me/WeltkindVPN');}
 
 /* INIT */
+/* ════ CLEAR CACHE ════ */
+async function clearAllCache(){
+  // Подтверждение
+  if(!confirm('Очистить весь кэш?\nДанные о подписке, уведомления и история будут удалены.')) return;
+
+  // Очищаем localStorage / memStore
+  try{ localStorage.removeItem('vpn_s'); }catch(e){}
+  try{ localStorage.removeItem('vpn_hist'); }catch(e){}
+  try{ localStorage.removeItem('onboarded'); }catch(e){}
+  _memStore['vpn_s'] = null;
+  _memStore['vpn_hist'] = null;
+  _memStore['onboarded'] = null;
+
+  // Очищаем Service Worker кэши
+  if('caches' in window){
+    try{
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }catch(e){}
+  }
+
+  // Отписываем Service Worker
+  if('serviceWorker' in navigator){
+    try{
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }catch(e){}
+  }
+
+  // Сброс бейджа
+  updateBadge(null);
+  if(timerIv) clearInterval(timerIv);
+  document.getElementById('bell-badge').classList.remove('show');
+
+  showSt('✅ Кэш очищен! Перезагрузка...','ok');
+  setTimeout(()=> location.reload(), 1200);
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
   obInit();updateNet();startTimer();
   // updateProxyStatus вызываем ВСЕГДА — кнопка видима сразу
