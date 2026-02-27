@@ -34,9 +34,9 @@
     .splash-bar-fill{height:100%;width:0%;background:var(--accent);border-radius:2px;animation:bf 2.2s ease forwards}
     @keyframes bf{to{width:100%}}
     /* Header */
-    #hdr{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(5,13,20,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 14px;display:flex;align-items:center;justify-content:space-between;height:52px;gap:8px}
+    #hdr{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(5,13,20,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 10px;display:flex;align-items:center;justify-content:space-between;height:52px;gap:6px}
     .hdr-brand{font-size:1.05rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;flex-shrink:0}
-    .hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .hdr-right{display:flex;align-items:center;gap:5px;flex-shrink:0}
     /* Timer pill */
     #timer-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--accent);cursor:pointer;transition:all .3s;white-space:nowrap}
     #timer-pill:hover{background:rgba(0,230,118,.15)}
@@ -153,12 +153,12 @@
     #dimmer.show{display:block}
 
     /* ── Telegram chip in header ── */
-    #tg-chip{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;background:rgba(84,110,122,.12);border:1px solid rgba(84,110,122,.25);font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);cursor:pointer;transition:all .3s;white-space:nowrap;text-decoration:none}
-    #tg-chip.connected{background:rgba(0,176,255,.1);border-color:rgba(0,176,255,.35);color:var(--accent2)}
-    #tg-chip.connected:hover{background:rgba(0,176,255,.18)}
+    #tg-chip{display:flex;align-items:center;gap:3px;padding:4px 8px;border-radius:20px;background:rgba(84,110,122,.12);border:1px solid rgba(84,110,122,.25);font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);cursor:pointer;transition:all .3s;white-space:nowrap;text-decoration:none;min-width:36px;justify-content:center}
+    #tg-chip.connected{background:rgba(0,176,255,.12);border-color:rgba(0,176,255,.4);color:var(--accent2)}
+    #tg-chip.connected:hover{background:rgba(0,176,255,.2)}
     #tg-chip:not(.connected):hover{background:rgba(84,110,122,.2)}
     .tg-chip-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
-    #tg-chip.connected .tg-chip-dot{background:var(--accent2)}
+    #tg-chip.connected .tg-chip-dot{background:var(--accent2);box-shadow:0 0 4px var(--accent2)}
 
     /* ── FAB support button ── */
     #fab-support{position:fixed;bottom:24px;right:18px;z-index:300;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0088cc,#006daa);box-shadow:0 4px 20px rgba(0,136,204,.5);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;transition:transform .2s,box-shadow .2s;text-decoration:none}
@@ -203,7 +203,7 @@
     #float-support:hover+#float-tooltip{opacity:1;transform:translateY(0)}
 
     /* ── Прокси кнопка в шапке ── */
-    #proxy-btn{display:none;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;background:rgba(0,176,255,.07);border:1px solid rgba(0,176,255,.2);font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);cursor:pointer;transition:all .3s;white-space:nowrap;flex-shrink:0;line-height:1}
+    #proxy-btn{display:none;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;background:rgba(0,176,255,.07);border:1px solid rgba(0,176,255,.2);font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);cursor:pointer;transition:all .3s;white-space:nowrap;flex-shrink:0;line-height:1;max-width:90px;overflow:hidden;text-overflow:ellipsis}
     #proxy-btn.show{display:flex}
     #proxy-btn.active{background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.4);color:var(--accent)}
     #proxy-btn-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
@@ -381,6 +381,9 @@
   resize();window.addEventListener('resize',resize);setInterval(draw,55);
 })();
 
+/* Telegram WebView detection */
+const isTgWebView = /Telegram|TelegramBrowser/i.test(navigator.userAgent) || !!window.TelegramWebApp || !!window.Telegram;
+
 /* HAPTIC */
 function haptic(t='light'){
   if(!navigator.vibrate)return;
@@ -421,7 +424,7 @@ function animC(){
 
 /* ONBOARDING */
 let obIdx=0;
-function obInit(){if(localStorage.getItem('onboarded'))document.getElementById('onboarding').classList.add('done');}
+function obInit(){if(_lsGet('onboarded'))document.getElementById('onboarding').classList.add('done');}
 function obNext(){
   haptic();obIdx++;
   if(obIdx>=3){obFinish();return;}
@@ -429,16 +432,43 @@ function obNext(){
   document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('active',i===obIdx));
   if(obIdx===2)document.getElementById('ob-next-btn').textContent='Начать →';
 }
-function obFinish(){haptic('medium');localStorage.setItem('onboarded','1');document.getElementById('onboarding').classList.add('done');}
+function obFinish(){haptic('medium');_lsSet('onboarded','1');document.getElementById('onboarding').classList.add('done');}
 
 /* IFRAME */
 const frame=document.getElementById('main-frame');
-let sT=setTimeout(()=>document.getElementById('splash').classList.add('out'),9000);
+let sT=setTimeout(()=>{
+  document.getElementById('splash').classList.add('out');
+  // В Telegram WebView iframe может не загрузиться — показываем кнопку
+  if(isTgWebView && !frame.classList.contains('loaded')){
+    showTgOpenBrowser();
+  }
+},9000);
 frame.addEventListener('load',()=>{
   clearTimeout(sT);frame.classList.add('loaded');
   setTimeout(()=>document.getElementById('splash').classList.add('out'),400);
   startTimer();
 });
+
+function showTgOpenBrowser(){
+  const fw=document.getElementById('frame-wrap');
+  const op=document.getElementById('offline-page');
+  op.classList.add('show');
+  op.innerHTML=`
+    <div class="offline-icon">📱</div>
+    <div class="offline-title">Telegram Browser</div>
+    <div class="offline-sub">Для полной работы приложения<br>откройте в стандартном браузере.</div>
+    <button class="offline-retry" onclick="openUrl('https://weltkind666.github.io/777Weltkind777/')">🌐 Открыть в браузере</button>
+    <div id="tg-sub-info" style="margin-top:14px;width:100%;max-width:320px"></div>
+  `;
+  // Показываем кэшированные данные если есть
+  const sub=loadSub();
+  if(sub.date){
+    const d=daysLeft(sub.date);
+    const info=document.getElementById('tg-sub-info');
+    if(info){info.innerHTML=`<div class="offline-card"><div class="offline-card-title">Данные подписки</div><div class="offline-row"><span>Статус</span><span class="offline-val">${sub.status||'—'}</span></div><div class="offline-row"><span>Истекает</span><span class="offline-val">${new Date(sub.date).toLocaleDateString('ru-RU')}</span></div><div class="offline-row"><span>Осталось</span><span class="offline-val ${d<=0?'err':d<=3?'warn':''}">${d<=0?'истекла':d+' дн.'}</span></div></div>`;}
+  }
+  frame.style.display='none';
+}
 
 /* SW */
 let swReg=null;
@@ -507,11 +537,14 @@ fw.addEventListener('touchend',()=>{
   ptD=0;pin.style.transform='translateX(-50%) translateY(-60px)';
 });
 
-/* STORAGE */
-function loadSub(){try{return JSON.parse(localStorage.getItem('vpn_s')||'{}')||{};}catch(e){return{};}}
-function saveSub(o){localStorage.setItem('vpn_s',JSON.stringify(o));}
-function loadHist(){try{return JSON.parse(localStorage.getItem('vpn_hist')||'[]');}catch(e){return[];}}
-function saveHist(a){localStorage.setItem('vpn_hist',JSON.stringify(a));}
+/* STORAGE — с fallback для Telegram WebView где localStorage может быть заблокирован */
+const _memStore={};
+function _lsGet(k){try{const v=localStorage.getItem(k);if(v!==undefined)return v;}catch(e){}return _memStore[k]||null;}
+function _lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}  _memStore[k]=v;}
+function loadSub(){try{return JSON.parse(_lsGet('vpn_s')||'{}')||{};}catch(e){return{};}}
+function saveSub(o){_lsSet('vpn_s',JSON.stringify(o));}
+function loadHist(){try{return JSON.parse(_lsGet('vpn_hist')||'[]');}catch(e){return[];}}
+function saveHist(a){_lsSet('vpn_hist',JSON.stringify(a));}
 
 /* DATE */
 function toISO(str){
@@ -534,7 +567,8 @@ function tickTimer(){
   const tdot=document.getElementById('t-dot');
   const ttxt=document.getElementById('timer-text');
   if(!sub||!sub.date){
-    pill.className='';tdot.className='t-dot';ttxt.textContent='войдите';
+    pill.className='';tdot.className='t-dot';
+    ttxt.textContent=isTgWebView?'загрузка...':'войдите';
     updateBadge(null);return;
   }
   const msLeft=new Date(sub.date)-Date.now();
@@ -688,7 +722,7 @@ function updateTgStatus(sub) {
     chip.classList.remove('connected');
     chipText.textContent = 'TG';
     chip.title = 'Telegram не подключён — нажми для подключения';
-    if (!sessionStorage.getItem('tg_banner_closed')) {
+    if (!_ssGet('tg_banner_closed')) {
       setTimeout(() => showTgBanner(tgBotUrl), 1500);
     }
   } else {
@@ -703,7 +737,7 @@ function fabTelegramClick(e) {
   haptic([30]);
   const sub = loadSub();
   const url = getTgUrl(sub.phone);
-  window.open(url, '_blank');
+  openUrl(url);
   return false;
 }
 
@@ -723,8 +757,9 @@ function showTgBanner(url) {
 function closeTgBanner() {
   const banner = document.getElementById('tg-banner');
   if (banner) banner.classList.remove('show');
-  sessionStorage.setItem('tg_banner_closed', '1');
+  try{sessionStorage.setItem('tg_banner_closed', '1');}catch(e){_memStore['ss_tg_banner_closed']='1';}
 }
+function _ssGet(k){try{return sessionStorage.getItem(k);}catch(e){return _memStore['ss_'+k]||null;}}
 
 /* ════ PROXY TELEGRAM ════ */
 let currentProxyUrl = '';
@@ -901,7 +936,8 @@ function startLiveTimer(){
   timerInterval=setInterval(tick,1000);
 }
 
-function openSupport(){window.open('https://t.me/WeltkindVPN','_blank');}
+function openUrl(url){try{var w=window.open(url,'_blank');if(!w||w.closed){location.href=url;}}catch(e){location.href=url;}}
+function openSupport(){openUrl('https://t.me/WeltkindVPN');}
 
 /* INIT */
 document.addEventListener('DOMContentLoaded',()=>{
