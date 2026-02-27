@@ -671,31 +671,32 @@ function forceShowFrame(){
 // Chrome PWA замораживает google.script.run callbacks в cross-origin iframe
 // пока iframe не имеет фокуса. Решение — programmatically фокусируем iframe.
 function focusFrame(){
+  // НЕ фокусим если сейчас активен любой input/textarea — иначе сворачивается клавиатура
+  const active = document.activeElement;
+  if(active && (active.tagName==='INPUT' || active.tagName==='TEXTAREA' || active.isContentEditable)) return;
+
   try {
     frame.focus();
     frame.contentWindow && frame.contentWindow.focus();
   } catch(e){}
-  
-  // Дополнительно — симулируем pointer event на iframe
-  // Это разблокирует очередь microtasks в замороженном контексте
-  const rect = frame.getBoundingClientRect();
-  if(rect.width > 0){
-    const evt = new PointerEvent('pointermove', {
-      bubbles: true, cancelable: true,
-      clientX: rect.left + rect.width/2,
-      clientY: rect.top + rect.height/2
-    });
-    frame.dispatchEvent(evt);
-  }
+
+  // Pointer event для разморозки microtask queue
+  try {
+    const rect = frame.getBoundingClientRect();
+    if(rect.width > 0){
+      frame.dispatchEvent(new PointerEvent('pointermove',{
+        bubbles:true, cancelable:true,
+        clientX: rect.left + rect.width/2,
+        clientY: rect.top + rect.height/2
+      }));
+    }
+  } catch(e){}
 }
 
-// Повторяем фокус каждые 800мс — на случай если пользователь
-// нажал Войти и ждёт ответа. Фокус держим пока postMessage не придёт.
 let focusTimer = null;
 function startFocusLoop(){
   stopFocusLoop();
   focusTimer = setInterval(focusFrame, 800);
-  // Останавливаем через 30 сек
   setTimeout(stopFocusLoop, 30000);
 }
 function stopFocusLoop(){
