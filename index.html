@@ -593,7 +593,7 @@ async function swNotify(title,body,tag='weltkind'){
   // Сохраняем данные для фонового синка
   try{
     const sub=loadSub();
-    if(sub.date){const cache=await caches.open('Weltkind-v4');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
+    if(sub.date){const cache=await caches.open('Weltkind-v5');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
   }catch(e){}
   // Показываем через SW — приходит как настоящий пуш на мобильном
   const reg=swReg||await navigator.serviceWorker.getRegistration();
@@ -789,7 +789,9 @@ function checkExpiry(){
   const sub=loadSub();if(!sub.date||Notification.permission!=='granted')return;
   const d=daysLeft(sub.date);if(d===null||d>3)return;
   const title=d<=0?'🚨 Подписка истекла!':`⚠️ Истекает через ${d} дн.`;
-  setTimeout(()=>{const n=new Notification(title,{body:d<=0?'Продлите прямо сейчас!':'Зайдите и продлите.',icon:'icons/icon-192.png',tag:'w-exp',renotify:true,vibrate:[200,100,200]});n.onclick=()=>{window.focus();n.close();};},1500);
+  const body=d<=0?'Продлите прямо сейчас!':'Зайдите и продлите подписку.';
+  // Используем SW — единственный способ получить уведомление в фоне на Android
+  swNotify(title, body, 'w-exp');
   document.getElementById('bell-badge').classList.add('show');
 }
 /* ════ TELEGRAM STATUS ════ */
@@ -1043,26 +1045,15 @@ function openSupport(){openUrl('https://t.me/WeltkindVPN');}
 /* INIT */
 /* ════ CLEAR CACHE ════ */
 async function clearAllCache(){
-  // Подтверждение
   if(!confirm('Очистить весь кэш?\nДанные о подписке, уведомления и история будут удалены.')) return;
 
-  // Очищаем localStorage / memStore
-  try{ localStorage.removeItem('vpn_s'); }catch(e){}
-  try{ localStorage.removeItem('vpn_hist'); }catch(e){}
-  try{ localStorage.removeItem('onboarded'); }catch(e){}
-  _memStore['vpn_s'] = null;
-  _memStore['vpn_hist'] = null;
-  _memStore['onboarded'] = null;
+  // Очищаем localStorage полностью
+  try{ localStorage.clear(); }catch(e){}
+  try{ sessionStorage.clear(); }catch(e){}
+  // Очищаем memStore
+  Object.keys(_memStore).forEach(k=>{ _memStore[k]=null; });
 
-  // Очищаем Service Worker кэши
-  if('caches' in window){
-    try{
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-    }catch(e){}
-  }
-
-  // Отписываем Service Worker
+  // Сначала отписываем SW — ПОТОМ чистим кэш, иначе SW восстановит его
   if('serviceWorker' in navigator){
     try{
       const regs = await navigator.serviceWorker.getRegistrations();
@@ -1070,13 +1061,22 @@ async function clearAllCache(){
     }catch(e){}
   }
 
-  // Сброс бейджа
+  // Теперь чистим все кэши SW (после отписки они не восстановятся)
+  if('caches' in window){
+    try{
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }catch(e){}
+  }
+
+  // Сброс UI
   updateBadge(null);
   if(timerIv) clearInterval(timerIv);
   document.getElementById('bell-badge').classList.remove('show');
 
   showSt('✅ Кэш очищен! Перезагрузка...','ok');
-  setTimeout(()=> location.reload(), 1200);
+  // Задержка чтобы SW успел полностью отписаться до перезагрузки
+  setTimeout(()=> location.reload(true), 1800);
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
