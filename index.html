@@ -773,15 +773,11 @@ function orderProxy() {
   const phone = sub.phone || '';
   if (!phone) { showSt('Войдите в аккаунт', 'err'); return; }
 
-  // Отправляем уведомление админу через postMessage в Apps Script фрейм
-  try {
-    window.top.postMessage({ type: 'weltkind_proxy_order', phone: phone }, '*');
-  } catch(e) {}
-  try {
-    if (window.parent !== window.top) window.parent.postMessage({ type: 'weltkind_proxy_order', phone: phone }, '*');
-  } catch(e) {}
+  // Отправляем через Apps Script — токен скрыт на сервере
+  const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
+  fetch(appsScriptUrl + '?action=proxy_order&phone=' + encodeURIComponent(phone))
+    .catch(() => {});
 
-  // Показываем клиенту подтверждение
   closeProxyModal();
   setTimeout(showProxyOrderConfirm, 150);
 }
