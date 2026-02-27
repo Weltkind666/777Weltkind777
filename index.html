@@ -180,12 +180,18 @@
     /* Confetti canvas */
     #confetti-canvas{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none}
     /* ── Адаптив шапки ── */
+    /* Скрывать текст кнопки меню если не влезает */
+    @media(max-width:380px){
+      .bell-label{display:none!important}
+      .bell-btn{padding:0 8px;min-width:34px}
+    }
     @media(max-width:360px){
       .hdr-brand{font-size:.85rem}
       #proxy-btn{max-width:76px;font-size:.52rem;padding:3px 7px}
       #tg-chip{min-width:28px;padding:3px 6px;font-size:.52rem}
       #timer-pill{padding:3px 7px;font-size:.55rem}
       .bell-btn{padding:0 7px;height:30px;font-size:.8rem}
+      .bell-label{display:none}
     }
     /* Live timer glow when urgent */
     .conn-pill.urgent{border-color:rgba(255,109,0,.5);background:rgba(255,109,0,.1)}
@@ -297,7 +303,7 @@
     </div>
     <div class="bell-btn" onclick="haptic();togglePanel()" title="Настройки и подписка">
       <span>⚙️</span>
-      <span class="bell-label">Настройки</span>
+      <span class="bell-label">Меню</span>
       <div class="bell-badge" id="bell-badge"></div>
     </div>
   </div>
@@ -367,7 +373,7 @@
   <iframe id="main-frame"
     src="https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec"
     title="Weltkind"
-    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation allow-modals">
+    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation allow-modals allow-pointer-lock allow-presentation">
   </iframe>
 </div>
 
@@ -649,18 +655,48 @@ function obFinish(){haptic('medium');_lsSet('onboarded','1');document.getElement
 
 /* IFRAME */
 const frame=document.getElementById('main-frame');
-let sT=setTimeout(()=>{
+
+// Принудительно показываем iframe через 3.5 сек — Google Apps Script
+// иногда не стреляет событие load в PWA/Chrome без взаимодействия с экраном
+let frameForced = false;
+function forceShowFrame(){
+  if(frameForced) return;
+  frameForced = true;
+  frame.classList.add('loaded');
   document.getElementById('splash').classList.add('out');
-  // В Telegram WebView iframe может не загрузиться — показываем кнопку
-  if(isTgWebView && !frame.classList.contains('loaded')){
-    showTgOpenBrowser();
-  }
-},9000);
-frame.addEventListener('load',()=>{
-  clearTimeout(sT);frame.classList.add('loaded');
-  setTimeout(()=>document.getElementById('splash').classList.add('out'),400);
   startTimer();
+}
+
+// load событие — штатный путь
+frame.addEventListener('load', ()=>{
+  forceShowFrame();
 });
+
+// Fallback 1: через 3.5 сек показываем в любом случае (фикс зависания в PWA)
+let sT = setTimeout(()=>{
+  if(isTgWebView && !frameForced){
+    showTgOpenBrowser();
+  } else {
+    forceShowFrame();
+  }
+}, 3500);
+
+// Fallback 2: при любом касании/клике — форсируем показ (фикс PWA зависания)
+function onUserInteract(){
+  if(!frameForced){
+    forceShowFrame();
+    clearTimeout(sT);
+  }
+  document.removeEventListener('touchstart', onUserInteract);
+  document.removeEventListener('click', onUserInteract);
+}
+document.addEventListener('touchstart', onUserInteract, {passive:true, once:true});
+document.addEventListener('click', onUserInteract, {once:true});
+
+// Fallback 3: visibilitychange — когда пользователь возвращается на вкладку
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden && !frameForced) forceShowFrame();
+}, {once:true});
 
 function showTgOpenBrowser(){
   const fw=document.getElementById('frame-wrap');
