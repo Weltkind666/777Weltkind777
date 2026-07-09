@@ -851,7 +851,7 @@ async function gasLogin(silent){
   gasShowErr('');
   if (!silent) setGasLoading(true, 'inline');
   try {
-    const json = await gasApi({ action: 'getUser', phone });
+    const json = await gasApi({ action: 'getUser', phone, notify: silent ? '0' : '1', source: 'pwa' });
     if (json.status === 'ok' && json.data) {
       gasPhone = phone;
       gasUserData = json.data;
@@ -1234,7 +1234,7 @@ async function swNotify(title,body,tag='weltkind'){
   // Сохраняем данные для фонового синка
   try{
     const sub=loadSub();
-    if(sub.date){const cache=await caches.open('Weltkind-v16');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
+    if(sub.date){const cache=await caches.open('Weltkind-v17');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
   }catch(e){}
   // Показываем через SW — приходит как настоящий пуш на мобильном
   const reg=swReg||await navigator.serviceWorker.getRegistration();
