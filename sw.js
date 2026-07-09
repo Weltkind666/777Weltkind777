@@ -1,4 +1,4 @@
-const CACHE = 'Weltkind-v5';
+const CACHE = 'Weltkind-v6';
 const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -14,14 +14,16 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Do NOT intercept Google Apps Script or Google resources.
+  // Let the browser handle them natively (cookies, redirects, auth, framing all work correctly).
+  // This fixes most "embedded site works poorly" issues in the PWA.
   if (
     e.request.url.includes('script.google.com') ||
     e.request.url.includes('googleapis.com') ||
     e.request.url.includes('fonts.googleapis.com') ||
     e.request.url.includes('fonts.gstatic.com')
   ) {
-    e.respondWith(fetch(e.request).catch(() => new Response('Offline', { status: 503 })));
-    return;
+    return; // bypass SW completely → native fetch
   }
   // index.html — network-first
   const url = e.request.url;

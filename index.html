@@ -43,6 +43,8 @@
     .bell-btn{position:relative;padding:0 9px;height:34px;border-radius:10px;background:rgba(0,176,255,.08);border:1px solid rgba(0,176,255,.2);display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-size:.85rem;transition:background .2s;flex-shrink:0;font-family:'JetBrains Mono',monospace;color:var(--accent2);white-space:nowrap}
     .bell-btn:hover{background:rgba(0,176,255,.2)}
     .bell-btn .bell-label{font-size:.55rem;letter-spacing:.04em;opacity:.8}
+    .site-btn{padding:0 9px;height:34px;border-radius:10px;background:rgba(0,176,255,.08);border:1px solid rgba(0,176,255,.2);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--accent2);font-family:'JetBrains Mono',monospace;cursor:pointer;white-space:nowrap;transition:background .2s}
+    .site-btn:hover{background:rgba(0,176,255,.22)}
     .bell-badge{position:absolute;top:3px;right:3px;width:8px;height:8px;background:var(--warn);border-radius:50%;border:1px solid var(--bg);display:none}
     .bell-badge.show{display:block}
     /* Offline bar */
@@ -216,7 +218,6 @@
 </style>
 </head>
 <body>
-<canvas id="confetti-canvas"></canvas>
 <canvas id="bg-canvas"></canvas>
 <canvas id="confetti-canvas"></canvas>
 
@@ -269,6 +270,7 @@
       <span class="bell-label">Меню</span>
       <div class="bell-badge" id="bell-badge"></div>
     </div>
+    <button class="site-btn" onclick="haptic();openFullSite()" title="Открыть полную версию сайта подписки">Сайт ↗</button>
   </div>
 </header>
 
@@ -305,6 +307,7 @@
   </div>
   <div class="np-divider"></div>
   <button class="np-btn np-btn-blue" onclick="haptic();shareApp()">🔗 Поделиться приложением</button>
+  <button class="np-btn np-btn-blue" onclick="haptic();openFullSite()" style="background:rgba(0,176,255,.12);border-color:rgba(0,176,255,.3)">🌐 Открыть сайт подписки</button>
   <button class="np-btn np-btn-red" id="notif-off-btn" onclick="haptic();disableNotif()" style="display:none">🔕 Отключить уведомления</button>
   <div class="np-divider"></div>
   <div class="np-section">
@@ -334,10 +337,10 @@
     <button class="offline-retry" onclick="haptic();retryConn()">🔄 Повторить</button>
   </div>
   <iframe id="main-frame"
-    src="https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec"
     title="Weltkind"
-    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-top-navigation allow-top-navigation-by-user-activation allow-modals allow-pointer-lock allow-presentation"
-    allow="clipboard-write">
+    sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-top-navigation-by-user-activation allow-modals"
+    allow="clipboard-read; clipboard-write; web-share"
+    referrerpolicy="strict-origin-when-cross-origin">
   </iframe>
 </div>
 
@@ -494,23 +497,106 @@ function obNext(){
 function obFinish(){haptic('medium');_lsSet('onboarded','1');document.getElementById('onboarding').classList.add('done');}
 
 /* IFRAME */
-const frame=document.getElementById('main-frame');
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
+const frame = document.getElementById('main-frame');
+
+// Set iframe src from single source of truth
+if (frame) {
+  frame.src = GAS_URL;
+}
 
 let frameForced = false;
+let frameLoadFailed = false;
 function forceShowFrame(){
   if(frameForced) return;
   frameForced = true;
-  frame.classList.add('loaded');
+
+  // Clean any previous failure UI
+  const fb = document.getElementById('frame-fallback');
+  if (fb) fb.remove();
+  if (frame) {
+    frame.style.display = 'block';
+    frame.classList.add('loaded');
+  }
+
   document.getElementById('splash').classList.add('out');
   startTimer();
 }
 
-frame.addEventListener('load', ()=>{ forceShowFrame(); });
+frame.addEventListener('load', () => {
+  // If we got a load event, assume success (even if inner content is an error page from Google)
+  forceShowFrame();
+});
+
+// Detect hard failures to load the iframe (network / blocked / CSP)
+frame.addEventListener('error', () => {
+  handleFrameLoadFailure('Ошибка загрузки контента');
+});
+
+let frameCheckTimer = setTimeout(() => {
+  // After some time, if still no 'loaded' class and we are online, the content might be blocked inside iframe
+  if (!frameForced && navigator.onLine && !frameLoadFailed) {
+    // Try one hard reload of the frame src
+    try {
+      frame.src = GAS_URL + (GAS_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
+    } catch (e) {}
+  }
+}, 6500);
+
+function handleFrameLoadFailure(reason) {
+  if (frameLoadFailed) return;
+  frameLoadFailed = true;
+  clearTimeout(frameCheckTimer);
+
+  const wrap = document.getElementById('frame-wrap');
+  if (frame) frame.style.display = 'none';
+
+  // Hide splash so user sees the UI
+  const splash = document.getElementById('splash');
+  if (splash) splash.classList.add('out');
+
+  // Show a clean fallback card instead of broken iframe
+  const fallback = document.createElement('div');
+  fallback.id = 'frame-fallback';
+  fallback.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;z-index:12;background:var(--bg)';
+  fallback.innerHTML = `
+    <div style="max-width:340px;text-align:center;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px 22px;">
+      <div style="font-size:2.4rem;margin-bottom:12px">🌐</div>
+      <div style="font-size:1.15rem;font-weight:700;margin-bottom:8px">Не удалось встроить сайт</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--muted);line-height:1.5;margin-bottom:18px">
+        ${reason || 'Google заблокировал встраивание или временная проблема.'}<br>
+        Откройте полную версию — всё работает идеально.
+      </div>
+      <button onclick="openFullSite()" style="padding:14px 32px;background:linear-gradient(135deg,var(--accent),#00b300);border:none;border-radius:999px;color:#000;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;width:100%">
+        Открыть панель подписки ↗
+      </button>
+      <div style="margin-top:12px;font-size:.7rem;color:var(--muted)">
+        Откроется в новой вкладке (рекомендуется)
+      </div>
+    </div>
+  `;
+  wrap.appendChild(fallback);
+}
+
+function openFullSite() {
+  haptic('medium');
+  // Most reliable way to open the real Google Apps Script site
+  const url = GAS_URL;
+  try {
+    const win = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!win || win.closed) {
+      // popup blocked or PWA restriction → fallback to top navigation
+      location.href = url;
+    }
+  } catch (e) {
+    location.href = url;
+  }
+}
 
 let sT = setTimeout(()=>{
   if(isTgWebView && !frameForced){ showTgOpenBrowser(); }
-  else { forceShowFrame(); }
-}, 3500);
+  else if(!frameForced){ forceShowFrame(); }
+}, 4200);
 
 document.addEventListener('touchstart', ()=>{
   if(!frameForced){ forceShowFrame(); clearTimeout(sT); }
@@ -528,7 +614,7 @@ function showTgOpenBrowser(){
     <div class="offline-icon">📱</div>
     <div class="offline-title">Telegram Browser</div>
     <div class="offline-sub">Для полной работы приложения<br>откройте в стандартном браузере.</div>
-    <button class="offline-retry" onclick="openUrl('https://weltkind666.github.io/777Weltkind777/')">🌐 Открыть в браузере</button>
+    <button class="offline-retry" onclick="openFullSite()">🌐 Открыть панель подписки</button>
     <div id="tg-sub-info" style="margin-top:14px;width:100%;max-width:320px"></div>
   `;
   // Показываем кэшированные данные если есть
@@ -557,7 +643,7 @@ async function swNotify(title,body,tag='weltkind'){
   // Сохраняем данные для фонового синка
   try{
     const sub=loadSub();
-    if(sub.date){const cache=await caches.open('Weltkind-v5');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
+    if(sub.date){const cache=await caches.open('Weltkind-v6');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
   }catch(e){}
   // Показываем через SW — приходит как настоящий пуш на мобильном
   const reg=swReg||await navigator.serviceWorker.getRegistration();
@@ -574,6 +660,8 @@ function updateNet(){
   const on=navigator.onLine;
   document.getElementById('offline-bar').classList.toggle('show',!on);
   document.getElementById('offline-page').classList.toggle('show',!on);
+  const fb=document.getElementById('frame-fallback');
+  if(fb) fb.style.display = on ? 'none' : 'flex';
   frame.style.display=on?'block':'none';
   if(!on){
     const sub=loadSub();
@@ -588,7 +676,17 @@ function updateNet(){
     }
   }
 }
-function retryConn(){if(navigator.onLine){updateNet();frame.src=frame.src;}}
+function retryConn(){
+  if(navigator.onLine){
+    updateNet();
+    const fb = document.getElementById('frame-fallback');
+    if (fb) fb.remove();
+    frame.style.display = 'block';
+    frame.src = GAS_URL;
+    frameLoadFailed = false;
+    setTimeout(forceShowFrame, 1200);
+  }
+}
 window.addEventListener('online',updateNet);
 window.addEventListener('offline',updateNet);
 
@@ -603,7 +701,20 @@ fw.addEventListener('touchmove',e=>{
 },{passive:true});
 fw.addEventListener('touchend',()=>{
   if(!ptOn)return;ptOn=false;
-  if(ptD>=PTR&&navigator.onLine){haptic('medium');pin.classList.add('spinning');frame.src=frame.src;frame.addEventListener('load',()=>{pin.classList.remove('spinning');pin.style.opacity='0';setTimeout(()=>pin.style.display='none',400);},{once:true});}
+  if(ptD>=PTR&&navigator.onLine){
+    haptic('medium');
+    pin.classList.add('spinning');
+    const fb = document.getElementById('frame-fallback');
+    if (fb) fb.remove();
+    frame.style.display = 'block';
+    frame.src = GAS_URL;
+    frameLoadFailed = false;
+    frame.addEventListener('load',()=>{
+      pin.classList.remove('spinning');
+      pin.style.opacity='0';
+      setTimeout(()=>pin.style.display='none',400);
+    },{once:true});
+  }
   else{pin.style.opacity='0';setTimeout(()=>pin.style.display='none',300);}
   ptD=0;pin.style.transform='translateX(-50%) translateY(-60px)';
 });
@@ -842,77 +953,6 @@ document.addEventListener('click',e=>{
   }
 });
 
-/* ════ CONFETTI ════ */
-function launchConfetti(){
-  const canvas=document.getElementById('confetti-canvas');
-  canvas.style.display='block';
-  canvas.width=innerWidth;canvas.height=innerHeight;
-  const ctx=canvas.getContext('2d');
-  const pieces=[];
-  const colors=['#00e676','#00b0ff','#ff6d00','#fff176','#f48fb1','#80deea'];
-  for(let i=0;i<120;i++){
-    pieces.push({
-      x:Math.random()*canvas.width, y:-10-Math.random()*200,
-      w:6+Math.random()*8, h:3+Math.random()*5,
-      color:colors[Math.floor(Math.random()*colors.length)],
-      angle:Math.random()*Math.PI*2, spin:(.5-Math.random())*.15,
-      vx:(.5-Math.random())*4, vy:2+Math.random()*4,
-      alpha:1
-    });
-  }
-  let frame=0;
-  function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    let alive=false;
-    for(const p of pieces){
-      p.x+=p.vx;p.y+=p.vy;p.angle+=p.spin;
-      if(frame>60)p.alpha=Math.max(0,p.alpha-.012);
-      if(p.alpha>0){alive=true;}
-      ctx.save();ctx.globalAlpha=p.alpha;
-      ctx.translate(p.x+p.w/2,p.y+p.h/2);ctx.rotate(p.angle);
-      ctx.fillStyle=p.color;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
-      ctx.restore();
-    }
-    if(alive){frame++;requestAnimationFrame(draw);}
-    else{canvas.style.display='none';ctx.clearRect(0,0,canvas.width,canvas.height);}
-  }
-  draw();
-  haptic([50,30,80,30,50]);
-}
-
-/* ════ LIVE TIMER ════ */
-let timerInterval=null;
-function startLiveTimer(){
-  if(timerInterval)clearInterval(timerInterval);
-  function tick(){
-    const sub=loadSub();
-    if(!sub.date){
-      clearInterval(timerInterval);timerInterval=null;return;
-    }
-    const ms=new Date(sub.date)-Date.now();
-    const days=Math.floor(ms/86400000);
-    const pill=document.getElementById('hdr').querySelector('.conn-pill');
-    if(ms<=0){
-      txt.textContent='истекла!';
-      pill.className='conn-pill expired';
-    } else if(days<=7){
-      // Показываем живой обратный отсчёт
-      const h=Math.floor((ms%86400000)/3600000);
-      const m=Math.floor((ms%3600000)/60000);
-      const s=Math.floor((ms%60000)/1000);
-      if(days>0) txt.textContent=`${days}д ${h}ч ${String(m).padStart(2,'0')}м`;
-      else txt.textContent=`${h}ч ${String(m).padStart(2,'0')}м ${String(s).padStart(2,'0')}с`;
-      pill.className='conn-pill urgent';
-    } else {
-      // Обычный режим — просто дни
-      txt.textContent=days+' дн.';
-      pill.className='conn-pill';
-    }
-  }
-  tick();
-  timerInterval=setInterval(tick,1000);
-}
-
 function openUrl(url){try{var w=window.open(url,'_blank');if(!w||w.closed){location.href=url;}}catch(e){location.href=url;}}
 function openSupport(){openUrl('https://t.me/WeltkindVPN');}
 
@@ -968,8 +1008,7 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;setTim
 document.getElementById('install-btn').onclick=async()=>{haptic('medium');document.getElementById('install-banner').classList.remove('show');if(dp){dp.prompt();await dp.userChoice;dp=null;}};
 window.addEventListener('appinstalled',()=>document.getElementById('install-banner').classList.remove('show'));
 </script>
-<!-- ── Confetti ── -->
-<canvas id="confetti-canvas"></canvas>
+<!-- ── Confetti (one is enough) -->
 
 <!-- ── Float support button ── -->
 <button id="float-support" onclick="haptic();openSupport()" title="Поддержка">💬</button>
