@@ -26,6 +26,29 @@
     #gas-load-status.hide{display:none}
     #gas-load-status .gls-spin{width:36px;height:36px;border:3px solid rgba(0,230,118,.15);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
     #gas-load-status .gls-txt{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted)}
+    #main-frame{display:none!important}
+    #gas-app-panel{position:absolute;inset:0;z-index:13;overflow-y:auto;padding:14px 12px 88px;background:var(--bg);-webkit-overflow-scrolling:touch}
+    .gas-wrap{max-width:440px;margin:0 auto}
+    .gas-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+    .gas-title{font-size:1.2rem;font-weight:700;text-align:center;margin-bottom:4px}
+    .gas-sub{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);text-align:center;margin-bottom:14px;line-height:1.45}
+    .gas-inp{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(0,230,118,.05);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.95rem;box-sizing:border-box;margin-bottom:10px}
+    .gas-btn{width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),#00b300);color:#000;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:8px}
+    .gas-btn.sec{background:rgba(0,176,255,.12);border:1px solid rgba(0,176,255,.35);color:var(--accent2)}
+    .gas-btn.tar{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text);display:flex;justify-content:space-between;align-items:center;text-align:left;font-size:.92rem}
+    .gas-btn.tar strong{color:var(--accent);font-size:.95rem}
+    .gas-lbl{font-family:'JetBrains Mono',monospace;font-size:.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 8px}
+    .gas-row{display:flex;justify-content:space-between;gap:8px;font-size:.88rem;margin-bottom:6px}
+    .gas-tax{display:flex;gap:8px;margin-bottom:10px}
+    .gas-tax button{flex:1;padding:8px 6px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--muted);font-size:.72rem;cursor:pointer}
+    .gas-tax button.on{background:rgba(0,230,118,.15);border-color:var(--accent);color:var(--accent)}
+    .gas-msg{font-size:.8rem;color:var(--muted);text-align:center;margin:8px 0;line-height:1.5}
+    .gas-hidden{display:none!important}
+    .gas-inst{background:rgba(255,109,0,.08);border:1px solid rgba(255,109,0,.25);border-radius:12px;padding:14px;font-size:.8rem;line-height:1.55;margin-top:10px}
+    .gas-inst ol{margin:8px 0 0;padding-left:18px}
+    .gas-inst li{margin-bottom:6px}
+    .gas-dl{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}
+    .gas-dl a{padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.82rem;color:#fff}
     #wire-canvas{display:block;margin-bottom:24px}
     .splash-brand{font-size:2.2rem;font-weight:700;letter-spacing:.08em;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .splash-sub{margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.15em}
@@ -274,7 +297,7 @@
       <span class="bell-label">Меню</span>
       <div class="bell-badge" id="bell-badge"></div>
     </div>
-    <button class="site-btn" onclick="haptic();openFullSite()" title="Открыть полную версию сайта подписки">Сайт ↗</button>
+    <button class="site-btn" onclick="haptic();openFullSite()" title="Открыть веб-версию (запасной вариант)" style="opacity:.7">Веб ↗</button>
   </div>
 </header>
 
@@ -346,14 +369,68 @@
     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-top-navigation-by-user-activation allow-modals"
     allow="clipboard-read; clipboard-write; web-share">
   </iframe>
-  <div id="gas-native-panel" style="display:none;position:absolute;inset:0;z-index:13;overflow-y:auto;padding:20px 16px 32px;background:var(--bg)">
-    <div style="max-width:400px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 18px">
-      <div style="font-size:1.2rem;font-weight:700;margin-bottom:6px;text-align:center">Вход в подписку</div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.5">Встроенный сайт недоступен — войдите здесь или откройте полную панель</div>
-      <input type="tel" id="gas-native-phone" placeholder="79161234567" inputmode="numeric" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(0,230,118,.05);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.95rem;box-sizing:border-box;margin-bottom:10px"/>
-      <button onclick="nativeGasLogin()" style="width:100%;padding:13px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),#00b300);color:#000;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:12px">Войти</button>
-      <button onclick="openFullSite()" style="width:100%;padding:12px;border-radius:10px;background:rgba(0,176,255,.12);border:1px solid rgba(0,176,255,.35);color:var(--accent2);font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer">Полная панель оплаты ↗</button>
-      <div id="gas-native-result" style="margin-top:14px;font-size:.85rem;line-height:1.5"></div>
+  <div id="gas-app-panel" class="gas-hidden">
+    <div class="gas-wrap">
+      <div id="gas-login-view" class="gas-card">
+        <div class="gas-title">Добро пожаловать!</div>
+        <div class="gas-sub">Введите номер телефона как на сайте подписки</div>
+        <input type="tel" id="gas-phone-inp" class="gas-inp" placeholder="79161234567" inputmode="numeric"/>
+        <div id="gas-login-err" class="gas-msg gas-err gas-hidden"></div>
+        <button class="gas-btn" onclick="haptic('medium');gasLogin()">🚪 Войти</button>
+      </div>
+      <div id="gas-main-view" class="gas-hidden">
+        <div class="gas-card">
+          <div class="gas-title">Моя подписка</div>
+          <div class="gas-row"><span>Статус</span><strong id="gas-st-status">—</strong></div>
+          <div class="gas-row"><span>Оплата</span><span id="gas-st-pay">—</span></div>
+          <div class="gas-row"><span>Активна до</span><strong id="gas-st-exp" class="gas-ok">—</strong></div>
+          <div id="gas-st-warn" class="gas-msg gas-warn gas-hidden"></div>
+        </div>
+        <div id="gas-tax-block" class="gas-card gas-hidden">
+          <div class="gas-lbl">Вы оплачиваете как</div>
+          <div class="gas-tax">
+            <button type="button" id="gas-tax-ind" class="on" onclick="gasSetTax('individual')">👤 Физлицо (4%)</button>
+            <button type="button" id="gas-tax-co" onclick="gasSetTax('company')">🏢 Юрлицо (6%)</button>
+          </div>
+          <div id="gas-inn-block" class="gas-hidden">
+            <input type="text" id="gas-inn" class="gas-inp" placeholder="ИНН компании / ИП"/>
+            <input type="text" id="gas-co-name" class="gas-inp" placeholder="Название компании / ИП"/>
+          </div>
+        </div>
+        <div id="gas-tariff-block" class="gas-card gas-hidden">
+          <div class="gas-lbl" id="gas-tariff-lbl">Выберите тариф</div>
+          <button class="gas-btn tar" id="gas-t1" onclick="gasPickTariff('1month')"></button>
+          <button class="gas-btn tar" id="gas-t3" onclick="gasPickTariff('3months')"></button>
+          <button class="gas-btn tar" id="gas-ty" onclick="gasPickTariff('1year')"></button>
+        </div>
+        <div id="gas-pay-block" class="gas-card gas-hidden">
+          <div id="gas-pay-content"></div>
+          <div id="gas-pay-inst" class="gas-inst gas-hidden">
+            <strong>Как оплатить через СБП:</strong>
+            <ol>
+              <li>Откройте приложение банка</li>
+              <li>Раздел «Переводы» → «По номеру телефона»</li>
+              <li>Номер: <strong id="gas-inst-phone"></strong></li>
+              <li>Банк: <strong id="gas-inst-bank"></strong></li>
+              <li>Сумма: <strong id="gas-inst-sum"></strong> руб.</li>
+              <li>Комментарий оставьте пустым</li>
+            </ol>
+          </div>
+        </div>
+        <div id="gas-tg-block" class="gas-card gas-hidden"></div>
+        <div class="gas-card">
+          <div class="gas-lbl">📱 Приложения</div>
+          <div class="gas-dl">
+            <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#111">iPhone</a>
+            <a id="gas-apk-link" href="#" class="gas-hidden" style="background:var(--accent);color:#000">Android APK</a>
+            <a id="gas-iptv-link" href="#" class="gas-hidden" style="background:#9c27b0">TV IPTV</a>
+          </div>
+        </div>
+        <div class="gas-card">
+          <button class="gas-btn sec" onclick="haptic();openSupport()">💬 Связаться с поддержкой</button>
+          <button class="gas-btn sec" onclick="gasLogout()" style="margin-top:4px">↩ Выйти / сменить номер</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -512,17 +589,15 @@ function obFinish(){
   haptic('medium');
   _lsSet('onboarded','1');
   document.getElementById('onboarding').classList.add('done');
-  hideSplashNow();
-  loadGasIntoFrame();
+  initGasApp();
 }
 
-/* IFRAME */
+/* ════ ВСТРОЕННАЯ ПАНЕЛЬ ПОДПИСКИ (как на сайте Google) ════ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
-const GAS_EMBED_URL = './gas-embed.html';
-const frame = document.getElementById('main-frame');
-let frameForced = false;
-let frameLoadFailed = false;
-let gasLoadToken = 0;
+let gasUserData = null;
+let gasPhone = '';
+let gasClientType = 'individual';
+let gasAppReady = false;
 
 function hideSplashNow(){
   const splash = document.getElementById('splash');
@@ -536,18 +611,6 @@ function setGasLoading(on){
   if (el) el.classList.toggle('hide', !on);
 }
 
-function prepareGasHtml(html){
-  if (!html || html.length < 80) return '';
-  if (!/<base\s/i.test(html)) {
-    html = html.replace(/<head([^>]*)>/i, '<head$1><base href="https://script.google.com/">');
-  }
-  return html;
-}
-
-function isValidGasHtml(html){
-  return html && html.length > 200 && (html.includes('sandboxFrame') || html.includes('google.script') || html.includes('Добро пожаловать'));
-}
-
 async function fetchWithTimeout(url, opts, ms){
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms || 12000);
@@ -558,171 +621,251 @@ async function fetchWithTimeout(url, opts, ms){
   }
 }
 
-async function fetchGasHtmlSw(){
-  const res = await fetchWithTimeout(GAS_EMBED_URL + '?t=' + Date.now(), { cache: 'no-store' }, 12000);
-  if (!res.ok) throw new Error('sw_' + res.status);
-  return await res.text();
+async function gasApi(params){
+  const q = new URLSearchParams(params);
+  const res = await fetchWithTimeout(GAS_URL + '?' + q.toString(), { cache: 'no-store', mode: 'cors' }, 15000);
+  return await res.json();
 }
 
-async function fetchGasHtml(){
-  const html = prepareGasHtml(await fetchGasHtmlSw());
-  if (!isValidGasHtml(html)) throw new Error('invalid_html');
-  return html;
+function gasCalcTax(base){
+  const rate = gasClientType === 'company' ? 0.06 : 0.04;
+  const total = Math.ceil(base * (1 + rate) * 100) / 100;
+  const tax = Math.ceil(base * rate * 100) / 100;
+  return { total, tax, rate: gasClientType === 'company' ? 6 : 4 };
 }
 
-function showNativeGasPanel(){
+function gasFmtMoney(n){ return Number(n || 0).toFixed(2); }
+
+function gasSetTax(type){
+  gasClientType = type;
+  document.getElementById('gas-tax-ind').classList.toggle('on', type === 'individual');
+  document.getElementById('gas-tax-co').classList.toggle('on', type === 'company');
+  document.getElementById('gas-inn-block').classList.toggle('gas-hidden', type !== 'company');
+  if (gasUserData) gasRenderTariffs(gasUserData);
+}
+
+function gasShowErr(msg){
+  const el = document.getElementById('gas-login-err');
+  if (!el) return;
+  if (msg) { el.textContent = msg; el.classList.remove('gas-hidden'); }
+  else el.classList.add('gas-hidden');
+}
+
+function initGasApp(){
   hideSplashNow();
   setGasLoading(false);
-  forceShowFrame();
-  if (frame) frame.style.display = 'none';
-  const panel = document.getElementById('gas-native-panel');
-  if (panel) panel.style.display = 'block';
-  const saved = _lsGet('phoneNumber') || loadSub().phone || '';
-  const inp = document.getElementById('gas-native-phone');
+  const panel = document.getElementById('gas-app-panel');
+  if (panel) panel.classList.remove('gas-hidden');
+  gasAppReady = true;
+  startTimer();
+  const saved = _lsGet('gas_phone') || loadSub().phone || _lsGet('phoneNumber') || '';
+  const inp = document.getElementById('gas-phone-inp');
   if (inp && saved) inp.value = saved;
-}
-
-async function nativeGasLogin(){
-  const inp = document.getElementById('gas-native-phone');
-  const out = document.getElementById('gas-native-result');
-  const phone = (inp?.value || '').replace(/\D/g, '');
-  if (!phone || phone.length < 10) {
-    if (out) out.innerHTML = '<span style="color:var(--warn)">Введите номер: 79161234567</span>';
-    return;
-  }
-  if (out) out.innerHTML = '<span style="color:var(--muted)">Загрузка...</span>';
-  try {
-    const res = await fetchWithTimeout(GAS_URL + '?action=getUser&phone=' + encodeURIComponent(phone), { cache: 'no-store', mode: 'cors' }, 12000);
-    const json = await res.json();
-    if (json.status === 'ok' && json.data) {
-      const d = json.data;
-      _lsSet('phoneNumber', phone);
-      handleSubData(d.expiryDate, d.status, d.phoneNumber || phone, d.telegramConnected, 'https://t.me/WeltkindVPN_bot?start=' + phone);
-      if (out) out.innerHTML = '<div style="color:var(--accent)">Статус: <b>' + (d.status || '—') + '</b><br>До: <b>' + (d.expiryDate || '—') + '</b><br><br>Для оплаты откройте полную панель ↗</div>';
-    } else {
-      if (out) out.innerHTML = '<span style="color:#ff5252">Номер не найден. Проверьте или напишите в поддержку.</span>';
-    }
-  } catch (e) {
-    if (out) out.innerHTML = '<span style="color:#ff5252">Нет связи с Google. Включите VPN.</span>';
+  gasLoadAppLinks();
+  if (saved && document.getElementById('onboarding').classList.contains('done') && !isTgWebView) {
+    gasLogin(true);
   }
 }
 
 function startGasWhenReady(){
-  if (isTgWebView || frameLoadFailed) return;
+  if (isTgWebView) return;
   if (!document.getElementById('onboarding').classList.contains('done')) return;
-  loadGasIntoFrame();
+  initGasApp();
 }
 
-async function testGasConnection() {
-  const probes = [GAS_URL + '?action=ping', GAS_URL + '?action=getUser&phone=0'];
-  for (const url of probes) {
-    try {
-      const res = await fetch(url, { cache: 'no-store', mode: 'cors' });
-      if (res.ok) return true;
-    } catch (e) {}
+async function gasLogin(silent){
+  const phone = (document.getElementById('gas-phone-inp')?.value || '').replace(/\D/g, '');
+  if (!phone || phone.length < 10) {
+    if (!silent) gasShowErr('Введите номер: 79161234567');
+    return;
   }
-  return false;
-}
-
-function forceShowFrame(){
-  if (frameForced) return;
-  frameForced = true;
-  hideSplashNow();
-  setGasLoading(false);
-  const fb = document.getElementById('frame-fallback');
-  if (fb) fb.remove();
-  if (frame) {
-    frame.style.display = 'block';
-    frame.classList.add('loaded');
-  }
-  startTimer();
-}
-
-async function loadGasIntoFrame(){
-  if (!frame || frameLoadFailed) return;
-  const token = ++gasLoadToken;
-  setGasLoading(true);
-  hideSplashNow();
+  gasShowErr('');
+  if (!silent) setGasLoading(true);
   try {
-    const html = await fetchGasHtml();
-    if (token !== gasLoadToken) return;
-    frame.removeAttribute('src');
-    frame.srcdoc = html;
-    forceShowFrame();
-  } catch (e) {
-    if (token !== gasLoadToken) return;
-    const ok = await testGasConnection();
-    if (ok) {
-      showNativeGasPanel();
-    } else {
-      setGasLoading(false);
-      handleFrameLoadFailure('Нет доступа к Google. Включите VPN или откройте полную версию.');
+    const json = await gasApi({ action: 'getUser', phone });
+    if (json.status === 'ok' && json.data) {
+      gasPhone = phone;
+      gasUserData = json.data;
+      _lsSet('gas_phone', phone);
+      _lsSet('phoneNumber', phone);
+      handleSubData(json.data.expiryDate, json.data.status, json.data.phoneNumber || phone, json.data.telegramConnected, 'https://t.me/WeltkindVPN_bot?start=' + phone);
+      gasRenderMain(json.data);
+    } else if (!silent) {
+      gasShowErr('Номер не найден. Проверьте или напишите в поддержку.');
     }
+  } catch (e) {
+    if (!silent) gasShowErr('Нет связи с Google. Включите VPN и повторите.');
+  } finally {
+    setGasLoading(false);
   }
 }
 
-if (frame) {
-  frame.addEventListener('load', () => { if (!frameLoadFailed) forceShowFrame(); });
-  frame.addEventListener('error', () => {
-    handleFrameLoadFailure('Ошибка загрузки контента');
-  });
+function gasRenderMain(d){
+  document.getElementById('gas-login-view').classList.add('gas-hidden');
+  document.getElementById('gas-main-view').classList.remove('gas-hidden');
+  document.getElementById('gas-st-status').textContent = d.status || '—';
+  document.getElementById('gas-st-pay').textContent = d.paymentDate || '—';
+  document.getElementById('gas-st-exp').textContent = d.expiryDate || '—';
+  const warn = document.getElementById('gas-st-warn');
+  if (d.canRenew) {
+    warn.textContent = '⚠️ Подписка скоро истекает или истекла — продлите сейчас';
+    warn.classList.remove('gas-hidden');
+  } else if (d.status === 'Оплачено') {
+    warn.textContent = '✅ Подписка активна';
+    warn.classList.remove('gas-hidden');
+  } else warn.classList.add('gas-hidden');
+  document.getElementById('gas-tax-block').classList.remove('gas-hidden');
+  document.getElementById('gas-tariff-block').classList.remove('gas-hidden');
+  document.getElementById('gas-tariff-lbl').textContent = d.status === 'Не оплачено' ? 'Выберите тариф' : 'Продлить подписку';
+  gasRenderTariffs(d);
+  gasRenderTelegram(d);
+  document.getElementById('gas-pay-block').classList.add('gas-hidden');
+  document.getElementById('gas-pay-content').innerHTML = '';
+  document.getElementById('gas-pay-inst').classList.add('gas-hidden');
 }
 
-setTimeout(hideSplashNow, 2000);
-
-function handleFrameLoadFailure(reason) {
-  if (frameLoadFailed) return;
-  frameLoadFailed = true;
-  gasLoadToken++;
-  setGasLoading(false);
-
-  const wrap = document.getElementById('frame-wrap');
-  if (frame) frame.style.display = 'none';
-
-  hideSplashNow();
-
-  // Show a clean fallback card instead of broken iframe
-  const fallback = document.createElement('div');
-  fallback.id = 'frame-fallback';
-  fallback.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;z-index:12;background:var(--bg)';
-  fallback.innerHTML = `
-    <div style="max-width:340px;text-align:center;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px 22px;">
-      <div style="font-size:2.4rem;margin-bottom:12px">🌐</div>
-      <div style="font-size:1.15rem;font-weight:700;margin-bottom:8px">Не удалось встроить сайт</div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--muted);line-height:1.5;margin-bottom:18px">
-        ${reason || 'Google заблокировал встраивание или временная проблема.'}<br>
-        Откройте полную версию — всё работает идеально.
-      </div>
-      <button onclick="retryGasEmbed()" style="padding:14px 32px;background:linear-gradient(135deg,var(--accent),#00b300);border:none;border-radius:999px;color:#000;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;width:100%;margin-bottom:10px">
-        Повторить загрузку ↻
-      </button>
-      <button onclick="openFullSite()" style="padding:12px 32px;background:rgba(0,176,255,.15);border:1px solid rgba(0,176,255,.35);border-radius:999px;color:var(--accent2);font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;width:100%">
-        Открыть панель подписки ↗
-      </button>
-      <div style="margin-top:12px;font-size:.7rem;color:var(--muted)">
-        Если не помогло — включите VPN или откройте полную версию
-      </div>
-    </div>
-  `;
-  wrap.appendChild(fallback);
+function gasRenderTariffs(d){
+  const t1 = gasCalcTax(Number(d.amount1Month || 0));
+  const t3 = gasCalcTax(Number(d.amount3Months || 0));
+  const ty = gasCalcTax(Number(d.amount1Year || 0));
+  document.getElementById('gas-t1').innerHTML = '1 месяц <strong>' + gasFmtMoney(t1.total) + ' ₽</strong>';
+  document.getElementById('gas-t3').innerHTML = '3 месяца (−5%) <strong>' + gasFmtMoney(t3.total) + ' ₽</strong>';
+  document.getElementById('gas-ty').innerHTML = '1 год (−15%) <strong>' + gasFmtMoney(ty.total) + ' ₽</strong>';
 }
 
-function retryGasEmbed() {
+function gasRenderTelegram(d){
+  const block = document.getElementById('gas-tg-block');
+  const phone = gasPhone || d.phoneNumber || '';
+  const link = 'https://t.me/WeltkindVPN_bot?start=' + phone;
+  if (d.telegramConnected) {
+    block.innerHTML = '<div class="gas-lbl">Telegram</div><div class="gas-msg gas-ok">✅ Уведомления подключены</div>' +
+      '<button class="gas-btn sec" onclick="gasTestTg()">📩 Тестовое сообщение</button>' +
+      '<button class="gas-btn sec" onclick="gasClearTg()" style="margin-top:6px">❌ Отключить Telegram</button>';
+  } else {
+    block.innerHTML = '<div class="gas-lbl">Telegram уведомления</div><div class="gas-msg">Подключите бота для напоминаний об оплате</div>' +
+      '<a href="' + link + '" target="_blank" rel="noopener" style="text-decoration:none"><button class="gas-btn">📲 Подключить Telegram</button></a>' +
+      '<button class="gas-btn sec" onclick="gasRefreshTg()" style="margin-top:6px">🔄 Обновить статус</button>';
+  }
+  block.classList.remove('gas-hidden');
+}
+
+async function gasPickTariff(period){
+  if (!gasUserData || !gasPhone) return;
   haptic('medium');
-  frameLoadFailed = false;
-  frameForced = false;
-  const fb = document.getElementById('frame-fallback');
-  if (fb) fb.remove();
-  const panel = document.getElementById('gas-native-panel');
-  if (panel) panel.style.display = 'none';
-  if (frame) {
-    frame.style.display = 'block';
-    frame.classList.remove('loaded');
-    frame.removeAttribute('srcdoc');
+  const base = period === '1month' ? Number(gasUserData.amount1Month) : period === '3months' ? Number(gasUserData.amount3Months) : Number(gasUserData.amount1Year);
+  const tax = gasCalcTax(base);
+  const inn = (document.getElementById('gas-inn')?.value || '').replace(/\D/g, '').trim();
+  const coName = (document.getElementById('gas-co-name')?.value || '').trim();
+  if (gasClientType === 'company' && (!inn || !coName)) {
+    alert('Укажите ИНН и название компании');
+    return;
   }
-  hideSplashNow();
-  loadGasIntoFrame();
+  setGasLoading(true);
+  try {
+    await gasApi({
+      action: 'selectTariff', phone: gasPhone, period,
+      amount: tax.total, clientType: gasClientType,
+      companyInn: inn, companyName: coName
+    });
+    gasShowPayment(period, tax, gasUserData);
+    if (gasClientType !== 'company') gasAskReceipt();
+  } catch (e) {
+    alert('Ошибка отправки заявки. Проверьте интернет/VPN.');
+  } finally {
+    setGasLoading(false);
+  }
 }
+
+function gasShowPayment(period, tax, d){
+  const block = document.getElementById('gas-pay-block');
+  const content = document.getElementById('gas-pay-content');
+  const inst = document.getElementById('gas-pay-inst');
+  block.classList.remove('gas-hidden');
+  if (gasClientType === 'company') {
+    content.innerHTML = '<div class="gas-msg"><strong>📄 Счёт формируется</strong><br>Заявка принята. Счёт придёт в Telegram.</div>';
+    inst.classList.add('gas-hidden');
+    return;
+  }
+  content.innerHTML =
+    '<div class="gas-row"><span>Номер для перевода</span><strong>' + (d.paymentMethod || '—') + '</strong></div>' +
+    '<button class="gas-btn sec" onclick="gasCopyPayPhone()">📋 Копировать номер</button>' +
+    '<div class="gas-row" style="margin-top:10px"><span>Банк</span><strong>' + (d.bank || '—') + '</strong></div>' +
+    '<div class="gas-row"><span>К оплате</span><strong class="gas-ok">' + gasFmtMoney(tax.total) + ' ₽</strong></div>' +
+    '<div class="gas-msg">Тариф ' + gasFmtMoney(baseFromPeriod(period, d)) + ' ₽ + НПД ' + tax.rate + '% (' + gasFmtMoney(tax.tax) + ' ₽)</div>';
+  document.getElementById('gas-inst-phone').textContent = d.paymentMethod || '';
+  document.getElementById('gas-inst-bank').textContent = d.bank || '';
+  document.getElementById('gas-inst-sum').textContent = gasFmtMoney(tax.total);
+  inst.classList.remove('gas-hidden');
+}
+
+function baseFromPeriod(period, d){
+  return period === '1month' ? d.amount1Month : period === '3months' ? d.amount3Months : d.amount1Year;
+}
+
+function gasCopyText(t){
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => alert('Скопировано!')).catch(() => {});
+}
+function gasCopyPayPhone(){
+  gasCopyText(String(gasUserData?.paymentMethod || ''));
+}
+
+function gasAskReceipt(){
+  if (!confirm('Вам нужен чек об оплате?')) {
+    gasApi({ action: 'receiptChoice', phone: gasPhone, wants: '0' }).catch(() => {});
+    return;
+  }
+  gasApi({ action: 'receiptChoice', phone: gasPhone, wants: '1' }).catch(() => {});
+  alert('Хорошо, отправим чек после подтверждения оплаты');
+}
+
+async function gasRefreshTg(){ await gasLogin(true); }
+async function gasTestTg(){
+  try {
+    const j = await gasApi({ action: 'testTelegram', phone: gasPhone });
+    alert(j.message || (j.status === 'ok' ? 'Отправлено!' : 'Ошибка'));
+  } catch (e) { alert('Ошибка связи'); }
+}
+async function gasClearTg(){
+  if (!confirm('Отключить Telegram уведомления?')) return;
+  try {
+    const j = await gasApi({ action: 'clearTelegram', phone: gasPhone });
+    alert(j.message || 'Готово');
+    gasLogin(true);
+  } catch (e) { alert('Ошибка связи'); }
+}
+
+function gasLogout(){
+  gasUserData = null;
+  gasPhone = '';
+  document.getElementById('gas-main-view').classList.add('gas-hidden');
+  document.getElementById('gas-login-view').classList.remove('gas-hidden');
+  gasShowErr('');
+}
+
+function gasRefresh(){ if (gasPhone) gasLogin(true); else initGasApp(); }
+
+async function gasLoadAppLinks(){
+  try {
+    const apk = await gasApi({ action: 'appVersion' });
+    if (apk.apkUrl) {
+      const a = document.getElementById('gas-apk-link');
+      a.href = apk.apkUrl;
+      a.textContent = 'Android' + (apk.version ? ' v' + apk.version : '');
+      a.classList.remove('gas-hidden');
+    }
+  } catch (e) {}
+  try {
+    const iptv = await gasApi({ action: 'iptvVersion' });
+    if (iptv.apkUrl) {
+      const a = document.getElementById('gas-iptv-link');
+      a.href = iptv.apkUrl;
+      a.textContent = 'IPTV' + (iptv.version ? ' v' + iptv.version : '');
+      a.classList.remove('gas-hidden');
+    }
+  } catch (e) {}
+}
+
+setTimeout(hideSplashNow, 1500);
 
 function openFullSite() {
   haptic('medium');
@@ -741,8 +884,7 @@ function openFullSite() {
 
 function showTgOpenBrowser(){
   hideSplashNow();
-  forceShowFrame();
-  const fw=document.getElementById('frame-wrap');
+  startTimer();
   const op=document.getElementById('offline-page');
   op.classList.add('show');
   op.innerHTML=`
@@ -759,7 +901,6 @@ function showTgOpenBrowser(){
     const info=document.getElementById('tg-sub-info');
     if(info){info.innerHTML=`<div class="offline-card"><div class="offline-card-title">Данные подписки</div><div class="offline-row"><span>Статус</span><span class="offline-val">${sub.status||'—'}</span></div><div class="offline-row"><span>Истекает</span><span class="offline-val">${new Date(sub.date).toLocaleDateString('ru-RU')}</span></div><div class="offline-row"><span>Осталось</span><span class="offline-val ${d<=0?'err':d<=3?'warn':''}">${d<=0?'истекла':d+' дн.'}</span></div></div>`;}
   }
-  frame.style.display='none';
 }
 
 /* SW */
@@ -783,7 +924,7 @@ async function swNotify(title,body,tag='weltkind'){
   // Сохраняем данные для фонового синка
   try{
     const sub=loadSub();
-    if(sub.date){const cache=await caches.open('Weltkind-v8');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
+    if(sub.date){const cache=await caches.open('Weltkind-v9');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
   }catch(e){}
   // Показываем через SW — приходит как настоящий пуш на мобильном
   const reg=swReg||await navigator.serviceWorker.getRegistration();
@@ -799,10 +940,7 @@ async function swNotify(title,body,tag='weltkind'){
 function updateNet(){
   const on=navigator.onLine;
   document.getElementById('offline-bar').classList.toggle('show',!on);
-  document.getElementById('offline-page').classList.toggle('show',!on);
-  const fb=document.getElementById('frame-fallback');
-  if(fb) fb.style.display = on ? 'none' : 'flex';
-  frame.style.display=on?'block':'none';
+  if (!isTgWebView) document.getElementById('offline-page').classList.toggle('show',!on);
   if(!on){
     const sub=loadSub();
     if(sub.date){
@@ -819,12 +957,7 @@ function updateNet(){
 function retryConn(){
   if(navigator.onLine){
     updateNet();
-    const fb = document.getElementById('frame-fallback');
-    if (fb) fb.remove();
-    frame.style.display = 'block';
-    frameLoadFailed = false;
-    frameForced = false;
-    loadGasIntoFrame();
+    gasRefresh();
   }
 }
 window.addEventListener('online',updateNet);
@@ -844,17 +977,12 @@ fw.addEventListener('touchend',()=>{
   if(ptD>=PTR&&navigator.onLine){
     haptic('medium');
     pin.classList.add('spinning');
-    const fb = document.getElementById('frame-fallback');
-    if (fb) fb.remove();
-    frame.style.display = 'block';
-    frameLoadFailed = false;
-    frameForced = false;
-    loadGasIntoFrame();
-    frame.addEventListener('load',()=>{
+    gasRefresh();
+    setTimeout(()=>{
       pin.classList.remove('spinning');
       pin.style.opacity='0';
       setTimeout(()=>pin.style.display='none',400);
-    },{once:true});
+    },900);
   }
   else{pin.style.opacity='0';setTimeout(()=>pin.style.display='none',300);}
   ptD=0;pin.style.transform='translateX(-50%) translateY(-60px)';
@@ -1137,6 +1265,8 @@ async function clearAllCache(){
 document.addEventListener('DOMContentLoaded',()=>{
   obInit();updateNet();startTimer();
   hideSplashNow();
+  const gasInp=document.getElementById('gas-phone-inp');
+  if(gasInp) gasInp.addEventListener('input',function(){ this.value=this.value.replace(/\D/g,''); });
   if (isTgWebView) showTgOpenBrowser();
   const _sub=loadSub();
   updateTgStatus(_sub);
