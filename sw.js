@@ -1,4 +1,4 @@
-const CACHE = 'Weltkind-v7';
+const CACHE = 'Weltkind-v8';
 const ASSETS = ['./', './index.html', './gas-embed.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 const GAS_EXEC = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
@@ -7,20 +7,21 @@ function isGasEmbedRequest(url) {
   return url.pathname.endsWith('/gas-embed.html') || url.pathname.endsWith('gas-embed.html');
 }
 
+async function fetchWithTimeout(url, opts, ms) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms || 15000);
+  try {
+    return await fetch(url, Object.assign({}, opts || {}, { signal: ctrl.signal }));
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fetchGasHtml(target) {
-  const res = await fetch(target, { redirect: 'follow', credentials: 'omit', cache: 'no-store' });
+  const res = await fetchWithTimeout(target, { redirect: 'follow', credentials: 'omit', cache: 'no-store' }, 15000);
   if (!res.ok) throw new Error('gas_status_' + res.status);
   const html = await res.text();
   if (!html || html.length < 50) throw new Error('gas_empty');
-  return html;
-}
-
-async function fetchGasHtmlViaProxy(target) {
-  const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(target);
-  const res = await fetch(proxyUrl, { cache: 'no-store' });
-  if (!res.ok) throw new Error('proxy_status_' + res.status);
-  const html = await res.text();
-  if (!html || html.length < 50) throw new Error('proxy_empty');
   return html;
 }
 
@@ -38,17 +39,13 @@ async function proxyGas(request) {
   try {
     html = await fetchGasHtml(target);
   } catch (e) {
-    try {
-      html = await fetchGasHtmlViaProxy(target);
-    } catch (e2) {
-      const msg = 'Не удалось загрузить панель подписки. Проверьте интернет или включите VPN.';
-      return new Response(
-        '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
-        '<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;' +
-        'background:#f5f7fa;color:#333;text-align:center}</style></head><body><div><p>' + msg + '</p></div></body></html>',
-        { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } }
-      );
-    }
+    const msg = 'Не удалось загрузить панель подписки. Проверьте интернет или включите VPN.';
+    return new Response(
+      '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;' +
+      'background:#f5f7fa;color:#333;text-align:center}</style></head><body><div><p>' + msg + '</p></div></body></html>',
+      { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } }
+    );
   }
   return new Response(prepareGasHtml(html), {
     status: 200,

@@ -21,7 +21,11 @@
     #confetti-canvas{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none}
     /* Splash */
     #splash{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s ease}
-    #splash.out{opacity:0;pointer-events:none}
+    #splash.out{opacity:0;pointer-events:none;display:none!important}
+    #gas-load-status{position:absolute;inset:0;z-index:14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:var(--bg);pointer-events:none}
+    #gas-load-status.hide{display:none}
+    #gas-load-status .gls-spin{width:36px;height:36px;border:3px solid rgba(0,230,118,.15);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+    #gas-load-status .gls-txt{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted)}
     #wire-canvas{display:block;margin-bottom:24px}
     .splash-brand{font-size:2.2rem;font-weight:700;letter-spacing:.08em;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .splash-sub{margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.15em}
@@ -323,6 +327,7 @@
 
 <!-- FRAME -->
 <div id="frame-wrap">
+  <div id="gas-load-status"><div class="gls-spin"></div><div class="gls-txt">Загрузка панели подписки...</div></div>
   <div id="pull-indicator">🔄</div>
   <div id="offline-page">
     <div class="offline-icon">📡</div>
@@ -341,6 +346,16 @@
     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-top-navigation-by-user-activation allow-modals"
     allow="clipboard-read; clipboard-write; web-share">
   </iframe>
+  <div id="gas-native-panel" style="display:none;position:absolute;inset:0;z-index:13;overflow-y:auto;padding:20px 16px 32px;background:var(--bg)">
+    <div style="max-width:400px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 18px">
+      <div style="font-size:1.2rem;font-weight:700;margin-bottom:6px;text-align:center">Вход в подписку</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.5">Встроенный сайт недоступен — войдите здесь или откройте полную панель</div>
+      <input type="tel" id="gas-native-phone" placeholder="79161234567" inputmode="numeric" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(0,230,118,.05);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.95rem;box-sizing:border-box;margin-bottom:10px"/>
+      <button onclick="nativeGasLogin()" style="width:100%;padding:13px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),#00b300);color:#000;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:12px">Войти</button>
+      <button onclick="openFullSite()" style="width:100%;padding:12px;border-radius:10px;background:rgba(0,176,255,.12);border:1px solid rgba(0,176,255,.35);color:var(--accent2);font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer">Полная панель оплаты ↗</button>
+      <div id="gas-native-result" style="margin-top:14px;font-size:.85rem;line-height:1.5"></div>
+    </div>
+  </div>
 </div>
 
 <div id="install-banner">
@@ -493,28 +508,113 @@ function obNext(){
   document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('active',i===obIdx));
   if(obIdx===2)document.getElementById('ob-next-btn').textContent='Начать →';
 }
-function obFinish(){haptic('medium');_lsSet('onboarded','1');document.getElementById('onboarding').classList.add('done');}
+function obFinish(){
+  haptic('medium');
+  _lsSet('onboarded','1');
+  document.getElementById('onboarding').classList.add('done');
+  hideSplashNow();
+  loadGasIntoFrame();
+}
 
 /* IFRAME */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
 const GAS_EMBED_URL = './gas-embed.html';
 const frame = document.getElementById('main-frame');
+let frameForced = false;
+let frameLoadFailed = false;
+let gasLoadToken = 0;
 
-function loadGasFrame() {
-  if (!frame) return;
-  const sep = GAS_EMBED_URL.includes('?') ? '&' : '?';
-  frame.src = GAS_EMBED_URL + sep + 't=' + Date.now();
+function hideSplashNow(){
+  const splash = document.getElementById('splash');
+  if (!splash) return;
+  splash.classList.add('out');
+  splash.style.display = 'none';
 }
 
-if (frame) {
-  loadGasFrame();
+function setGasLoading(on){
+  const el = document.getElementById('gas-load-status');
+  if (el) el.classList.toggle('hide', !on);
+}
+
+function prepareGasHtml(html){
+  if (!html || html.length < 80) return '';
+  if (!/<base\s/i.test(html)) {
+    html = html.replace(/<head([^>]*)>/i, '<head$1><base href="https://script.google.com/">');
+  }
+  return html;
+}
+
+function isValidGasHtml(html){
+  return html && html.length > 200 && (html.includes('sandboxFrame') || html.includes('google.script') || html.includes('Добро пожаловать'));
+}
+
+async function fetchWithTimeout(url, opts, ms){
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms || 12000);
+  try {
+    return await fetch(url, Object.assign({}, opts || {}, { signal: ctrl.signal }));
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchGasHtmlSw(){
+  const res = await fetchWithTimeout(GAS_EMBED_URL + '?t=' + Date.now(), { cache: 'no-store' }, 12000);
+  if (!res.ok) throw new Error('sw_' + res.status);
+  return await res.text();
+}
+
+async function fetchGasHtml(){
+  const html = prepareGasHtml(await fetchGasHtmlSw());
+  if (!isValidGasHtml(html)) throw new Error('invalid_html');
+  return html;
+}
+
+function showNativeGasPanel(){
+  hideSplashNow();
+  setGasLoading(false);
+  forceShowFrame();
+  if (frame) frame.style.display = 'none';
+  const panel = document.getElementById('gas-native-panel');
+  if (panel) panel.style.display = 'block';
+  const saved = _lsGet('phoneNumber') || loadSub().phone || '';
+  const inp = document.getElementById('gas-native-phone');
+  if (inp && saved) inp.value = saved;
+}
+
+async function nativeGasLogin(){
+  const inp = document.getElementById('gas-native-phone');
+  const out = document.getElementById('gas-native-result');
+  const phone = (inp?.value || '').replace(/\D/g, '');
+  if (!phone || phone.length < 10) {
+    if (out) out.innerHTML = '<span style="color:var(--warn)">Введите номер: 79161234567</span>';
+    return;
+  }
+  if (out) out.innerHTML = '<span style="color:var(--muted)">Загрузка...</span>';
+  try {
+    const res = await fetchWithTimeout(GAS_URL + '?action=getUser&phone=' + encodeURIComponent(phone), { cache: 'no-store', mode: 'cors' }, 12000);
+    const json = await res.json();
+    if (json.status === 'ok' && json.data) {
+      const d = json.data;
+      _lsSet('phoneNumber', phone);
+      handleSubData(d.expiryDate, d.status, d.phoneNumber || phone, d.telegramConnected, 'https://t.me/WeltkindVPN_bot?start=' + phone);
+      if (out) out.innerHTML = '<div style="color:var(--accent)">Статус: <b>' + (d.status || '—') + '</b><br>До: <b>' + (d.expiryDate || '—') + '</b><br><br>Для оплаты откройте полную панель ↗</div>';
+    } else {
+      if (out) out.innerHTML = '<span style="color:#ff5252">Номер не найден. Проверьте или напишите в поддержку.</span>';
+    }
+  } catch (e) {
+    if (out) out.innerHTML = '<span style="color:#ff5252">Нет связи с Google. Включите VPN.</span>';
+  }
+}
+
+function startGasWhenReady(){
+  if (isTgWebView || frameLoadFailed) return;
+  if (!document.getElementById('onboarding').classList.contains('done')) return;
+  loadGasIntoFrame();
 }
 
 async function testGasConnection() {
-  const probes = [
-    GAS_URL + '?action=ping',
-    GAS_URL + '?action=getUser&phone=0'
-  ];
+  const probes = [GAS_URL + '?action=ping', GAS_URL + '?action=getUser&phone=0'];
   for (const url of probes) {
     try {
       const res = await fetch(url, { cache: 'no-store', mode: 'cors' });
@@ -524,68 +624,62 @@ async function testGasConnection() {
   return false;
 }
 
-let frameForced = false;
-let frameLoadFailed = false;
 function forceShowFrame(){
-  if(frameForced) return;
+  if (frameForced) return;
   frameForced = true;
-
-  // Clean any previous failure UI
+  hideSplashNow();
+  setGasLoading(false);
   const fb = document.getElementById('frame-fallback');
   if (fb) fb.remove();
   if (frame) {
     frame.style.display = 'block';
     frame.classList.add('loaded');
   }
-
-  document.getElementById('splash').classList.add('out');
   startTimer();
 }
 
-frame.addEventListener('load', () => {
-  // If we got a load event, assume success (even if inner content is an error page from Google)
-  forceShowFrame();
-});
-
-// Detect hard failures to load the iframe (network / blocked / CSP)
-frame.addEventListener('error', () => {
-  handleFrameLoadFailure('Ошибка загрузки контента');
-});
-
-let frameCheckTimer = setTimeout(() => {
-  if (!frameForced && navigator.onLine && !frameLoadFailed) {
-    loadGasFrame();
-  }
-}, 6500);
-
-let frameEmptyTimer = setTimeout(async () => {
-  if (frameForced || frameLoadFailed || !navigator.onLine) return;
-  let looksEmpty = true;
+async function loadGasIntoFrame(){
+  if (!frame || frameLoadFailed) return;
+  const token = ++gasLoadToken;
+  setGasLoading(true);
+  hideSplashNow();
   try {
-    const doc = frame.contentDocument;
-    if (doc && doc.body && doc.body.innerText.trim().length > 20) looksEmpty = false;
-    if (doc && doc.getElementById('sandboxFrame')) looksEmpty = false;
-  } catch (e) {}
-  if (looksEmpty) {
+    const html = await fetchGasHtml();
+    if (token !== gasLoadToken) return;
+    frame.removeAttribute('src');
+    frame.srcdoc = html;
+    forceShowFrame();
+  } catch (e) {
+    if (token !== gasLoadToken) return;
     const ok = await testGasConnection();
-    handleFrameLoadFailure(ok
-      ? 'Сайт не отобразился во встроенном режиме'
-      : 'Нет доступа к Google. Включите VPN или откройте сайт в браузере.');
+    if (ok) {
+      showNativeGasPanel();
+    } else {
+      setGasLoading(false);
+      handleFrameLoadFailure('Нет доступа к Google. Включите VPN или откройте полную версию.');
+    }
   }
-}, 9000);
+}
+
+if (frame) {
+  frame.addEventListener('load', () => { if (!frameLoadFailed) forceShowFrame(); });
+  frame.addEventListener('error', () => {
+    handleFrameLoadFailure('Ошибка загрузки контента');
+  });
+}
+
+setTimeout(hideSplashNow, 2000);
 
 function handleFrameLoadFailure(reason) {
   if (frameLoadFailed) return;
   frameLoadFailed = true;
-  clearTimeout(frameCheckTimer);
-  clearTimeout(frameEmptyTimer);
+  gasLoadToken++;
+  setGasLoading(false);
 
   const wrap = document.getElementById('frame-wrap');
   if (frame) frame.style.display = 'none';
 
-  // Hide splash so user sees the UI
-  const splash = document.getElementById('splash');
-  if (splash) splash.classList.add('out');
+  hideSplashNow();
 
   // Show a clean fallback card instead of broken iframe
   const fallback = document.createElement('div');
@@ -617,23 +711,17 @@ function retryGasEmbed() {
   haptic('medium');
   frameLoadFailed = false;
   frameForced = false;
-  clearTimeout(frameCheckTimer);
-  clearTimeout(frameEmptyTimer);
   const fb = document.getElementById('frame-fallback');
   if (fb) fb.remove();
+  const panel = document.getElementById('gas-native-panel');
+  if (panel) panel.style.display = 'none';
   if (frame) {
     frame.style.display = 'block';
     frame.classList.remove('loaded');
-    loadGasFrame();
+    frame.removeAttribute('srcdoc');
   }
-  document.getElementById('splash').classList.add('out');
-  frameCheckTimer = setTimeout(() => { if (!frameForced && navigator.onLine) loadGasFrame(); }, 6500);
-  frameEmptyTimer = setTimeout(async () => {
-    if (frameForced || frameLoadFailed || !navigator.onLine) return;
-    const ok = await testGasConnection();
-    if (!ok) handleFrameLoadFailure('Нет доступа к Google. Включите VPN или откройте сайт в браузере.');
-  }, 9000);
-  frame.addEventListener('load', () => forceShowFrame(), { once: true });
+  hideSplashNow();
+  loadGasIntoFrame();
 }
 
 function openFullSite() {
@@ -651,20 +739,9 @@ function openFullSite() {
   setTimeout(() => { location.assign(url); }, 250);
 }
 
-let sT = setTimeout(()=>{
-  if(isTgWebView && !frameForced){ showTgOpenBrowser(); }
-  else if(!frameForced){ forceShowFrame(); }
-}, 4200);
-
-document.addEventListener('touchstart', ()=>{
-  if(!frameForced){ forceShowFrame(); clearTimeout(sT); }
-}, {passive:true, once:true});
-
-document.addEventListener('visibilitychange', ()=>{
-  if(!document.hidden && !frameForced) forceShowFrame();
-}, {once:true});
-
 function showTgOpenBrowser(){
+  hideSplashNow();
+  forceShowFrame();
   const fw=document.getElementById('frame-wrap');
   const op=document.getElementById('offline-page');
   op.classList.add('show');
@@ -691,8 +768,13 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').then(reg=>{
     swReg=reg;
     if('periodicSync' in reg)reg.periodicSync.register('check-subscription',{minInterval:86400000}).catch(()=>{});
-  }).catch(()=>{});
+    return navigator.serviceWorker.ready;
+  }).then(()=>{
+    startGasWhenReady();
+  }).catch(()=>{ startGasWhenReady(); });
   navigator.serviceWorker.addEventListener('message',e=>{if(e.data?.type==='bg_check')checkExpiry();});
+} else {
+  startGasWhenReady();
 }
 
 /* ════ SW NOTIFY — настоящие мобильные уведомления ════ */
@@ -701,7 +783,7 @@ async function swNotify(title,body,tag='weltkind'){
   // Сохраняем данные для фонового синка
   try{
     const sub=loadSub();
-    if(sub.date){const cache=await caches.open('Weltkind-v7');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
+    if(sub.date){const cache=await caches.open('Weltkind-v8');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
   }catch(e){}
   // Показываем через SW — приходит как настоящий пуш на мобильном
   const reg=swReg||await navigator.serviceWorker.getRegistration();
@@ -740,9 +822,9 @@ function retryConn(){
     const fb = document.getElementById('frame-fallback');
     if (fb) fb.remove();
     frame.style.display = 'block';
-    loadGasFrame();
     frameLoadFailed = false;
-    setTimeout(forceShowFrame, 1200);
+    frameForced = false;
+    loadGasIntoFrame();
   }
 }
 window.addEventListener('online',updateNet);
@@ -765,8 +847,9 @@ fw.addEventListener('touchend',()=>{
     const fb = document.getElementById('frame-fallback');
     if (fb) fb.remove();
     frame.style.display = 'block';
-    loadGasFrame();
     frameLoadFailed = false;
+    frameForced = false;
+    loadGasIntoFrame();
     frame.addEventListener('load',()=>{
       pin.classList.remove('spinning');
       pin.style.opacity='0';
@@ -1053,6 +1136,8 @@ async function clearAllCache(){
 
 document.addEventListener('DOMContentLoaded',()=>{
   obInit();updateNet();startTimer();
+  hideSplashNow();
+  if (isTgWebView) showTgOpenBrowser();
   const _sub=loadSub();
   updateTgStatus(_sub);
   if(_sub.date){checkExpiry();}
