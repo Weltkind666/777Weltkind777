@@ -239,7 +239,9 @@
     "ru.sportbox",
     "ru.smotrim",
     "CDEK",
-    "com.logistic.sdek"
+    "com.logistic.sdek",
+    "com.programmisty.emiasapp",
+    "amnezia"
   ],
   "markers": [
     "ru.sber",
@@ -387,7 +389,10 @@
     "selfemployed",
     "cdek",
     "sdek",
-    "logistic"
+    "logistic",
+    "emiasapp",
+    "programmisty",
+    "amnezia"
   ],
   "keywords": [
     "сбер",
@@ -557,7 +562,11 @@
     "сдэк: курьер",
     "cdek",
     "сдэк: доставка и шопинг",
-    "sdek"
+    "sdek",
+    "емиас.инфо",
+    "emiasapp",
+    "amnezia vpn",
+    "amnezia"
   ],
   "excludes": [
     "ru.google",
