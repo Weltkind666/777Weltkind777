@@ -1,5 +1,5 @@
 {
-  "version": 1.1,
+  "version": 2,
   "updated": "2026-07-09",
   "packages": [
     "ru.sberbankmobile", "ru.sberbank.spasibo", "ru.sberbank.sberpay", "ru.sberbank_sbbol",
@@ -50,6 +50,7 @@
     "ru.petrovich", "ru.vseinstrumenti", "ru.letu", "ru.goldapple",
     "youdrive.today", "com.carshering.belkacar", "ru.delimobil.android",
     "com.punicapp.whoosh", "ru.urentbike.app",
+    "mobi.zona.lite", "mobi.zona", "com.bread.bakery.app",
     "ru.taxsee.taxsee", "ru.maximtaxi", "ru.inDriver",
     "ru.stolichki", "ru.apteka.ru", "ru.zdravcity",
     "ru.invitro", "ru.gemotest", "ru.kdl", "ru.prodoctorov",
@@ -91,7 +92,8 @@
     "ru.finam", "ru.bcs", "ru.broker", "ru.rencredit", "ru.akbars", "ru.modulbank",
     "ru.tochka", "ru.podeli", "ru.dolyame", "ru.zvooq", "ru.litres", "ru.bookmate",
     "ru.rambler", "ru.sbermarket", "ru.sbermegamarket", "ru.beru", "ru.yota", "ru.motiv",
-    "ru.salute", "ru.sberdevices", "ru.sberzvuk"
+    "ru.salute", "ru.sberdevices", "ru.sberzvuk",
+    "mobi.zona", "bread.bakery", "buhanka"
   ],
   "keywords": [
     "сбер", "sber", "втб", "vtb", "тинькофф", "tinkoff", "альфа-банк", "alfabank",
@@ -115,8 +117,9 @@
     "start.ru", "амедиатека", "согаз", "ингосстрах", "ресо", "вск", "ргс",
     "финам", "бкс", "ренессанс", "ак барс", "модульбанк", "точка", "подели", "долями",
     "звук", "литрес", "bookmate", "рамблер", "мегамаркет", "yota", "йота", "салют",
-    "сбермаркет", "сберзвук", "сберпрайм", "Zona", "Буханка", "indriver", "индрайвер", "максим",
-    "taxsee", "taximaxim", "urent"
+    "сбермаркет", "сберзвук", "сберпрайм", "indriver", "индрайвер", "максим",
+    "taxsee", "taximaxim", "urent",
+    "zona", "Zona", "буханка", "Буханка", "buhanka"
   ],
   "excludes": [
     "ru.google", "com.google", "org.telegram", "com.whatsapp",
