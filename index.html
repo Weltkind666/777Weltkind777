@@ -22,10 +22,13 @@
     /* Splash */
     #splash{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s ease}
     #splash.out{opacity:0;pointer-events:none;display:none!important}
-    #gas-load-status{position:absolute;inset:0;z-index:14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:var(--bg);pointer-events:none}
+    #gas-load-status{position:absolute;inset:0;z-index:14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(5,13,20,.92);backdrop-filter:blur(6px);pointer-events:none}
     #gas-load-status.hide{display:none}
-    #gas-load-status .gls-spin{width:36px;height:36px;border:3px solid rgba(0,230,118,.15);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
-    #gas-load-status .gls-txt{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted)}
+    .gas-loader{display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:18px 0;width:100%}
+    .gas-loader.active{display:flex}
+    .gas-loader-canvas{display:block}
+    .gas-loader-label{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);animation:lblPulse 1.3s ease-in-out infinite}
+    @keyframes lblPulse{0%,100%{opacity:1}50%{opacity:.3}}
     #main-frame{display:none!important}
     #gas-app-panel{position:absolute;inset:0;z-index:13;overflow-y:auto;padding:14px 12px 88px;background:var(--bg);-webkit-overflow-scrolling:touch}
     .gas-wrap{max-width:440px;margin:0 auto}
@@ -48,7 +51,18 @@
     .gas-inst ol{margin:8px 0 0;padding-left:18px}
     .gas-inst li{margin-bottom:6px}
     .gas-dl{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}
-    .gas-dl a{padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.82rem;color:#fff}
+    .gas-dl a,.gas-dl .gas-dl-btn{padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.82rem;color:#fff;border:none;cursor:pointer;font-family:inherit}
+    #apk-dl-panel{position:fixed;inset:0;z-index:490;background:rgba(5,13,20,.94);backdrop-filter:blur(8px);display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+    #apk-dl-panel.show{display:flex}
+    .apk-dl-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 20px;width:min(340px,92vw)}
+    .apk-dl-title{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+    .apk-dl-sub{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);margin-bottom:16px;line-height:1.5}
+    .apk-dl-bar{height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:8px}
+    .apk-dl-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;transition:width .25s ease}
+    .apk-dl-pct{font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--accent);margin-bottom:6px}
+    .apk-dl-bytes{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--muted);margin-bottom:14px}
+    .apk-dl-status{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);min-height:2.5em;line-height:1.45;margin-bottom:12px}
+    .apk-dl-cancel{width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:.9rem;cursor:pointer}
     #wire-canvas{display:block;margin-bottom:24px}
     .splash-brand{font-size:2.2rem;font-weight:700;letter-spacing:.08em;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .splash-sub{margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.15em}
@@ -246,13 +260,16 @@
     .chat-fab-badge.show{display:flex}
     #fab-support{left:16px;right:auto}
     /* Chat support */
-    #chat-panel{position:fixed;inset:0;z-index:480;background:var(--bg);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(.34,1.2,.64,1);pointer-events:none;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+    body.chat-open #hdr,body.chat-open #offline-bar{visibility:hidden;pointer-events:none}
+    #chat-panel{position:fixed;left:0;right:0;top:0;bottom:0;z-index:480;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;height:100dvh;max-height:100dvh;transform:translateY(100%);transition:transform .35s cubic-bezier(.34,1.2,.64,1);pointer-events:none}
     #chat-panel.open{transform:translateY(0);pointer-events:all}
-    .chat-hdr{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);background:rgba(5,13,20,.98);flex-shrink:0}
+    .chat-hdr{display:flex;align-items:center;gap:12px;padding:12px 14px;padding-top:max(12px,env(safe-area-inset-top));border-bottom:1px solid var(--border);background:rgba(5,13,20,.98);flex-shrink:0;position:relative;z-index:2}
+    .chat-hdr-info{min-width:0;flex:1}
     .chat-back{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:1.2rem;cursor:pointer;flex-shrink:0}
     .chat-hdr-title{font-size:1.05rem;font-weight:700}
-    .chat-hdr-phone{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);margin-top:2px}
-    #chat-messages{flex:1;overflow-y:auto;padding:14px 12px 8px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}
+    .chat-hdr-phone{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .chat-body{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+    #chat-messages{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:14px 12px 8px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
     .chat-empty{text-align:center;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted);margin:auto;padding:24px;line-height:1.6}
     .chat-bubble{max-width:88%;padding:10px 12px;border-radius:14px;font-size:.9rem;line-height:1.45;word-break:break-word}
     .chat-bubble.user{align-self:flex-end;background:rgba(0,230,118,.15);border:1px solid rgba(0,230,118,.3);border-bottom-right-radius:4px}
@@ -261,7 +278,7 @@
     .chat-bubble.user .chat-bubble-meta{text-align:right}
     .chat-status{font-family:'JetBrains Mono',monospace;font-size:.68rem;text-align:center;padding:4px 12px;color:var(--warn);display:none;flex-shrink:0}
     .chat-status.show{display:block}
-    .chat-input-row{display:flex;gap:8px;padding:10px 12px 14px;border-top:1px solid var(--border);background:rgba(5,13,20,.98);flex-shrink:0;align-items:flex-end}
+    .chat-input-row{display:flex;gap:8px;padding:10px 12px; padding-bottom:max(14px,env(safe-area-inset-bottom));border-top:1px solid var(--border);background:rgba(5,13,20,.98);flex-shrink:0;align-items:flex-end}
     #chat-input{flex:1;min-height:44px;max-height:120px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:rgba(0,230,118,.05);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.95rem;resize:none;outline:none}
     #chat-input:focus{border-color:var(--accent)}
     #chat-send-btn{width:44px;height:44px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),#00b300);color:#000;font-size:1.1rem;cursor:pointer;flex-shrink:0}
@@ -379,7 +396,10 @@
 
 <!-- FRAME -->
 <div id="frame-wrap">
-  <div id="gas-load-status"><div class="gls-spin"></div><div class="gls-txt">Загрузка панели подписки...</div></div>
+  <div id="gas-load-status" class="hide">
+    <canvas class="gas-loader-canvas" width="80" height="80"></canvas>
+    <span class="gas-loader-label">Загрузка...</span>
+  </div>
   <div id="pull-indicator">🔄</div>
   <div id="offline-page">
     <div class="offline-icon">📡</div>
@@ -405,7 +425,11 @@
         <div class="gas-sub">Введите номер телефона как на сайте подписки</div>
         <input type="tel" id="gas-phone-inp" class="gas-inp" placeholder="79161234567" inputmode="numeric"/>
         <div id="gas-login-err" class="gas-msg gas-err gas-hidden"></div>
-        <button class="gas-btn" onclick="haptic('medium');gasLogin()">🚪 Войти</button>
+        <button class="gas-btn" id="gas-login-btn" onclick="haptic('medium');gasLogin()">🚪 Войти</button>
+        <div id="gas-login-loader" class="gas-loader">
+          <canvas class="gas-loader-canvas" width="80" height="80"></canvas>
+          <span class="gas-loader-label">Загрузка...</span>
+        </div>
         <button class="gas-btn sec" onclick="haptic();chatOpen()" style="margin-top:4px">💬 Не можете войти? Напишите в поддержку</button>
       </div>
       <div id="gas-main-view" class="gas-hidden">
@@ -452,8 +476,8 @@
           <div class="gas-lbl">📱 Приложения</div>
           <div class="gas-dl">
             <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#111">iPhone</a>
-            <a id="gas-apk-link" href="#" class="gas-hidden" style="background:var(--accent);color:#000">Android APK</a>
-            <a id="gas-iptv-link" href="#" class="gas-hidden" style="background:#9c27b0">TV IPTV</a>
+            <button type="button" id="gas-apk-link" class="gas-hidden gas-dl-btn" style="background:var(--accent);color:#000" onclick="haptic('medium');gasDownloadApk('vpn')">Android APK</button>
+            <button type="button" id="gas-iptv-link" class="gas-hidden gas-dl-btn" style="background:#9c27b0" onclick="haptic('medium');gasDownloadApk('iptv')">TV IPTV</button>
           </div>
         </div>
         <div class="gas-card">
@@ -636,9 +660,93 @@ function hideSplashNow(){
   splash.style.display = 'none';
 }
 
-function setGasLoading(on){
-  const el = document.getElementById('gas-load-status');
-  if (el) el.classList.toggle('hide', !on);
+let gasLoaderRaf = null;
+let gasLoaderT = 0;
+
+function gasLoaderDraw(cv, t){
+  const ctx = cv.getContext('2d');
+  const CX = 40, CY = 40;
+  const C1 = '#00C4B4', C2 = '#FF7043', C3 = '#00b0ff';
+  const orbs = [
+    { r: 28, spd: 1.8, sz: 5, col: C1, off: 0, trail: 8 },
+    { r: 18, spd: -2.5, sz: 3.5, col: C2, off: Math.PI * 0.7, trail: 6 },
+    { r: 10, spd: 3.4, sz: 2.5, col: C3, off: Math.PI * 1.4, trail: 5 }
+  ];
+  ctx.clearRect(0, 0, 80, 80);
+  const p = 0.72 + 0.28 * Math.sin(t * 3);
+  const cr = 6 * p;
+  const g = ctx.createRadialGradient(CX, CY, 0, CX, CY, cr * 3.2);
+  g.addColorStop(0, 'rgba(0,196,180,.55)');
+  g.addColorStop(1, 'rgba(0,196,180,0)');
+  ctx.beginPath(); ctx.arc(CX, CY, cr * 3.2, 0, Math.PI * 2);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.beginPath(); ctx.arc(CX, CY, cr, 0, Math.PI * 2);
+  ctx.fillStyle = C1; ctx.shadowColor = C1; ctx.shadowBlur = 12;
+  ctx.fill(); ctx.shadowBlur = 0;
+  orbs.forEach(o => {
+    const ang = t * o.spd + o.off;
+    ctx.beginPath(); ctx.arc(CX, CY, o.r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 1;
+    ctx.setLineDash([3, 5]); ctx.stroke(); ctx.setLineDash([]);
+    for (let i = o.trail; i >= 1; i--) {
+      const a = ang - i * 0.17;
+      ctx.beginPath();
+      ctx.arc(CX + Math.cos(a) * o.r, CY + Math.sin(a) * o.r, o.sz * (1 - i / o.trail * 0.65), 0, Math.PI * 2);
+      ctx.globalAlpha = (1 - i / o.trail) * 0.55;
+      ctx.fillStyle = o.col; ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.arc(CX + Math.cos(ang) * o.r, CY + Math.sin(ang) * o.r, o.sz, 0, Math.PI * 2);
+    ctx.fillStyle = o.col; ctx.shadowColor = o.col; ctx.shadowBlur = 9;
+    ctx.fill(); ctx.shadowBlur = 0;
+  });
+}
+
+function gasLoaderIsActive(){
+  const overlay = document.getElementById('gas-load-status');
+  const inline = document.getElementById('gas-login-loader');
+  return (overlay && !overlay.classList.contains('hide')) || (inline && inline.classList.contains('active'));
+}
+
+function gasLoaderFrame(){
+  gasLoaderT += 0.034;
+  document.querySelectorAll('.gas-loader-canvas').forEach(cv => gasLoaderDraw(cv, gasLoaderT));
+  if (gasLoaderIsActive()) gasLoaderRaf = requestAnimationFrame(gasLoaderFrame);
+  else {
+    gasLoaderRaf = null;
+    document.querySelectorAll('.gas-loader-canvas').forEach(cv => cv.getContext('2d').clearRect(0, 0, 80, 80));
+  }
+}
+
+function gasLoaderStart(){
+  if (!gasLoaderRaf) gasLoaderFrame();
+}
+
+function setGasLoading(on, mode){
+  const overlay = document.getElementById('gas-load-status');
+  const inline = document.getElementById('gas-login-loader');
+  const loginBtn = document.getElementById('gas-login-btn');
+  if (on) {
+    if (mode === 'overlay') {
+      overlay?.classList.remove('hide');
+      inline?.classList.remove('active');
+    } else {
+      inline?.classList.add('active');
+      overlay?.classList.add('hide');
+    }
+    if (loginBtn) loginBtn.disabled = mode !== 'overlay';
+    gasLoaderStart();
+  } else {
+    overlay?.classList.add('hide');
+    inline?.classList.remove('active');
+    if (loginBtn) loginBtn.disabled = false;
+    if (gasLoaderRaf) {
+      cancelAnimationFrame(gasLoaderRaf);
+      gasLoaderRaf = null;
+      document.querySelectorAll('.gas-loader-canvas').forEach(cv => cv.getContext('2d').clearRect(0, 0, 80, 80));
+    }
+  }
 }
 
 async function fetchWithTimeout(url, opts, ms){
@@ -710,7 +818,7 @@ async function gasLogin(silent){
     return;
   }
   gasShowErr('');
-  if (!silent) setGasLoading(true);
+  if (!silent) setGasLoading(true, 'inline');
   try {
     const json = await gasApi({ action: 'getUser', phone });
     if (json.status === 'ok' && json.data) {
@@ -791,7 +899,7 @@ async function gasPickTariff(period){
     alert('Укажите ИНН и название компании');
     return;
   }
-  setGasLoading(true);
+  setGasLoading(true, 'overlay');
   try {
     await gasApi({
       action: 'selectTariff', phone: gasPhone, period,
@@ -877,12 +985,146 @@ function gasLogout(){
 
 function gasRefresh(){ if (gasPhone) gasLogin(true); else initGasApp(); }
 
+let gasApkMeta = { version: '', url: '', fileName: 'Weltkind.apk' };
+let gasIptvMeta = { version: '', url: '', fileName: 'AuroraIPTV.apk' };
+let apkDlCancelFlag = false;
+
+function gasFmtBytes(n){
+  const b = Number(n) || 0;
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+
+function b64ToUint8(b64){
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function apkDlShow(title, sub){
+  const p = document.getElementById('apk-dl-panel');
+  if (!p) return;
+  document.getElementById('apk-dl-title').textContent = title || 'Скачивание...';
+  document.getElementById('apk-dl-sub').textContent = sub || '';
+  document.getElementById('apk-dl-fill').style.width = '0%';
+  document.getElementById('apk-dl-pct').textContent = '0%';
+  document.getElementById('apk-dl-bytes').textContent = '';
+  document.getElementById('apk-dl-status').textContent = 'Подключение...';
+  p.classList.add('show');
+}
+
+function apkDlHide(){
+  document.getElementById('apk-dl-panel')?.classList.remove('show');
+}
+
+function apkDlUpdate(pct, loaded, total){
+  const p = Math.max(0, Math.min(100, pct || 0));
+  document.getElementById('apk-dl-fill').style.width = p + '%';
+  document.getElementById('apk-dl-pct').textContent = p + '%';
+  if (total) document.getElementById('apk-dl-bytes').textContent = gasFmtBytes(loaded) + ' / ' + gasFmtBytes(total);
+}
+
+function apkDlSetStatus(msg){
+  const el = document.getElementById('apk-dl-status');
+  if (el) el.textContent = msg || '';
+}
+
+function apkDlCancel(){
+  apkDlCancelFlag = true;
+  apkDlSetStatus('Отмена...');
+}
+
+async function gasOpenApkFile(blob, filename){
+  const file = new File([blob], filename, { type: 'application/vnd.android.package-archive' });
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: filename });
+      return;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
+  alert('✅ ' + filename + ' скачан.\n\nОткройте файл из уведомлений или папки «Загрузки» для установки.');
+}
+
+async function gasDownloadApk(kind){
+  const meta = kind === 'iptv' ? gasIptvMeta : gasApkMeta;
+  const label = kind === 'iptv' ? 'IPTV' : 'Android';
+  apkDlCancelFlag = false;
+  apkDlShow('Скачивание ' + label, (meta.version ? 'Версия ' + meta.version : ''));
+  const CHUNK = 524288;
+  let offset = 0;
+  let total = 0;
+  let fileName = meta.fileName || (kind === 'iptv' ? 'AuroraIPTV.apk' : 'Weltkind.apk');
+  const parts = [];
+  try {
+    const m = await gasApi({ action: 'apkMeta', type: kind });
+    if (m.status !== 'ok') throw new Error(m.message || 'APK не найден');
+    total = Number(m.size) || 0;
+    fileName = m.fileName || fileName;
+    if (m.version) {
+      const sub = document.getElementById('apk-dl-sub');
+      if (sub) sub.textContent = 'Версия ' + m.version;
+    }
+    while (!apkDlCancelFlag) {
+      apkDlSetStatus('Загрузка файла...');
+      const j = await gasApi({ action: 'apkChunk', type: kind, offset: String(offset), size: String(CHUNK) });
+      if (j.status !== 'ok') throw new Error(j.message || 'Ошибка загрузки');
+      if (!total && j.total) total = Number(j.total);
+      if (j.data) {
+        parts.push(b64ToUint8(j.data));
+        offset = Number(j.end) || offset;
+      }
+      const pct = total ? Math.round(offset / total * 100) : 0;
+      apkDlUpdate(pct, offset, total);
+      if (j.done || (total && offset >= total)) break;
+      if (!j.data && !j.done) throw new Error('Пустой ответ сервера');
+    }
+    if (apkDlCancelFlag) {
+      apkDlHide();
+      return;
+    }
+    apkDlSetStatus('Сборка файла...');
+    apkDlUpdate(100, total, total);
+    const blob = new Blob(parts, { type: 'application/vnd.android.package-archive' });
+    apkDlSetStatus('Готово! Открываем установку...');
+    await new Promise(r => setTimeout(r, 400));
+    apkDlHide();
+    await gasOpenApkFile(blob, fileName);
+  } catch (e) {
+    apkDlSetStatus('Ошибка: ' + (e.message || e));
+    if (meta.url) {
+      setTimeout(() => {
+        apkDlHide();
+        openUrl(meta.url);
+      }, 1200);
+    } else {
+      setTimeout(apkDlHide, 2500);
+    }
+  }
+}
+
 async function gasLoadAppLinks(){
   try {
     const apk = await gasApi({ action: 'appVersion' });
     if (apk.apkUrl) {
+      gasApkMeta = {
+        version: apk.version || '',
+        url: apk.apkUrl,
+        fileName: 'Weltkind' + (apk.version ? '_' + apk.version : '') + '.apk'
+      };
       const a = document.getElementById('gas-apk-link');
-      a.href = apk.apkUrl;
       a.textContent = 'Android' + (apk.version ? ' v' + apk.version : '');
       a.classList.remove('gas-hidden');
     }
@@ -890,8 +1132,12 @@ async function gasLoadAppLinks(){
   try {
     const iptv = await gasApi({ action: 'iptvVersion' });
     if (iptv.apkUrl) {
+      gasIptvMeta = {
+        version: iptv.version || '',
+        url: iptv.apkUrl,
+        fileName: 'AuroraIPTV' + (iptv.version ? '_' + iptv.version : '') + '.apk'
+      };
       const a = document.getElementById('gas-iptv-link');
-      a.href = iptv.apkUrl;
       a.textContent = 'IPTV' + (iptv.version ? ' v' + iptv.version : '');
       a.classList.remove('gas-hidden');
     }
@@ -957,7 +1203,7 @@ async function swNotify(title,body,tag='weltkind'){
   // Сохраняем данные для фонового синка
   try{
     const sub=loadSub();
-    if(sub.date){const cache=await caches.open('Weltkind-v11');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
+    if(sub.date){const cache=await caches.open('Weltkind-v15');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
   }catch(e){}
   // Показываем через SW — приходит как настоящий пуш на мобильном
   const reg=swReg||await navigator.serviceWorker.getRegistration();
@@ -1318,6 +1564,28 @@ function chatEsc(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
 }
 
+function chatIsTmpId(id){ return String(id).startsWith('tmp_'); }
+
+function chatMergeIncoming(incoming){
+  if (!Array.isArray(incoming) || !incoming.length) return false;
+  let changed = false;
+  for (const m of incoming) {
+    if (chatMsgs.find(x => x.id === m.id)) continue;
+    if (m.sender === 'user') {
+      const tmpIdx = chatMsgs.findIndex(x => chatIsTmpId(x.id) && x.sender === 'user' && x.text === m.text);
+      if (tmpIdx >= 0) {
+        chatMsgs.splice(tmpIdx, 1);
+        changed = true;
+      }
+    }
+    chatMsgs.push(m);
+    changed = true;
+    if (m.ts > chatSince) chatSince = m.ts;
+  }
+  if (changed) chatMsgs.sort((a, b) => a.ts - b.ts);
+  return changed;
+}
+
 function chatShowStatus(msg, on){
   const el = document.getElementById('chat-status');
   if (!el) return;
@@ -1348,12 +1616,9 @@ async function chatLoadHistory(){
   try {
     const j = await gasApi({ action: 'getMessages', phone, since: '0' });
     if (j.status === 'ok' && Array.isArray(j.messages)) {
-      chatMsgs = j.messages.slice().sort((a, b) => a.ts - b.ts);
-      if (chatMsgs.length) {
-        const maxTs = Math.max.apply(null, chatMsgs.map(m => m.ts));
-        if (maxTs > chatSince) chatSince = maxTs;
-        _lsSet(chatTsKey(phone), String(chatSince));
-      }
+      chatMsgs = chatMsgs.filter(m => !chatIsTmpId(m.id));
+      chatMergeIncoming(j.messages);
+      if (chatMsgs.length) _lsSet(chatTsKey(phone), String(chatSince));
       chatRender();
       chatShowStatus('', false);
     } else {
@@ -1374,13 +1639,11 @@ async function chatPoll(){
     const isOpen = panel && panel.classList.contains('open');
     let hasNewAdmin = false;
     for (const m of j.messages) {
-      if (!chatMsgs.find(x => x.id === m.id)) chatMsgs.push(m);
-      if (m.ts > chatSince) chatSince = m.ts;
       if (m.sender === 'admin') hasNewAdmin = true;
     }
-    chatMsgs.sort((a, b) => a.ts - b.ts);
-    _lsSet(chatTsKey(phone), String(chatSince));
-    if (isOpen) {
+    const changed = chatMergeIncoming(j.messages);
+    if (changed) _lsSet(chatTsKey(phone), String(chatSince));
+    if (isOpen && changed) {
       chatRender();
       _lsSet(chatSeenKey(phone), String(Date.now()));
       document.getElementById('chat-fab-badge')?.classList.remove('show');
@@ -1406,9 +1669,44 @@ function chatStopBgPoll(){
   if (chatPollIv) { clearInterval(chatPollIv); chatPollIv = null; }
 }
 
+let chatVvHandler = null;
+function chatFixViewport(){
+  const panel = document.getElementById('chat-panel');
+  if (!panel || !window.visualViewport) return;
+  if (chatVvHandler) chatResetViewport();
+  const vv = window.visualViewport;
+  const apply = () => {
+    if (!panel.classList.contains('open')) return;
+    panel.style.top = vv.offsetTop + 'px';
+    panel.style.height = vv.height + 'px';
+    panel.style.maxHeight = vv.height + 'px';
+  };
+  chatVvHandler = apply;
+  document.body.classList.add('chat-open');
+  vv.addEventListener('resize', apply);
+  vv.addEventListener('scroll', apply);
+  apply();
+}
+function chatResetViewport(){
+  const panel = document.getElementById('chat-panel');
+  const vv = window.visualViewport;
+  if (vv && chatVvHandler) {
+    vv.removeEventListener('resize', chatVvHandler);
+    vv.removeEventListener('scroll', chatVvHandler);
+    chatVvHandler = null;
+  }
+  if (panel) {
+    panel.style.top = '';
+    panel.style.height = '';
+    panel.style.maxHeight = '';
+  }
+  document.body.classList.remove('chat-open');
+}
+
 function chatOpen(){
   haptic();
   document.getElementById('chat-panel')?.classList.add('open');
+  chatFixViewport();
   const phone = getChatPhone();
   if (phone.length >= 10) {
     chatSavePhone(phone);
@@ -1425,6 +1723,7 @@ function chatOpen(){
 function chatClose(){
   haptic();
   document.getElementById('chat-panel')?.classList.remove('open');
+  chatResetViewport();
   chatShowStatus('', false);
 }
 
@@ -1543,6 +1842,18 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
 </script>
 <!-- ── Confetti (one is enough) -->
 
+<div id="apk-dl-panel">
+  <div class="apk-dl-card">
+    <div class="apk-dl-title" id="apk-dl-title">Скачивание...</div>
+    <div class="apk-dl-sub" id="apk-dl-sub"></div>
+    <div class="apk-dl-bar"><div class="apk-dl-fill" id="apk-dl-fill"></div></div>
+    <div class="apk-dl-pct" id="apk-dl-pct">0%</div>
+    <div class="apk-dl-bytes" id="apk-dl-bytes"></div>
+    <div class="apk-dl-status" id="apk-dl-status"></div>
+    <button type="button" class="apk-dl-cancel" onclick="apkDlCancel()">Отмена</button>
+  </div>
+</div>
+
 <!-- ── Chat support FAB ── -->
 <button id="float-support" onclick="haptic();chatOpen()" title="Чат поддержки">💬<span id="chat-fab-badge" class="chat-fab-badge">1</span></button>
 <div id="float-tooltip">Чат с поддержкой</div>
@@ -1550,21 +1861,23 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
 <div id="chat-panel">
   <div class="chat-hdr">
     <button type="button" class="chat-back" onclick="chatClose()" aria-label="Назад">←</button>
-    <div>
+    <div class="chat-hdr-info">
       <div class="chat-hdr-title">Поддержка</div>
       <div class="chat-hdr-phone" id="chat-phone-lbl"></div>
     </div>
   </div>
-  <div id="chat-phone-row" class="gas-hidden">
-    <input type="tel" id="chat-phone-inp" placeholder="79161234567" inputmode="numeric" maxlength="15"/>
-    <button type="button" id="chat-phone-ok" onclick="chatConfirmPhone()">OK</button>
-  </div>
-  <div class="chat-phone-hint" id="chat-phone-hint">Номер нужен, чтобы ответ пришёл именно вам. Вход в подписку не обязателен.</div>
-  <div id="chat-messages"></div>
-  <div id="chat-status" class="chat-status"></div>
-  <div class="chat-input-row">
-    <textarea id="chat-input" rows="1" placeholder="Ваше сообщение..." maxlength="1000"></textarea>
-    <button type="button" id="chat-send-btn" onclick="haptic();chatSend()" aria-label="Отправить">➤</button>
+  <div class="chat-body">
+    <div id="chat-phone-row" class="gas-hidden">
+      <input type="tel" id="chat-phone-inp" placeholder="79161234567" inputmode="numeric" maxlength="15"/>
+      <button type="button" id="chat-phone-ok" onclick="chatConfirmPhone()">OK</button>
+    </div>
+    <div class="chat-phone-hint" id="chat-phone-hint">Номер нужен, чтобы ответ пришёл именно вам. Вход в подписку не обязателен.</div>
+    <div id="chat-messages"></div>
+    <div id="chat-status" class="chat-status"></div>
+    <div class="chat-input-row">
+      <textarea id="chat-input" rows="1" placeholder="Ваше сообщение..." maxlength="1000"></textarea>
+      <button type="button" id="chat-send-btn" onclick="haptic();chatSend()" aria-label="Отправить">➤</button>
+    </div>
   </div>
 </div>
 
