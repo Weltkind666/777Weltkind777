@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "updated": "2026-07-09",
   "packages": [
     "ru.sberbankmobile", "ru.sberbank.spasibo", "ru.sberbank.sberpay", "ru.sberbank_sbbol",
@@ -119,7 +119,7 @@
     "звук", "литрес", "bookmate", "рамблер", "мегамаркет", "yota", "йота", "салют",
     "сбермаркет", "сберзвук", "сберпрайм", "indriver", "индрайвер", "максим",
     "taxsee", "taximaxim", "urent",
-    "zona", "Zona", "буханка", "Буханка", "buhanka"
+    "zona", "Zona", "буханка", "Буханка", "buhanka", "Мой Налог"
   ],
   "excludes": [
     "ru.google", "com.google", "org.telegram", "com.whatsapp",
