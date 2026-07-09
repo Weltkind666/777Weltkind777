@@ -250,15 +250,46 @@
     #fab-support:hover #fab-tooltip{opacity:1}
     #confetti-canvas{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none}
 
-    #float-support{position:fixed;bottom:24px;right:16px;z-index:300;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0088cc,#006aaa);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 4px 20px rgba(0,136,204,.5);transition:transform .2s,box-shadow .2s;animation:float-bob 3s ease-in-out infinite}
-    #float-support:hover{transform:scale(1.12) translateY(-3px)!important;box-shadow:0 8px 28px rgba(0,136,204,.7)}
-    @keyframes float-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-    #float-tooltip{position:fixed;bottom:84px;right:16px;z-index:301;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text);white-space:nowrap;opacity:0;pointer-events:none;transform:translateY(4px);transition:all .25s;box-shadow:0 4px 16px rgba(0,0,0,.4)}
-    #float-support:hover+#float-tooltip{opacity:1;transform:translateY(0)}
-    #float-support{position:relative}
-    .chat-fab-badge{position:absolute;top:-2px;right:-2px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--warn);color:#000;font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;display:none;align-items:center;justify-content:center;border:2px solid var(--bg)}
+    /* ── FAB: чат (справа) и Telegram (слева) — всегда fixed, не уезжают ── */
+    #float-support{
+      position:fixed!important;
+      bottom:max(16px,calc(env(safe-area-inset-bottom,0px) + 12px));
+      right:max(12px,calc(env(safe-area-inset-right,0px) + 8px));
+      left:auto!important;
+      z-index:320;
+      width:52px;height:52px;border-radius:50%;
+      background:linear-gradient(135deg,#0088cc,#006aaa);
+      border:none;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      font-size:1.35rem;line-height:1;
+      box-shadow:0 4px 20px rgba(0,136,204,.5);
+      transition:transform .2s,box-shadow .2s;
+      -webkit-tap-highlight-color:transparent;
+      touch-action:manipulation;
+    }
+    #float-support:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(0,136,204,.65)}
+    #float-support:active{transform:scale(.94)}
+    .chat-fab-badge{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--warn);color:#000;font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;display:none;align-items:center;justify-content:center;border:2px solid var(--bg);pointer-events:none}
     .chat-fab-badge.show{display:flex}
-    #fab-support{left:16px;right:auto}
+    #float-tooltip{
+      position:fixed;
+      bottom:max(76px,calc(env(safe-area-inset-bottom,0px) + 72px));
+      right:max(12px,calc(env(safe-area-inset-right,0px) + 8px));
+      z-index:319;
+      background:var(--card);border:1px solid var(--border);border-radius:10px;
+      padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text);
+      white-space:nowrap;opacity:0;pointer-events:none;
+      transition:opacity .2s;box-shadow:0 4px 16px rgba(0,0,0,.4);
+    }
+    #float-support:hover+#float-tooltip,#float-support:focus+#float-tooltip{opacity:1}
+    #fab-support{
+      position:fixed!important;
+      bottom:max(16px,calc(env(safe-area-inset-bottom,0px) + 12px));
+      left:max(12px,calc(env(safe-area-inset-left,0px) + 8px));
+      right:auto!important;
+      z-index:320;
+    }
+    body.chat-open #float-support,body.chat-open #float-tooltip{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
     /* Chat support */
     body.chat-open #hdr,body.chat-open #offline-bar{visibility:hidden;pointer-events:none}
     #chat-panel{position:fixed;left:0;right:0;top:0;bottom:0;z-index:480;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;height:100dvh;max-height:100dvh;transform:translateY(100%);transition:transform .35s cubic-bezier(.34,1.2,.64,1);pointer-events:none}
@@ -1203,7 +1234,7 @@ async function swNotify(title,body,tag='weltkind'){
   // Сохраняем данные для фонового синка
   try{
     const sub=loadSub();
-    if(sub.date){const cache=await caches.open('Weltkind-v15');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
+    if(sub.date){const cache=await caches.open('Weltkind-v16');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
   }catch(e){}
   // Показываем через SW — приходит как настоящий пуш на мобильном
   const reg=swReg||await navigator.serviceWorker.getRegistration();
