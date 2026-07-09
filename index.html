@@ -241,6 +241,35 @@
     @keyframes float-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
     #float-tooltip{position:fixed;bottom:84px;right:16px;z-index:301;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text);white-space:nowrap;opacity:0;pointer-events:none;transform:translateY(4px);transition:all .25s;box-shadow:0 4px 16px rgba(0,0,0,.4)}
     #float-support:hover+#float-tooltip{opacity:1;transform:translateY(0)}
+    #float-support{position:relative}
+    .chat-fab-badge{position:absolute;top:-2px;right:-2px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--warn);color:#000;font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;display:none;align-items:center;justify-content:center;border:2px solid var(--bg)}
+    .chat-fab-badge.show{display:flex}
+    #fab-support{left:16px;right:auto}
+    /* Chat support */
+    #chat-panel{position:fixed;inset:0;z-index:480;background:var(--bg);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(.34,1.2,.64,1);pointer-events:none;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+    #chat-panel.open{transform:translateY(0);pointer-events:all}
+    .chat-hdr{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);background:rgba(5,13,20,.98);flex-shrink:0}
+    .chat-back{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:1.2rem;cursor:pointer;flex-shrink:0}
+    .chat-hdr-title{font-size:1.05rem;font-weight:700}
+    .chat-hdr-phone{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);margin-top:2px}
+    #chat-messages{flex:1;overflow-y:auto;padding:14px 12px 8px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}
+    .chat-empty{text-align:center;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted);margin:auto;padding:24px;line-height:1.6}
+    .chat-bubble{max-width:88%;padding:10px 12px;border-radius:14px;font-size:.9rem;line-height:1.45;word-break:break-word}
+    .chat-bubble.user{align-self:flex-end;background:rgba(0,230,118,.15);border:1px solid rgba(0,230,118,.3);border-bottom-right-radius:4px}
+    .chat-bubble.admin{align-self:flex-start;background:rgba(0,176,255,.1);border:1px solid rgba(0,176,255,.28);border-bottom-left-radius:4px}
+    .chat-bubble-meta{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);margin-bottom:4px}
+    .chat-bubble.user .chat-bubble-meta{text-align:right}
+    .chat-status{font-family:'JetBrains Mono',monospace;font-size:.68rem;text-align:center;padding:4px 12px;color:var(--warn);display:none;flex-shrink:0}
+    .chat-status.show{display:block}
+    .chat-input-row{display:flex;gap:8px;padding:10px 12px 14px;border-top:1px solid var(--border);background:rgba(5,13,20,.98);flex-shrink:0;align-items:flex-end}
+    #chat-input{flex:1;min-height:44px;max-height:120px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:rgba(0,230,118,.05);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.95rem;resize:none;outline:none}
+    #chat-input:focus{border-color:var(--accent)}
+    #chat-send-btn{width:44px;height:44px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),#00b300);color:#000;font-size:1.1rem;cursor:pointer;flex-shrink:0}
+    #chat-send-btn:disabled{opacity:.45;cursor:default}
+    #chat-phone-row{display:flex;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);background:rgba(255,109,0,.06);flex-shrink:0;align-items:center}
+    #chat-phone-inp{flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(0,230,118,.05);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.9rem}
+    #chat-phone-ok{padding:10px 14px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent),#00b300);color:#000;font-weight:700;cursor:pointer;flex-shrink:0}
+    .chat-phone-hint{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);padding:8px 14px 0;line-height:1.45;flex-shrink:0}
 
 </style>
 </head>
@@ -377,6 +406,7 @@
         <input type="tel" id="gas-phone-inp" class="gas-inp" placeholder="79161234567" inputmode="numeric"/>
         <div id="gas-login-err" class="gas-msg gas-err gas-hidden"></div>
         <button class="gas-btn" onclick="haptic('medium');gasLogin()">🚪 Войти</button>
+        <button class="gas-btn sec" onclick="haptic();chatOpen()" style="margin-top:4px">💬 Не можете войти? Напишите в поддержку</button>
       </div>
       <div id="gas-main-view" class="gas-hidden">
         <div class="gas-card">
@@ -427,7 +457,7 @@
           </div>
         </div>
         <div class="gas-card">
-          <button class="gas-btn sec" onclick="haptic();openSupport()">💬 Связаться с поддержкой</button>
+          <button class="gas-btn sec" onclick="haptic();chatOpen()">💬 Чат с поддержкой</button>
           <button class="gas-btn sec" onclick="gasLogout()" style="margin-top:4px">↩ Выйти / сменить номер</button>
         </div>
       </div>
@@ -690,8 +720,9 @@ async function gasLogin(silent){
       _lsSet('phoneNumber', phone);
       handleSubData(json.data.expiryDate, json.data.status, json.data.phoneNumber || phone, json.data.telegramConnected, 'https://t.me/WeltkindVPN_bot?start=' + phone);
       gasRenderMain(json.data);
+      chatStartBgPoll();
     } else if (!silent) {
-      gasShowErr('Номер не найден. Проверьте или напишите в поддержку.');
+      gasShowErr('Номер не найден. Нажмите «Написать в поддержку» ниже — поможем.');
     }
   } catch (e) {
     if (!silent) gasShowErr('Нет связи с Google. Включите VPN и повторите.');
@@ -835,6 +866,8 @@ async function gasClearTg(){
 }
 
 function gasLogout(){
+  chatStopBgPoll();
+  chatClose();
   gasUserData = null;
   gasPhone = '';
   document.getElementById('gas-main-view').classList.add('gas-hidden');
@@ -924,7 +957,7 @@ async function swNotify(title,body,tag='weltkind'){
   // Сохраняем данные для фонового синка
   try{
     const sub=loadSub();
-    if(sub.date){const cache=await caches.open('Weltkind-v9');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
+    if(sub.date){const cache=await caches.open('Weltkind-v11');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
   }catch(e){}
   // Показываем через SW — приходит как настоящий пуш на мобильном
   const reg=swReg||await navigator.serviceWorker.getRegistration();
@@ -1223,7 +1256,220 @@ document.addEventListener('click',e=>{
 });
 
 function openUrl(url){try{var w=window.open(url,'_blank');if(!w||w.closed){location.href=url;}}catch(e){location.href=url;}}
-function openSupport(){openUrl('https://t.me/WeltkindVPN');}
+
+/* ════ ЧАТ ПОДДЕРЖКИ (PWA ↔ Telegram) ════ */
+let chatPollIv = null;
+let chatMsgs = [];
+let chatSince = 0;
+
+function chatTsKey(phone){ return 'chat_ts_' + phone; }
+function chatSeenKey(phone){ return 'chat_seen_' + phone; }
+
+function getChatPhone(){
+  const fromInp = (document.getElementById('gas-phone-inp')?.value || document.getElementById('chat-phone-inp')?.value || '').replace(/\D/g, '');
+  return (gasPhone || fromInp || _lsGet('chat_phone') || _lsGet('gas_phone') || loadSub().phone || '').replace(/\D/g, '');
+}
+
+function chatSavePhone(phone){
+  _lsSet('chat_phone', phone);
+  _lsSet('gas_phone', phone);
+  const gasInp = document.getElementById('gas-phone-inp');
+  const chatInp = document.getElementById('chat-phone-inp');
+  if (gasInp) gasInp.value = phone;
+  if (chatInp) chatInp.value = phone;
+}
+
+function chatUpdatePhoneUI(phone){
+  const lbl = document.getElementById('chat-phone-lbl');
+  const row = document.getElementById('chat-phone-row');
+  const hint = document.getElementById('chat-phone-hint');
+  const inputRow = document.querySelector('.chat-input-row');
+  const ok = phone.length >= 10;
+  if (lbl) lbl.textContent = ok ? ('+' + phone + (gasPhone === phone ? '' : ' · без входа')) : 'Укажите ваш номер';
+  if (row) row.classList.toggle('gas-hidden', ok);
+  if (hint) hint.classList.toggle('gas-hidden', ok);
+  if (inputRow) inputRow.classList.toggle('gas-hidden', !ok);
+}
+
+function chatConfirmPhone(){
+  const phone = (document.getElementById('chat-phone-inp')?.value || '').replace(/\D/g, '');
+  if (phone.length < 10) {
+    chatShowStatus('Введите номер: 79161234567', true);
+    return;
+  }
+  haptic();
+  chatSavePhone(phone);
+  chatEnterWithPhone(phone);
+}
+
+function chatEnterWithPhone(phone){
+  chatUpdatePhoneUI(phone);
+  chatSince = parseInt(_lsGet(chatTsKey(phone)) || '0', 10) || 0;
+  chatMsgs = [];
+  chatLoadHistory();
+  chatStartBgPoll();
+  document.getElementById('chat-fab-badge')?.classList.remove('show');
+  _lsSet(chatSeenKey(phone), String(Date.now()));
+  chatShowStatus('', false);
+  setTimeout(() => document.getElementById('chat-input')?.focus(), 350);
+}
+
+function chatEsc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+function chatShowStatus(msg, on){
+  const el = document.getElementById('chat-status');
+  if (!el) return;
+  if (on && msg) { el.textContent = msg; el.classList.add('show'); }
+  else el.classList.remove('show');
+}
+
+function chatRender(){
+  const box = document.getElementById('chat-messages');
+  if (!box) return;
+  if (!chatMsgs.length) {
+    box.innerHTML = '<div class="chat-empty">Напишите нам — ответ придёт сюда.<br>Можно писать даже если не получилось войти.<br>Обычно отвечаем в течение дня.</div>';
+    return;
+  }
+  box.innerHTML = chatMsgs.map(m => {
+    const time = new Date(m.ts).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const cls = m.sender === 'admin' ? 'admin' : 'user';
+    const lbl = m.sender === 'admin' ? 'Поддержка' : 'Вы';
+    return '<div class="chat-bubble ' + cls + '"><div class="chat-bubble-meta">' + lbl + ' · ' + time + '</div><div class="chat-bubble-text">' + chatEsc(m.text) + '</div></div>';
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+async function chatLoadHistory(){
+  const phone = getChatPhone();
+  if (!phone) return;
+  chatShowStatus('Загрузка...', true);
+  try {
+    const j = await gasApi({ action: 'getMessages', phone, since: '0' });
+    if (j.status === 'ok' && Array.isArray(j.messages)) {
+      chatMsgs = j.messages.slice().sort((a, b) => a.ts - b.ts);
+      if (chatMsgs.length) {
+        const maxTs = Math.max.apply(null, chatMsgs.map(m => m.ts));
+        if (maxTs > chatSince) chatSince = maxTs;
+        _lsSet(chatTsKey(phone), String(chatSince));
+      }
+      chatRender();
+      chatShowStatus('', false);
+    } else {
+      chatShowStatus('Не удалось загрузить чат', true);
+    }
+  } catch (e) {
+    chatShowStatus('Нет связи. Включите VPN и повторите.', true);
+  }
+}
+
+async function chatPoll(){
+  const phone = getChatPhone();
+  if (!phone) return;
+  try {
+    const j = await gasApi({ action: 'getMessages', phone, since: String(chatSince) });
+    if (j.status !== 'ok' || !Array.isArray(j.messages) || !j.messages.length) return;
+    const panel = document.getElementById('chat-panel');
+    const isOpen = panel && panel.classList.contains('open');
+    let hasNewAdmin = false;
+    for (const m of j.messages) {
+      if (!chatMsgs.find(x => x.id === m.id)) chatMsgs.push(m);
+      if (m.ts > chatSince) chatSince = m.ts;
+      if (m.sender === 'admin') hasNewAdmin = true;
+    }
+    chatMsgs.sort((a, b) => a.ts - b.ts);
+    _lsSet(chatTsKey(phone), String(chatSince));
+    if (isOpen) {
+      chatRender();
+      _lsSet(chatSeenKey(phone), String(Date.now()));
+      document.getElementById('chat-fab-badge')?.classList.remove('show');
+    } else if (hasNewAdmin) {
+      document.getElementById('chat-fab-badge')?.classList.add('show');
+      haptic([40, 30, 40]);
+      const last = j.messages.filter(m => m.sender === 'admin').pop();
+      swNotify('💬 Поддержка Weltkind', (last && last.text) ? last.text.slice(0, 120) : 'Новое сообщение', 'chat-' + phone);
+    }
+  } catch (e) {}
+}
+
+function chatStartBgPoll(){
+  const phone = getChatPhone();
+  if (!phone || phone.length < 10) return;
+  chatSince = parseInt(_lsGet(chatTsKey(phone)) || '0', 10) || 0;
+  if (chatPollIv) clearInterval(chatPollIv);
+  chatPoll();
+  chatPollIv = setInterval(chatPoll, 5000);
+}
+
+function chatStopBgPoll(){
+  if (chatPollIv) { clearInterval(chatPollIv); chatPollIv = null; }
+}
+
+function chatOpen(){
+  haptic();
+  document.getElementById('chat-panel')?.classList.add('open');
+  const phone = getChatPhone();
+  if (phone.length >= 10) {
+    chatSavePhone(phone);
+    chatEnterWithPhone(phone);
+  } else {
+    chatUpdatePhoneUI('');
+    chatMsgs = [];
+    chatRender();
+    chatShowStatus('Укажите номер — так мы найдём ваш чат и ответим', true);
+    setTimeout(() => document.getElementById('chat-phone-inp')?.focus(), 350);
+  }
+}
+
+function chatClose(){
+  haptic();
+  document.getElementById('chat-panel')?.classList.remove('open');
+  chatShowStatus('', false);
+}
+
+async function chatSend(){
+  const inp = document.getElementById('chat-input');
+  const msg = (inp?.value || '').trim();
+  if (!msg) return;
+  let phone = getChatPhone();
+  if (!phone || phone.length < 10) {
+    chatShowStatus('Сначала укажите номер телефона выше', true);
+    document.getElementById('chat-phone-row')?.classList.remove('gas-hidden');
+    document.getElementById('chat-phone-inp')?.focus();
+    return;
+  }
+  chatSavePhone(phone);
+  const btn = document.getElementById('chat-send-btn');
+  inp.disabled = true;
+  if (btn) btn.disabled = true;
+  inp.value = '';
+  const tmpId = 'tmp_' + Date.now();
+  chatMsgs.push({ id: tmpId, sender: 'user', text: msg, ts: Date.now() });
+  chatRender();
+  chatShowStatus('Отправка...', true);
+  try {
+    const j = await gasApi({ action: 'sendMessage', phone, message: msg });
+    if (j.status === 'ok') {
+      chatShowStatus('', false);
+      setTimeout(chatPoll, 800);
+    } else {
+      chatMsgs = chatMsgs.filter(m => m.id !== tmpId);
+      chatRender();
+      chatShowStatus('Не удалось отправить', true);
+    }
+  } catch (e) {
+    chatMsgs = chatMsgs.filter(m => m.id !== tmpId);
+    chatRender();
+    chatShowStatus('Ошибка сети. Проверьте VPN.', true);
+  } finally {
+    inp.disabled = false;
+    if (btn) btn.disabled = false;
+    inp.focus();
+  }
+}
+
+function openSupport(){ chatOpen(); }
 
 /* INIT */
 /* ════ CLEAR CACHE ════ */
@@ -1271,7 +1517,21 @@ document.addEventListener('DOMContentLoaded',()=>{
   const _sub=loadSub();
   updateTgStatus(_sub);
   if(_sub.date){checkExpiry();}
+  if(getChatPhone().length >= 10) chatStartBgPoll();
   setInterval(checkExpiry,3600000);
+  const chatInp = document.getElementById('chat-input');
+  if (chatInp) {
+    chatInp.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); chatSend(); }
+    });
+  }
+  const chatPhoneInp = document.getElementById('chat-phone-inp');
+  if (chatPhoneInp) {
+    chatPhoneInp.addEventListener('input', function(){ this.value = this.value.replace(/\D/g, ''); });
+    chatPhoneInp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); chatConfirmPhone(); }
+    });
+  }
   (function sched(){const now=new Date(),next=new Date(now);next.setHours(9,0,0,0);if(next<=now)next.setDate(next.getDate()+1);setTimeout(()=>{checkExpiry();sched();},next-now);})();
 });
 
@@ -1283,15 +1543,36 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
 </script>
 <!-- ── Confetti (one is enough) -->
 
-<!-- ── Float support button ── -->
-<button id="float-support" onclick="haptic();openSupport()" title="Поддержка">💬</button>
-<div id="float-tooltip">Написать в поддержку</div>
+<!-- ── Chat support FAB ── -->
+<button id="float-support" onclick="haptic();chatOpen()" title="Чат поддержки">💬<span id="chat-fab-badge" class="chat-fab-badge">1</span></button>
+<div id="float-tooltip">Чат с поддержкой</div>
 
-<!-- FAB Telegram support -->
-<a id="fab-support" href="#" target="_blank" onclick="haptic([30,20,60])" title="Написать в поддержку">
+<div id="chat-panel">
+  <div class="chat-hdr">
+    <button type="button" class="chat-back" onclick="chatClose()" aria-label="Назад">←</button>
+    <div>
+      <div class="chat-hdr-title">Поддержка</div>
+      <div class="chat-hdr-phone" id="chat-phone-lbl"></div>
+    </div>
+  </div>
+  <div id="chat-phone-row" class="gas-hidden">
+    <input type="tel" id="chat-phone-inp" placeholder="79161234567" inputmode="numeric" maxlength="15"/>
+    <button type="button" id="chat-phone-ok" onclick="chatConfirmPhone()">OK</button>
+  </div>
+  <div class="chat-phone-hint" id="chat-phone-hint">Номер нужен, чтобы ответ пришёл именно вам. Вход в подписку не обязателен.</div>
+  <div id="chat-messages"></div>
+  <div id="chat-status" class="chat-status"></div>
+  <div class="chat-input-row">
+    <textarea id="chat-input" rows="1" placeholder="Ваше сообщение..." maxlength="1000"></textarea>
+    <button type="button" id="chat-send-btn" onclick="haptic();chatSend()" aria-label="Отправить">➤</button>
+  </div>
+</div>
+
+<!-- FAB Telegram bot -->
+<a id="fab-support" href="#" target="_blank" onclick="return fabTelegramClick(event)" title="Telegram-бот">
   <div class="fab-pulse"></div>
   <span>✈️</span>
-  <div class="fab-tooltip">Написать в поддержку</div>
+  <div class="fab-tooltip">Telegram-бот</div>
 </a>
 
 <!-- Telegram connect banner -->
