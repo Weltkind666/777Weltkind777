@@ -241,7 +241,10 @@
     "CDEK",
     "com.logistic.sdek",
     "com.programmisty.emiasapp",
-    "amnezia"
+    "amnezia",
+    "mail",
+    "ru.yandex.games",
+    "com.apegroup.mcdonaldsrussia"
   ],
   "markers": [
     "ru.sber",
@@ -392,7 +395,14 @@
     "logistic",
     "emiasapp",
     "programmisty",
-    "amnezia"
+    "amnezia",
+    "maxim",
+    "mail",
+    "games",
+    "yandex",
+    "dodopizza",
+    "mcdonaldsrussia",
+    "apegroup"
   ],
   "keywords": [
     "сбер",
@@ -566,7 +576,15 @@
     "емиас.инфо",
     "emiasapp",
     "amnezia vpn",
-    "amnezia"
+    "amnezia",
+    "maxim",
+    "mail: почта, облако, календарь",
+    "mail",
+    "яндекс игры",
+    "games",
+    "додо пицца доставка и ресторан",
+    "вкусно — и точка: еда и акции",
+    "mcdonaldsrussia"
   ],
   "excludes": [
     "ru.google",
