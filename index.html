@@ -288,7 +288,17 @@
       left:max(12px,calc(env(safe-area-inset-left,0px) + 8px));
       right:auto!important;
       z-index:320;
+      display:none!important;
+      align-items:center;justify-content:center;
+      width:52px;height:52px;border-radius:50%;
+      background:linear-gradient(135deg,#0088cc,#005f99);
+      border:none;cursor:pointer;font-size:1.4rem;
+      box-shadow:0 4px 20px rgba(0,136,204,.5);
+      text-decoration:none;-webkit-tap-highlight-color:transparent;
     }
+    body.gas-logged-in #fab-support{display:flex!important}
+    body:not(.gas-logged-in) #tg-chip{opacity:0!important;visibility:hidden!important;pointer-events:none!important;width:0;min-width:0;padding:0;border:0;overflow:hidden}
+    body.gas-logged-in #tg-chip{opacity:1!important;visibility:visible!important;pointer-events:auto!important;width:auto}
     body.chat-open #float-support,body.chat-open #float-tooltip{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
     /* Chat support */
     body.chat-open #hdr,body.chat-open #offline-bar{visibility:hidden;pointer-events:none}
@@ -453,7 +463,15 @@
     <div class="gas-wrap">
       <div id="gas-login-view" class="gas-card">
         <div class="gas-title">Добро пожаловать!</div>
-        <div class="gas-sub">Введите номер телефона как на сайте подписки</div>
+        <div class="gas-sub">Скачайте приложение или войдите по номеру</div>
+        <div id="gas-apps-card" class="gas-card" style="margin-bottom:10px">
+          <div class="gas-lbl">📱 Скачать приложение</div>
+          <div class="gas-dl">
+            <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#111">iPhone</a>
+            <button type="button" id="gas-apk-link" class="gas-hidden gas-dl-btn" style="background:var(--accent);color:#000" onclick="haptic('medium');gasDownloadApk('vpn')">Android APK</button>
+            <button type="button" id="gas-iptv-link" class="gas-hidden gas-dl-btn" style="background:#9c27b0" onclick="haptic('medium');gasDownloadApk('iptv')">TV IPTV</button>
+          </div>
+        </div>
         <input type="tel" id="gas-phone-inp" class="gas-inp" placeholder="79161234567" inputmode="numeric"/>
         <div id="gas-login-err" class="gas-msg gas-err gas-hidden"></div>
         <button class="gas-btn" id="gas-login-btn" onclick="haptic('medium');gasLogin()">🚪 Войти</button>
@@ -503,14 +521,6 @@
           </div>
         </div>
         <div id="gas-tg-block" class="gas-card gas-hidden"></div>
-        <div class="gas-card">
-          <div class="gas-lbl">📱 Приложения</div>
-          <div class="gas-dl">
-            <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#111">iPhone</a>
-            <button type="button" id="gas-apk-link" class="gas-hidden gas-dl-btn" style="background:var(--accent);color:#000" onclick="haptic('medium');gasDownloadApk('vpn')">Android APK</button>
-            <button type="button" id="gas-iptv-link" class="gas-hidden gas-dl-btn" style="background:#9c27b0" onclick="haptic('medium');gasDownloadApk('iptv')">TV IPTV</button>
-          </div>
-        </div>
         <div class="gas-card">
           <button class="gas-btn sec" onclick="haptic();chatOpen()">💬 Чат с поддержкой</button>
           <button class="gas-btn sec" onclick="gasLogout()" style="margin-top:4px">↩ Выйти / сменить номер</button>
@@ -820,6 +830,15 @@ function gasShowErr(msg){
   else el.classList.add('gas-hidden');
 }
 
+function setGasLoggedIn(on){
+  document.body.classList.toggle('gas-logged-in', !!on);
+  if (!on) closeTgBanner();
+}
+
+function getActivePhone(){
+  return (gasPhone || _lsGet('gas_phone') || loadSub().phone || (document.getElementById('gas-phone-inp')?.value || '')).replace(/\D/g, '');
+}
+
 function initGasApp(){
   hideSplashNow();
   setGasLoading(false);
@@ -871,6 +890,7 @@ async function gasLogin(silent){
 }
 
 function gasRenderMain(d){
+  setGasLoggedIn(true);
   document.getElementById('gas-login-view').classList.add('gas-hidden');
   document.getElementById('gas-main-view').classList.remove('gas-hidden');
   document.getElementById('gas-st-status').textContent = d.status || '—';
@@ -1007,11 +1027,13 @@ async function gasClearTg(){
 function gasLogout(){
   chatStopBgPoll();
   chatClose();
+  setGasLoggedIn(false);
   gasUserData = null;
   gasPhone = '';
   document.getElementById('gas-main-view').classList.add('gas-hidden');
   document.getElementById('gas-login-view').classList.remove('gas-hidden');
   gasShowErr('');
+  updateTgStatus(loadSub());
 }
 
 function gasRefresh(){ if (gasPhone) gasLogin(true); else initGasApp(); }
@@ -1234,7 +1256,7 @@ async function swNotify(title,body,tag='weltkind'){
   // Сохраняем данные для фонового синка
   try{
     const sub=loadSub();
-    if(sub.date){const cache=await caches.open('Weltkind-v17');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
+    if(sub.date){const cache=await caches.open('Weltkind-v18');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
   }catch(e){}
   // Показываем через SW — приходит как настоящий пуш на мобильном
   const reg=swReg||await navigator.serviceWorker.getRegistration();
@@ -1461,39 +1483,52 @@ function updateTgStatus(sub) {
   const chipText = document.getElementById('tg-chip-text');
   if (!chip) return;
 
-  const connected = !!sub.tgConnected;
-  // Строим URL с номером клиента — точно как в Apps Script
-  tgBotUrl = getTgUrl(sub.phone);
+  const phone = getActivePhone();
+  const loggedIn = document.body.classList.contains('gas-logged-in') && phone.length >= 10;
+  const connected = loggedIn && !!sub.tgConnected;
+  tgBotUrl = getTgUrl(loggedIn ? phone : '');
 
-  // Обновляем FAB ссылку
   const fab = document.getElementById('fab-support');
   if (fab) fab.href = tgBotUrl;
+
+  if (!loggedIn) {
+    chip.classList.remove('connected');
+    if (chipText) chipText.textContent = 'TG';
+    chip.title = 'Войдите чтобы подключить Telegram';
+    closeTgBanner();
+    return;
+  }
 
   if (connected) {
     chip.classList.add('connected');
     chipText.textContent = 'TG ✓';
     chip.title = 'Telegram подключён ✅';
     closeTgBanner();
-  } else if (sub.phone) {
-    chip.classList.remove('connected');
-    chipText.textContent = 'TG';
-    chip.title = 'Telegram не подключён — нажми для подключения';
-    if (!_ssGet('tg_banner_closed')) {
-      setTimeout(() => showTgBanner(tgBotUrl), 1500);
-    }
   } else {
     chip.classList.remove('connected');
     chipText.textContent = 'TG';
-    chip.title = 'Войдите чтобы подключить Telegram';
+    chip.title = 'Подключить Telegram-бота';
+    if (!_ssGet('tg_banner_closed')) {
+      setTimeout(() => showTgBanner(tgBotUrl), 1500);
+    }
   }
 }
 
 function fabTelegramClick(e) {
-  e.preventDefault();
-  haptic([30]);
-  const sub = loadSub();
-  const url = getTgUrl(sub.phone);
+  if (e) e.preventDefault();
+  haptic([30, 20, 50]);
+  const phone = getActivePhone();
+  if (!phone || phone.length < 10 || !document.body.classList.contains('gas-logged-in')) {
+    alert('Сначала войдите по номеру — тогда бот привяжется к вашему аккаунту.');
+    document.getElementById('gas-login-view')?.classList.remove('gas-hidden');
+    document.getElementById('gas-main-view')?.classList.add('gas-hidden');
+    document.getElementById('gas-phone-inp')?.focus();
+    return false;
+  }
+  const url = getTgUrl(phone);
+  tgBotUrl = url;
   openUrl(url);
+  setTimeout(() => { if (gasPhone) gasLogin(true); }, 4000);
   return false;
 }
 
@@ -1844,8 +1879,12 @@ document.addEventListener('DOMContentLoaded',()=>{
   const gasInp=document.getElementById('gas-phone-inp');
   if(gasInp) gasInp.addEventListener('input',function(){ this.value=this.value.replace(/\D/g,''); });
   if (isTgWebView) showTgOpenBrowser();
+  setGasLoggedIn(false);
   const _sub=loadSub();
   updateTgStatus(_sub);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && gasPhone) gasLogin(true);
+  });
   if(_sub.date){checkExpiry();}
   if(getChatPhone().length >= 10) chatStartBgPoll();
   setInterval(checkExpiry,3600000);
@@ -1916,7 +1955,7 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
 <a id="fab-support" href="#" target="_blank" onclick="return fabTelegramClick(event)" title="Telegram-бот">
   <div class="fab-pulse"></div>
   <span>✈️</span>
-  <div class="fab-tooltip">Telegram-бот</div>
+  <div class="fab-tooltip">Подключить Telegram</div>
 </a>
 
 <!-- Telegram connect banner -->
