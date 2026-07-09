@@ -1,5 +1,60 @@
-const CACHE = 'Weltkind-v6';
-const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE = 'Weltkind-v7';
+const ASSETS = ['./', './index.html', './gas-embed.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
+
+const GAS_EXEC = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
+
+function isGasEmbedRequest(url) {
+  return url.pathname.endsWith('/gas-embed.html') || url.pathname.endsWith('gas-embed.html');
+}
+
+async function fetchGasHtml(target) {
+  const res = await fetch(target, { redirect: 'follow', credentials: 'omit', cache: 'no-store' });
+  if (!res.ok) throw new Error('gas_status_' + res.status);
+  const html = await res.text();
+  if (!html || html.length < 50) throw new Error('gas_empty');
+  return html;
+}
+
+async function fetchGasHtmlViaProxy(target) {
+  const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(target);
+  const res = await fetch(proxyUrl, { cache: 'no-store' });
+  if (!res.ok) throw new Error('proxy_status_' + res.status);
+  const html = await res.text();
+  if (!html || html.length < 50) throw new Error('proxy_empty');
+  return html;
+}
+
+function prepareGasHtml(html) {
+  if (!/<base\s/i.test(html)) {
+    html = html.replace(/<head([^>]*)>/i, '<head$1><base href="https://script.google.com/">');
+  }
+  return html;
+}
+
+async function proxyGas(request) {
+  const url = new URL(request.url);
+  const target = GAS_EXEC + url.search;
+  let html;
+  try {
+    html = await fetchGasHtml(target);
+  } catch (e) {
+    try {
+      html = await fetchGasHtmlViaProxy(target);
+    } catch (e2) {
+      const msg = 'Не удалось загрузить панель подписки. Проверьте интернет или включите VPN.';
+      return new Response(
+        '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+        '<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;' +
+        'background:#f5f7fa;color:#333;text-align:center}</style></head><body><div><p>' + msg + '</p></div></body></html>',
+        { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } }
+      );
+    }
+  }
+  return new Response(prepareGasHtml(html), {
+    status: 200,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }
+  });
+}
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -14,20 +69,25 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Do NOT intercept Google Apps Script or Google resources.
-  // Let the browser handle them natively (cookies, redirects, auth, framing all work correctly).
-  // This fixes most "embedded site works poorly" issues in the PWA.
+  const url = new URL(e.request.url);
+
   if (
     e.request.url.includes('script.google.com') ||
+    e.request.url.includes('googleusercontent.com') ||
     e.request.url.includes('googleapis.com') ||
     e.request.url.includes('fonts.googleapis.com') ||
-    e.request.url.includes('fonts.gstatic.com')
+    e.request.url.includes('fonts.gstatic.com') ||
+    e.request.url.includes('allorigins.win')
   ) {
-    return; // bypass SW completely → native fetch
+    return;
   }
-  // index.html — network-first
-  const url = e.request.url;
-  const isHtml = url.endsWith('/') || url.includes('index.html') || url === self.registration.scope;
+
+  if (isGasEmbedRequest(url)) {
+    e.respondWith(proxyGas(e.request));
+    return;
+  }
+
+  const isHtml = url.pathname.endsWith('/') || url.pathname.includes('index.html') || url === self.registration.scope;
   if (isHtml) {
     e.respondWith(
       fetch(e.request)
@@ -36,7 +96,7 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
-  // Остальное — cache-first
+
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
@@ -49,7 +109,6 @@ self.addEventListener('fetch', e => {
   );
 });
 
-// Показ уведомления через SW
 self.addEventListener('message', e => {
   if (e.data?.type === 'SHOW_NOTIFICATION') {
     const { title, body, tag } = e.data;
@@ -68,7 +127,6 @@ self.addEventListener('message', e => {
   if (e.data?.type === 'bg_check') checkSubBackground();
 });
 
-// Клик по уведомлению
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil(
@@ -80,7 +138,6 @@ self.addEventListener('notificationclick', e => {
   );
 });
 
-// Периодический фоновый синк — единственный способ уведомить когда приложение закрыто
 self.addEventListener('periodicsync', e => {
   if (e.tag === 'check-subscription') e.waitUntil(checkSubBackground());
 });
@@ -96,7 +153,6 @@ async function checkSubBackground() {
     const days = Math.ceil((new Date(sub.date) - Date.now()) / 86400000);
     if (days > 3 || days < -7) return;
 
-    // Антиспам — не чаще раза в 23 часа
     if (sub.lastNotifAt && Date.now() - sub.lastNotifAt < 23 * 3600 * 1000) return;
 
     const title = days <= 0 ? '🚨 Подписка Weltkind истекла!' : `⚠️ Подписка истекает через ${days} дн.`;
@@ -112,7 +168,6 @@ async function checkSubBackground() {
       data: { url: './' }
     });
 
-    // Запоминаем когда последний раз уведомили — чтобы не спамить
     sub.lastNotifAt = Date.now();
     await cache.put('weltkind-sub-data', new Response(JSON.stringify(sub)));
 

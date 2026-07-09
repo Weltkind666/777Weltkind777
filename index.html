@@ -338,9 +338,8 @@
   </div>
   <iframe id="main-frame"
     title="Weltkind"
-    sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-top-navigation-by-user-activation allow-modals"
-    allow="clipboard-read; clipboard-write; web-share"
-    referrerpolicy="strict-origin-when-cross-origin">
+    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-top-navigation-by-user-activation allow-modals"
+    allow="clipboard-read; clipboard-write; web-share">
   </iframe>
 </div>
 
@@ -498,11 +497,31 @@ function obFinish(){haptic('medium');_lsSet('onboarded','1');document.getElement
 
 /* IFRAME */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
+const GAS_EMBED_URL = './gas-embed.html';
 const frame = document.getElementById('main-frame');
 
-// Set iframe src from single source of truth
+function loadGasFrame() {
+  if (!frame) return;
+  const sep = GAS_EMBED_URL.includes('?') ? '&' : '?';
+  frame.src = GAS_EMBED_URL + sep + 't=' + Date.now();
+}
+
 if (frame) {
-  frame.src = GAS_URL;
+  loadGasFrame();
+}
+
+async function testGasConnection() {
+  const probes = [
+    GAS_URL + '?action=ping',
+    GAS_URL + '?action=getUser&phone=0'
+  ];
+  for (const url of probes) {
+    try {
+      const res = await fetch(url, { cache: 'no-store', mode: 'cors' });
+      if (res.ok) return true;
+    } catch (e) {}
+  }
+  return false;
 }
 
 let frameForced = false;
@@ -534,19 +553,32 @@ frame.addEventListener('error', () => {
 });
 
 let frameCheckTimer = setTimeout(() => {
-  // After some time, if still no 'loaded' class and we are online, the content might be blocked inside iframe
   if (!frameForced && navigator.onLine && !frameLoadFailed) {
-    // Try one hard reload of the frame src
-    try {
-      frame.src = GAS_URL + (GAS_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
-    } catch (e) {}
+    loadGasFrame();
   }
 }, 6500);
+
+let frameEmptyTimer = setTimeout(async () => {
+  if (frameForced || frameLoadFailed || !navigator.onLine) return;
+  let looksEmpty = true;
+  try {
+    const doc = frame.contentDocument;
+    if (doc && doc.body && doc.body.innerText.trim().length > 20) looksEmpty = false;
+    if (doc && doc.getElementById('sandboxFrame')) looksEmpty = false;
+  } catch (e) {}
+  if (looksEmpty) {
+    const ok = await testGasConnection();
+    handleFrameLoadFailure(ok
+      ? 'Сайт не отобразился во встроенном режиме'
+      : 'Нет доступа к Google. Включите VPN или откройте сайт в браузере.');
+  }
+}, 9000);
 
 function handleFrameLoadFailure(reason) {
   if (frameLoadFailed) return;
   frameLoadFailed = true;
   clearTimeout(frameCheckTimer);
+  clearTimeout(frameEmptyTimer);
 
   const wrap = document.getElementById('frame-wrap');
   if (frame) frame.style.display = 'none';
@@ -567,30 +599,56 @@ function handleFrameLoadFailure(reason) {
         ${reason || 'Google заблокировал встраивание или временная проблема.'}<br>
         Откройте полную версию — всё работает идеально.
       </div>
-      <button onclick="openFullSite()" style="padding:14px 32px;background:linear-gradient(135deg,var(--accent),#00b300);border:none;border-radius:999px;color:#000;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;width:100%">
+      <button onclick="retryGasEmbed()" style="padding:14px 32px;background:linear-gradient(135deg,var(--accent),#00b300);border:none;border-radius:999px;color:#000;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;width:100%;margin-bottom:10px">
+        Повторить загрузку ↻
+      </button>
+      <button onclick="openFullSite()" style="padding:12px 32px;background:rgba(0,176,255,.15);border:1px solid rgba(0,176,255,.35);border-radius:999px;color:var(--accent2);font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;width:100%">
         Открыть панель подписки ↗
       </button>
       <div style="margin-top:12px;font-size:.7rem;color:var(--muted)">
-        Откроется в новой вкладке (рекомендуется)
+        Если не помогло — включите VPN или откройте полную версию
       </div>
     </div>
   `;
   wrap.appendChild(fallback);
 }
 
+function retryGasEmbed() {
+  haptic('medium');
+  frameLoadFailed = false;
+  frameForced = false;
+  clearTimeout(frameCheckTimer);
+  clearTimeout(frameEmptyTimer);
+  const fb = document.getElementById('frame-fallback');
+  if (fb) fb.remove();
+  if (frame) {
+    frame.style.display = 'block';
+    frame.classList.remove('loaded');
+    loadGasFrame();
+  }
+  document.getElementById('splash').classList.add('out');
+  frameCheckTimer = setTimeout(() => { if (!frameForced && navigator.onLine) loadGasFrame(); }, 6500);
+  frameEmptyTimer = setTimeout(async () => {
+    if (frameForced || frameLoadFailed || !navigator.onLine) return;
+    const ok = await testGasConnection();
+    if (!ok) handleFrameLoadFailure('Нет доступа к Google. Включите VPN или откройте сайт в браузере.');
+  }, 9000);
+  frame.addEventListener('load', () => forceShowFrame(), { once: true });
+}
+
 function openFullSite() {
   haptic('medium');
-  // Most reliable way to open the real Google Apps Script site
-  const url = GAS_URL;
+  const url = GAS_URL + (GAS_URL.includes('?') ? '&' : '?') + 'from=pwa';
   try {
-    const win = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!win || win.closed) {
-      // popup blocked or PWA restriction → fallback to top navigation
-      location.href = url;
-    }
-  } catch (e) {
-    location.href = url;
-  }
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch (e) {}
+  setTimeout(() => { location.assign(url); }, 250);
 }
 
 let sT = setTimeout(()=>{
@@ -643,7 +701,7 @@ async function swNotify(title,body,tag='weltkind'){
   // Сохраняем данные для фонового синка
   try{
     const sub=loadSub();
-    if(sub.date){const cache=await caches.open('Weltkind-v6');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
+    if(sub.date){const cache=await caches.open('Weltkind-v7');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
   }catch(e){}
   // Показываем через SW — приходит как настоящий пуш на мобильном
   const reg=swReg||await navigator.serviceWorker.getRegistration();
@@ -682,7 +740,7 @@ function retryConn(){
     const fb = document.getElementById('frame-fallback');
     if (fb) fb.remove();
     frame.style.display = 'block';
-    frame.src = GAS_URL;
+    loadGasFrame();
     frameLoadFailed = false;
     setTimeout(forceShowFrame, 1200);
   }
@@ -707,7 +765,7 @@ fw.addEventListener('touchend',()=>{
     const fb = document.getElementById('frame-fallback');
     if (fb) fb.remove();
     frame.style.display = 'block';
-    frame.src = GAS_URL;
+    loadGasFrame();
     frameLoadFailed = false;
     frame.addEventListener('load',()=>{
       pin.classList.remove('spinning');
