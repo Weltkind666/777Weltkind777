@@ -52,6 +52,9 @@
     .gas-inst li{margin-bottom:6px}
     .gas-dl{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}
     .gas-dl a,.gas-dl .gas-dl-btn{padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.82rem;color:#fff;border:none;cursor:pointer;font-family:inherit}
+    .gas-apps-bottom{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+    .gas-apps-bottom .gas-card{margin-bottom:10px}
+    .gas-apps-bottom .gas-card:last-child{margin-bottom:0}
     #apk-dl-panel{position:fixed;inset:0;z-index:490;background:rgba(5,13,20,.94);backdrop-filter:blur(8px);display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
     #apk-dl-panel.show{display:flex}
     .apk-dl-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 20px;width:min(340px,92vw)}
@@ -463,15 +466,7 @@
     <div class="gas-wrap">
       <div id="gas-login-view" class="gas-card">
         <div class="gas-title">Добро пожаловать!</div>
-        <div class="gas-sub">Скачайте приложение или войдите по номеру</div>
-        <div id="gas-apps-card" class="gas-card" style="margin-bottom:10px">
-          <div class="gas-lbl">📱 Скачать приложение</div>
-          <div class="gas-dl">
-            <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#111">iPhone</a>
-            <button type="button" id="gas-apk-link" class="gas-hidden gas-dl-btn" style="background:var(--accent);color:#000" onclick="haptic('medium');gasDownloadApk('vpn')">Android APK</button>
-            <button type="button" id="gas-iptv-link" class="gas-hidden gas-dl-btn" style="background:#9c27b0" onclick="haptic('medium');gasDownloadApk('iptv')">TV IPTV</button>
-          </div>
-        </div>
+        <div class="gas-sub">Войдите по номеру 🦀</div>
         <input type="tel" id="gas-phone-inp" class="gas-inp" placeholder="79161234567" inputmode="numeric"/>
         <div id="gas-login-err" class="gas-msg gas-err gas-hidden"></div>
         <button class="gas-btn" id="gas-login-btn" onclick="haptic('medium');gasLogin()">🚪 Войти</button>
@@ -480,6 +475,21 @@
           <span class="gas-loader-label">Загрузка...</span>
         </div>
         <button class="gas-btn sec" onclick="haptic();chatOpen()" style="margin-top:4px">💬 Не можете войти? Напишите в поддержку</button>
+        <div class="gas-apps-bottom">
+          <div id="gas-main-apps-card" class="gas-card">
+            <div class="gas-lbl">📱 Основные приложения</div>
+            <div class="gas-dl">
+              <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#111">iPhone</a>
+              <button type="button" id="gas-apk-link" class="gas-hidden gas-dl-btn" style="background:var(--accent);color:#000" onclick="haptic('medium');gasDownloadApk('vpn')">Android APK</button>
+            </div>
+          </div>
+          <div id="gas-iptv-card" class="gas-card gas-hidden">
+            <div class="gas-lbl">📺 На телевизор</div>
+            <div class="gas-dl">
+              <button type="button" id="gas-iptv-link" class="gas-hidden gas-dl-btn" style="background:#9c27b0" onclick="haptic('medium');gasDownloadApk('iptv')">TV IPTV</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div id="gas-main-view" class="gas-hidden">
         <div class="gas-card">
@@ -1193,6 +1203,7 @@ async function gasLoadAppLinks(){
       const a = document.getElementById('gas-iptv-link');
       a.textContent = 'IPTV' + (iptv.version ? ' v' + iptv.version : '');
       a.classList.remove('gas-hidden');
+      document.getElementById('gas-iptv-card').classList.remove('gas-hidden');
     }
   } catch (e) {}
 }
