@@ -2249,13 +2249,13 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
       <div class="pay-sum-big" id="pay-modal-sum"></div>
       <div class="gas-msg" id="pay-modal-tax" style="text-align:center"></div>
       <div class="pay-action-row">
-        <button type="button" class="gas-btn sec" onclick="haptic();gasCopyPendingPhone()">📋 Номер</button>
-        <button type="button" class="gas-btn sec" onclick="haptic();gasCopyPendingSum()">💰 Сумма</button>
+        <button type="button" class="gas-btn sec" onclick="haptic();gasCopyPendingSum()">💰 Копировать сумму</button>
       </div>
       <div class="pay-phone-box">
         <div class="pay-phone-lbl">Номер для перевода (СБП)</div>
         <div class="pay-phone-num" id="pay-modal-phone"></div>
-        <div class="gas-row" style="margin:0"><span>Банк</span><strong id="pay-modal-bank">—</strong></div>
+        <button type="button" class="gas-btn sec" onclick="haptic();gasCopyPendingPhone()">📋 Копировать номер</button>
+        <div class="gas-row" style="margin:10px 0 0"><span>Банк</span><strong id="pay-modal-bank">—</strong></div>
       </div>
       <div class="pay-steps">
         <div class="pay-step"><span class="pay-step-num">1</span><span class="pay-step-text">Откройте приложение банка</span></div>
