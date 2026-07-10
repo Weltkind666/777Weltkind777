@@ -1,4 +1,4 @@
-const CACHE = 'Weltkind-v18';
+const CACHE = 'Weltkind-v19';
 const ASSETS = ['./', './index.html', './gas-embed.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 const GAS_EXEC = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';

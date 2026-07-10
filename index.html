@@ -66,6 +66,28 @@
     .apk-dl-bytes{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--muted);margin-bottom:14px}
     .apk-dl-status{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);min-height:2.5em;line-height:1.45;margin-bottom:12px}
     .apk-dl-cancel{width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:.9rem;cursor:pointer}
+    /* Payment & receipt modals */
+    .gas-modal{position:fixed;inset:0;z-index:495;display:none;align-items:flex-end;justify-content:center;padding:0}
+    .gas-modal.show{display:flex}
+    .gas-modal-backdrop{position:absolute;inset:0;background:rgba(5,13,20,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+    .gas-modal-sheet{position:relative;z-index:1;width:100%;max-width:440px;max-height:min(92vh,720px);overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--card);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:10px 18px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -12px 48px rgba(0,0,0,.55);animation:sheetUp .38s cubic-bezier(.34,1.4,.64,1)}
+    .gas-modal-sm{max-height:none;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+    @keyframes sheetUp{from{transform:translateY(105%);opacity:.6}to{transform:translateY(0);opacity:1}}
+    .gas-modal-handle{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.18);margin:4px auto 14px}
+    .gas-modal-title{font-size:1.15rem;font-weight:700;text-align:center;margin-bottom:4px}
+    .gas-modal-sub{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.5}
+    .pay-phone-box{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.22);border-radius:14px;padding:14px;margin-bottom:12px;text-align:center}
+    .pay-phone-lbl{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+    .pay-phone-num{font-family:'JetBrains Mono',monospace;font-size:1.35rem;font-weight:700;color:var(--accent);letter-spacing:.04em;margin-bottom:10px;word-break:break-all}
+    .pay-sum-big{font-size:1.5rem;font-weight:700;color:var(--accent);text-align:center;margin:10px 0 4px}
+    .gas-pending-card{border-color:rgba(255,109,0,.35)!important;background:rgba(255,109,0,.06)!important}
+    .gas-pending-head{font-weight:700;font-size:.95rem;margin-bottom:4px}
+    .gas-pending-sum{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted);margin-bottom:10px}
+    #receipt-modal{z-index:496}
+    .receipt-btns{display:flex;gap:8px;margin-top:4px}
+    .receipt-btns .gas-btn{flex:1;margin-bottom:0}
+    .gas-copy-toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);z-index:510;background:var(--card);border:1px solid rgba(0,230,118,.35);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:.75rem;padding:10px 18px;border-radius:100px;opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.34,1.4,.64,1);box-shadow:0 8px 28px rgba(0,0,0,.45)}
+    .gas-copy-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
     #wire-canvas{display:block;margin-bottom:24px}
     .splash-brand{font-size:2.2rem;font-weight:700;letter-spacing:.08em;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .splash-sub{margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.15em}
@@ -510,25 +532,16 @@
             <input type="text" id="gas-co-name" class="gas-inp" placeholder="Название компании / ИП"/>
           </div>
         </div>
+        <div id="gas-pending-banner" class="gas-card gas-pending-card gas-hidden">
+          <div class="gas-pending-head">💳 Ожидает оплаты</div>
+          <div class="gas-pending-sum" id="gas-pending-sum"></div>
+          <button type="button" class="gas-btn" onclick="haptic('medium');gasReopenPayModal()">Открыть инструкцию</button>
+        </div>
         <div id="gas-tariff-block" class="gas-card gas-hidden">
           <div class="gas-lbl" id="gas-tariff-lbl">Выберите тариф</div>
           <button class="gas-btn tar" id="gas-t1" onclick="gasPickTariff('1month')"></button>
           <button class="gas-btn tar" id="gas-t3" onclick="gasPickTariff('3months')"></button>
           <button class="gas-btn tar" id="gas-ty" onclick="gasPickTariff('1year')"></button>
-        </div>
-        <div id="gas-pay-block" class="gas-card gas-hidden">
-          <div id="gas-pay-content"></div>
-          <div id="gas-pay-inst" class="gas-inst gas-hidden">
-            <strong>Как оплатить через СБП:</strong>
-            <ol>
-              <li>Откройте приложение банка</li>
-              <li>Раздел «Переводы» → «По номеру телефона»</li>
-              <li>Номер: <strong id="gas-inst-phone"></strong></li>
-              <li>Банк: <strong id="gas-inst-bank"></strong></li>
-              <li>Сумма: <strong id="gas-inst-sum"></strong> руб.</li>
-              <li>Комментарий оставьте пустым</li>
-            </ol>
-          </div>
         </div>
         <div id="gas-tg-block" class="gas-card gas-hidden"></div>
         <div class="gas-card">
@@ -934,9 +947,13 @@ function gasRenderMain(d){
   document.getElementById('gas-tariff-lbl').textContent = d.status === 'Не оплачено' ? 'Выберите тариф' : 'Продлить подписку';
   gasRenderTariffs(d);
   gasRenderTelegram(d);
-  document.getElementById('gas-pay-block').classList.add('gas-hidden');
-  document.getElementById('gas-pay-content').innerHTML = '';
-  document.getElementById('gas-pay-inst').classList.add('gas-hidden');
+  if (d.status === 'Оплачено') {
+    gasClearPendingPay();
+  } else {
+    const pending = gasLoadPendingPay();
+    if (pending) gasRestorePendingPayment(pending);
+    else gasHidePendingBanner();
+  }
 }
 
 function gasRenderTariffs(d){
@@ -983,7 +1000,7 @@ async function gasPickTariff(period){
       companyInn: inn, companyName: coName
     });
     gasShowPayment(period, tax, gasUserData);
-    if (gasClientType !== 'company') gasAskReceipt();
+    gasOpenPayModal();
   } catch (e) {
     alert('Ошибка отправки заявки. Проверьте интернет/VPN.');
   } finally {
@@ -991,46 +1008,153 @@ async function gasPickTariff(period){
   }
 }
 
-function gasShowPayment(period, tax, d){
-  const block = document.getElementById('gas-pay-block');
-  const content = document.getElementById('gas-pay-content');
-  const inst = document.getElementById('gas-pay-inst');
-  block.classList.remove('gas-hidden');
-  if (gasClientType === 'company') {
-    content.innerHTML = '<div class="gas-msg"><strong>📄 Счёт формируется</strong><br>Заявка принята. Счёт придёт в Telegram.</div>';
-    inst.classList.add('gas-hidden');
-    return;
+const GAS_PENDING_TTL = 48 * 3600000;
+
+function gasPeriodLabel(period){
+  return period === '1month' ? '1 месяц' : period === '3months' ? '3 месяца' : '1 год';
+}
+
+function gasSavePendingPay(obj){
+  _lsSet('gas_pending_pay', JSON.stringify(Object.assign({}, obj, { createdAt: Date.now() })));
+}
+
+function gasLoadPendingPay(){
+  try {
+    const p = JSON.parse(_lsGet('gas_pending_pay') || 'null');
+    if (!p || !p.phone || p.phone !== gasPhone) return null;
+    if (Date.now() - (p.createdAt || 0) > GAS_PENDING_TTL) {
+      gasClearPendingPay();
+      return null;
+    }
+    return p;
+  } catch (e) { return null; }
+}
+
+function gasClearPendingPay(){
+  _lsSet('gas_pending_pay', '');
+  gasHidePendingBanner();
+  gasClosePayModal();
+  gasCloseReceiptModal();
+}
+
+function gasShowPendingBanner(p){
+  const b = document.getElementById('gas-pending-banner');
+  const s = document.getElementById('gas-pending-sum');
+  if (!b || !s) return;
+  s.textContent = gasPeriodLabel(p.period) + ' · ' + gasFmtMoney(p.total) + ' ₽' + (p.isCompany ? ' · счёт в Telegram' : '');
+  b.classList.remove('gas-hidden');
+}
+
+function gasHidePendingBanner(){
+  document.getElementById('gas-pending-banner')?.classList.add('gas-hidden');
+}
+
+function gasFillPayModal(p){
+  const isCo = !!p.isCompany;
+  document.getElementById('pay-modal-period').textContent = 'Тариф: ' + gasPeriodLabel(p.period);
+  document.getElementById('pay-modal-individual').classList.toggle('gas-hidden', isCo);
+  document.getElementById('pay-modal-company').classList.toggle('gas-hidden', !isCo);
+  if (!isCo) {
+    document.getElementById('pay-modal-phone').textContent = p.paymentMethod || '—';
+    document.getElementById('pay-modal-bank').textContent = p.bank || '—';
+    document.getElementById('pay-modal-sum').textContent = gasFmtMoney(p.total) + ' ₽';
+    document.getElementById('pay-modal-tax').textContent = 'Тариф ' + gasFmtMoney(p.base) + ' ₽ + НПД ' + p.rate + '% (' + gasFmtMoney(p.tax) + ' ₽)';
+    document.getElementById('pay-inst-phone').textContent = p.paymentMethod || '';
+    document.getElementById('pay-inst-bank').textContent = p.bank || '';
+    document.getElementById('pay-inst-sum').textContent = gasFmtMoney(p.total);
   }
-  content.innerHTML =
-    '<div class="gas-row"><span>Номер для перевода</span><strong>' + (d.paymentMethod || '—') + '</strong></div>' +
-    '<button class="gas-btn sec" onclick="gasCopyPayPhone()">📋 Копировать номер</button>' +
-    '<div class="gas-row" style="margin-top:10px"><span>Банк</span><strong>' + (d.bank || '—') + '</strong></div>' +
-    '<div class="gas-row"><span>К оплате</span><strong class="gas-ok">' + gasFmtMoney(tax.total) + ' ₽</strong></div>' +
-    '<div class="gas-msg">Тариф ' + gasFmtMoney(baseFromPeriod(period, d)) + ' ₽ + НПД ' + tax.rate + '% (' + gasFmtMoney(tax.tax) + ' ₽)</div>';
-  document.getElementById('gas-inst-phone').textContent = d.paymentMethod || '';
-  document.getElementById('gas-inst-bank').textContent = d.bank || '';
-  document.getElementById('gas-inst-sum').textContent = gasFmtMoney(tax.total);
-  inst.classList.remove('gas-hidden');
+}
+
+function gasShowPayment(period, tax, d, opts){
+  opts = opts || {};
+  const isCompany = opts.clientType === 'company' || gasClientType === 'company';
+  const pending = {
+    phone: gasPhone,
+    period,
+    total: tax.total,
+    tax: tax.tax,
+    rate: tax.rate,
+    base: baseFromPeriod(period, d),
+    paymentMethod: d.paymentMethod,
+    bank: d.bank,
+    clientType: isCompany ? 'company' : 'individual',
+    isCompany,
+    receiptAsked: !!opts.receiptAsked
+  };
+  if (!opts.skipSave) gasSavePendingPay(pending);
+  gasFillPayModal(pending);
+  gasShowPendingBanner(pending);
+}
+
+function gasRestorePendingPayment(p){
+  const d = gasUserData || {};
+  gasShowPayment(p.period, { total: p.total, tax: p.tax, rate: p.rate }, {
+    paymentMethod: p.paymentMethod,
+    bank: p.bank,
+    amount1Month: d.amount1Month,
+    amount3Months: d.amount3Months,
+    amount1Year: d.amount1Year
+  }, { skipSave: true, receiptAsked: p.receiptAsked, clientType: p.clientType });
+}
+
+function gasOpenPayModal(){
+  document.getElementById('pay-modal')?.classList.add('show');
+}
+
+function gasClosePayModal(askReceipt){
+  document.getElementById('pay-modal')?.classList.remove('show');
+  if (!askReceipt) return;
+  const p = gasLoadPendingPay();
+  if (p && !p.isCompany && !p.receiptAsked) gasOpenReceiptModal();
+}
+
+function gasReopenPayModal(){
+  const p = gasLoadPendingPay();
+  if (!p) return;
+  gasFillPayModal(p);
+  gasOpenPayModal();
+}
+
+function gasOpenReceiptModal(){
+  document.getElementById('receipt-modal')?.classList.add('show');
+}
+
+function gasCloseReceiptModal(){
+  document.getElementById('receipt-modal')?.classList.remove('show');
+}
+
+function gasReceiptChoice(wants){
+  gasCloseReceiptModal();
+  const p = gasLoadPendingPay();
+  if (p) {
+    p.receiptAsked = true;
+    gasSavePendingPay(p);
+  }
+  gasApi({ action: 'receiptChoice', phone: gasPhone, wants: wants ? '1' : '0' }).catch(() => {});
+  if (wants) gasShowCopyToast('Отправим чек после подтверждения оплаты');
 }
 
 function baseFromPeriod(period, d){
   return period === '1month' ? d.amount1Month : period === '3months' ? d.amount3Months : d.amount1Year;
 }
 
-function gasCopyText(t){
-  if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => alert('Скопировано!')).catch(() => {});
-}
-function gasCopyPayPhone(){
-  gasCopyText(String(gasUserData?.paymentMethod || ''));
+let gasCopyToastT = null;
+function gasShowCopyToast(msg){
+  const t = document.getElementById('gas-copy-toast');
+  if (!t) return;
+  t.textContent = msg || 'Скопировано!';
+  t.classList.add('show');
+  clearTimeout(gasCopyToastT);
+  gasCopyToastT = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-function gasAskReceipt(){
-  if (!confirm('Вам нужен чек об оплате?')) {
-    gasApi({ action: 'receiptChoice', phone: gasPhone, wants: '0' }).catch(() => {});
-    return;
-  }
-  gasApi({ action: 'receiptChoice', phone: gasPhone, wants: '1' }).catch(() => {});
-  alert('Хорошо, отправим чек после подтверждения оплаты');
+function gasCopyText(t){
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => gasShowCopyToast()).catch(() => {});
+}
+
+function gasCopyPendingPhone(){
+  const p = gasLoadPendingPay();
+  gasCopyText(String(p?.paymentMethod || gasUserData?.paymentMethod || ''));
 }
 
 async function gasRefreshTg(){ await gasLogin(true); }
@@ -1052,6 +1176,7 @@ async function gasClearTg(){
 function gasLogout(){
   chatStopBgPoll();
   chatClose();
+  gasClearPendingPay();
   setGasLoggedIn(false);
   gasUserData = null;
   gasPhone = '';
@@ -1425,7 +1550,7 @@ function handleSubData(expiryDate,status,phone,telegramConnected,telegramBotUrl)
   }
   startTimer();checkExpiry();
   updateTgStatus(sub);
-  if(iso&&status==='Оплачено')autoAskPerm();
+  if(iso&&status==='Оплачено'){gasClearPendingPay();autoAskPerm();}
   if(document.getElementById('notif-panel').classList.contains('open'))renderDash();
 }
 
@@ -1951,6 +2076,55 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
     <button type="button" class="apk-dl-cancel" onclick="apkDlCancel()">Отмена</button>
   </div>
 </div>
+
+<div id="pay-modal" class="gas-modal" role="dialog" aria-modal="true" aria-labelledby="pay-modal-title">
+  <div class="gas-modal-backdrop" onclick="gasClosePayModal()"></div>
+  <div class="gas-modal-sheet">
+    <div class="gas-modal-handle"></div>
+    <div class="gas-modal-title" id="pay-modal-title">💳 Оплата подписки</div>
+    <div class="gas-modal-sub" id="pay-modal-period"></div>
+    <div id="pay-modal-individual">
+      <div class="pay-phone-box">
+        <div class="pay-phone-lbl">Номер для перевода</div>
+        <div class="pay-phone-num" id="pay-modal-phone"></div>
+        <button type="button" class="gas-btn sec" onclick="haptic();gasCopyPendingPhone()">📋 Копировать номер</button>
+      </div>
+      <div class="gas-row"><span>Банк</span><strong id="pay-modal-bank">—</strong></div>
+      <div class="pay-sum-big" id="pay-modal-sum"></div>
+      <div class="gas-msg" id="pay-modal-tax"></div>
+      <div class="gas-inst" style="margin-top:12px">
+        <strong>Как оплатить через СБП:</strong>
+        <ol>
+          <li>Откройте приложение банка</li>
+          <li>Раздел «Переводы» → «По номеру телефона»</li>
+          <li>Номер: <strong id="pay-inst-phone"></strong></li>
+          <li>Банк: <strong id="pay-inst-bank"></strong></li>
+          <li>Сумма: <strong id="pay-inst-sum"></strong> ₽</li>
+          <li>Комментарий оставьте пустым</li>
+        </ol>
+      </div>
+    </div>
+    <div id="pay-modal-company" class="gas-hidden">
+      <div class="gas-msg" style="margin:12px 0 16px"><strong>📄 Счёт формируется</strong><br>Заявка принята. Счёт придёт в Telegram.</div>
+    </div>
+    <button type="button" class="gas-btn" style="margin-top:14px" onclick="haptic('medium');gasClosePayModal(true)">Понятно</button>
+  </div>
+</div>
+
+<div id="receipt-modal" class="gas-modal" role="dialog" aria-modal="true">
+  <div class="gas-modal-backdrop" onclick="gasReceiptChoice(false)"></div>
+  <div class="gas-modal-sheet gas-modal-sm">
+    <div class="gas-modal-handle"></div>
+    <div class="gas-modal-title">🧾 Чек об оплате</div>
+    <div class="gas-modal-sub">Нужен ли вам чек после подтверждения оплаты?</div>
+    <div class="receipt-btns">
+      <button type="button" class="gas-btn sec" onclick="haptic();gasReceiptChoice(false)">Нет</button>
+      <button type="button" class="gas-btn" onclick="haptic('medium');gasReceiptChoice(true)">Да, нужен</button>
+    </div>
+  </div>
+</div>
+
+<div id="gas-copy-toast" class="gas-copy-toast">Скопировано!</div>
 
 <!-- ── Chat support FAB ── -->
 <button id="float-support" onclick="haptic();chatOpen()" title="Чат поддержки">💬<span id="chat-fab-badge" class="chat-fab-badge">1</span></button>
