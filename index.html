@@ -67,26 +67,37 @@
     .apk-dl-status{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);min-height:2.5em;line-height:1.45;margin-bottom:12px}
     .apk-dl-cancel{width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:.9rem;cursor:pointer}
     /* Payment & receipt modals */
-    .gas-modal{position:fixed;inset:0;z-index:495;display:none;align-items:flex-end;justify-content:center;padding:0}
-    .gas-modal.show{display:flex}
-    .gas-modal-backdrop{position:absolute;inset:0;background:rgba(5,13,20,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-    .gas-modal-sheet{position:relative;z-index:1;width:100%;max-width:440px;max-height:min(92vh,720px);overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--card);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:10px 18px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -12px 48px rgba(0,0,0,.55);animation:sheetUp .38s cubic-bezier(.34,1.4,.64,1)}
+    body.pay-modal-open,body.receipt-modal-open{overflow:hidden;touch-action:none}
+    .gas-modal{position:fixed;inset:0;z-index:600;display:none;align-items:flex-end;justify-content:center;padding:0;visibility:hidden;opacity:0;transition:opacity .2s ease,visibility .2s}
+    .gas-modal.show{display:flex;visibility:visible;opacity:1}
+    .gas-modal-backdrop{position:absolute;inset:0;background:rgba(5,13,20,.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);touch-action:none;-webkit-tap-highlight-color:transparent}
+    .gas-modal-sheet{position:relative;z-index:1;width:100%;max-width:440px;max-height:min(92vh,720px);overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--card);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:10px 18px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -12px 48px rgba(0,0,0,.55);transform:translateY(105%);opacity:.5;transition:transform .38s cubic-bezier(.34,1.4,.64,1),opacity .28s ease}
+    .gas-modal.open .gas-modal-sheet{transform:translateY(0);opacity:1}
     .gas-modal-sm{max-height:none;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
-    @keyframes sheetUp{from{transform:translateY(105%);opacity:.6}to{transform:translateY(0);opacity:1}}
-    .gas-modal-handle{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.18);margin:4px auto 14px}
-    .gas-modal-title{font-size:1.15rem;font-weight:700;text-align:center;margin-bottom:4px}
-    .gas-modal-sub{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.5}
+    .gas-modal-handle{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.18);margin:4px auto 14px;flex-shrink:0}
+    .gas-modal-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+    .gas-modal-hdr-text{flex:1;min-width:0}
+    .gas-modal-title{font-size:1.15rem;font-weight:700;margin-bottom:4px}
+    .gas-modal-sub{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);line-height:1.5}
+    .gas-modal-close{width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);font-size:1.1rem;cursor:pointer;flex-shrink:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     .pay-phone-box{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.22);border-radius:14px;padding:14px;margin-bottom:12px;text-align:center}
     .pay-phone-lbl{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
-    .pay-phone-num{font-family:'JetBrains Mono',monospace;font-size:1.35rem;font-weight:700;color:var(--accent);letter-spacing:.04em;margin-bottom:10px;word-break:break-all}
-    .pay-sum-big{font-size:1.5rem;font-weight:700;color:var(--accent);text-align:center;margin:10px 0 4px}
+    .pay-phone-num{font-family:'JetBrains Mono',monospace;font-size:1.35rem;font-weight:700;color:var(--accent);letter-spacing:.04em;margin-bottom:10px;word-break:break-all;user-select:all;-webkit-user-select:all}
+    .pay-sum-big{font-size:1.65rem;font-weight:700;color:var(--accent);text-align:center;margin:10px 0 4px;user-select:all;-webkit-user-select:all}
+    .pay-action-row{display:flex;gap:8px;margin:10px 0 4px}
+    .pay-action-row .gas-btn{flex:1;margin-bottom:0;font-size:.88rem;padding:11px 8px;touch-action:manipulation}
+    .pay-steps{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+    .pay-step{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--border)}
+    .pay-step-num{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:rgba(0,230,118,.15);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+    .pay-step-text{font-size:.82rem;line-height:1.45;padding-top:2px}
+    .pay-step-text strong{color:var(--accent)}
     .gas-pending-card{border-color:rgba(255,109,0,.35)!important;background:rgba(255,109,0,.06)!important}
     .gas-pending-head{font-weight:700;font-size:.95rem;margin-bottom:4px}
     .gas-pending-sum{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted);margin-bottom:10px}
-    #receipt-modal{z-index:496}
+    #receipt-modal{z-index:610}
     .receipt-btns{display:flex;gap:8px;margin-top:4px}
     .receipt-btns .gas-btn{flex:1;margin-bottom:0}
-    .gas-copy-toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);z-index:510;background:var(--card);border:1px solid rgba(0,230,118,.35);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:.75rem;padding:10px 18px;border-radius:100px;opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.34,1.4,.64,1);box-shadow:0 8px 28px rgba(0,0,0,.45)}
+    .gas-copy-toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);z-index:650;background:var(--card);border:1px solid rgba(0,230,118,.35);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:.75rem;padding:10px 18px;border-radius:100px;opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.34,1.4,.64,1);box-shadow:0 8px 28px rgba(0,0,0,.45)}
     .gas-copy-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
     #wire-canvas{display:block;margin-bottom:24px}
     .splash-brand{font-size:2.2rem;font-weight:700;letter-spacing:.08em;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
@@ -342,6 +353,9 @@
     .chat-bubble.admin{align-self:flex-start;background:rgba(0,176,255,.1);border:1px solid rgba(0,176,255,.28);border-bottom-left-radius:4px}
     .chat-bubble-meta{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);margin-bottom:4px}
     .chat-bubble.user .chat-bubble-meta{text-align:right}
+    .chat-link{color:var(--accent2);text-decoration:underline;word-break:break-all;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,176,255,.25);cursor:pointer}
+    .chat-link:active{opacity:.75}
+    .chat-bubble.user .chat-link{color:#7dffb8}
     .chat-status{font-family:'JetBrains Mono',monospace;font-size:.68rem;text-align:center;padding:4px 12px;color:var(--warn);display:none;flex-shrink:0}
     .chat-status.show{display:block}
     .chat-input-row{display:flex;gap:8px;padding:10px 12px; padding-bottom:max(14px,env(safe-area-inset-bottom));border-top:1px solid var(--border);background:rgba(5,13,20,.98);flex-shrink:0;align-items:flex-end}
@@ -539,9 +553,9 @@
         </div>
         <div id="gas-tariff-block" class="gas-card gas-hidden">
           <div class="gas-lbl" id="gas-tariff-lbl">Выберите тариф</div>
-          <button class="gas-btn tar" id="gas-t1" onclick="gasPickTariff('1month')"></button>
-          <button class="gas-btn tar" id="gas-t3" onclick="gasPickTariff('3months')"></button>
-          <button class="gas-btn tar" id="gas-ty" onclick="gasPickTariff('1year')"></button>
+          <button type="button" class="gas-btn tar" id="gas-t1" onclick="gasPickTariff('1month')"></button>
+          <button type="button" class="gas-btn tar" id="gas-t3" onclick="gasPickTariff('3months')"></button>
+          <button type="button" class="gas-btn tar" id="gas-ty" onclick="gasPickTariff('1year')"></button>
         </div>
         <div id="gas-tg-block" class="gas-card gas-hidden"></div>
         <div class="gas-card">
@@ -731,6 +745,7 @@ let gasUserData = null;
 let gasPhone = '';
 let gasClientType = 'individual';
 let gasAppReady = false;
+let gasPickingTariff = false;
 
 function hideSplashNow(){
   const splash = document.getElementById('splash');
@@ -950,7 +965,7 @@ function gasRenderMain(d){
   if (d.status === 'Оплачено') {
     gasClearPendingPay();
   } else {
-    const pending = gasLoadPendingPay();
+    const pending = gasLoadPendingPay() || gasLoadPendingPayAny();
     if (pending) gasRestorePendingPayment(pending);
     else gasHidePendingBanner();
   }
@@ -982,6 +997,7 @@ function gasRenderTelegram(d){
 }
 
 async function gasPickTariff(period){
+  if (gasPickingTariff) return;
   if (!gasUserData || !gasPhone) return;
   haptic('medium');
   const base = period === '1month' ? Number(gasUserData.amount1Month) : period === '3months' ? Number(gasUserData.amount3Months) : Number(gasUserData.amount1Year);
@@ -992,6 +1008,7 @@ async function gasPickTariff(period){
     alert('Укажите ИНН и название компании');
     return;
   }
+  gasPickingTariff = true;
   setGasLoading(true, 'overlay');
   try {
     await gasApi({
@@ -1000,12 +1017,21 @@ async function gasPickTariff(period){
       companyInn: inn, companyName: coName
     });
     gasShowPayment(period, tax, gasUserData);
+    setGasLoading(false);
+    await gasAfterPaint();
     gasOpenPayModal();
+    haptic('success');
+    document.getElementById('gas-pending-banner')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } catch (e) {
     alert('Ошибка отправки заявки. Проверьте интернет/VPN.');
   } finally {
+    gasPickingTariff = false;
     setGasLoading(false);
   }
+}
+
+function gasAfterPaint(){
+  return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 }
 
 const GAS_PENDING_TTL = 48 * 3600000;
@@ -1097,35 +1123,79 @@ function gasRestorePendingPayment(p){
   }, { skipSave: true, receiptAsked: p.receiptAsked, clientType: p.clientType });
 }
 
+function gasModalShow(id, bodyClass){
+  const el = document.getElementById(id);
+  if (!el) return false;
+  el.classList.add('show');
+  el.setAttribute('aria-hidden', 'false');
+  if (bodyClass) document.body.classList.add(bodyClass);
+  requestAnimationFrame(() => {
+    el.classList.add('open');
+    const sheet = el.querySelector('.gas-modal-sheet');
+    if (sheet) sheet.scrollTop = 0;
+  });
+  return true;
+}
+
+function gasModalHide(id, bodyClass){
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('open');
+  el.classList.remove('show');
+  el.setAttribute('aria-hidden', 'true');
+  if (bodyClass) document.body.classList.remove(bodyClass);
+}
+
 function gasOpenPayModal(){
-  document.getElementById('pay-modal')?.classList.add('show');
+  const p = gasLoadPendingPay() || gasLoadPendingPayAny();
+  if (p) gasFillPayModal(p);
+  const ok = gasModalShow('pay-modal', 'pay-modal-open');
+  if (!ok) setTimeout(gasOpenPayModal, 80);
 }
 
 function gasClosePayModal(askReceipt){
-  document.getElementById('pay-modal')?.classList.remove('show');
+  gasModalHide('pay-modal', 'pay-modal-open');
   if (!askReceipt) return;
-  const p = gasLoadPendingPay();
-  if (p && !p.isCompany && !p.receiptAsked) gasOpenReceiptModal();
+  const p = gasLoadPendingPay() || gasLoadPendingPayAny();
+  if (p && !p.isCompany && !p.receiptAsked) setTimeout(() => gasOpenReceiptModal(), 280);
 }
 
 function gasReopenPayModal(){
-  const p = gasLoadPendingPay();
-  if (!p) return;
+  let p = gasLoadPendingPay() || gasLoadPendingPayAny();
+  if (!p) {
+    gasShowCopyToast('Нет активной заявки — выберите тариф');
+    return;
+  }
+  if ((!p.paymentMethod || !p.bank) && gasUserData) {
+    p.paymentMethod = p.paymentMethod || gasUserData.paymentMethod;
+    p.bank = p.bank || gasUserData.bank;
+    gasSavePendingPay(p);
+  }
   gasFillPayModal(p);
   gasOpenPayModal();
 }
 
 function gasOpenReceiptModal(){
-  document.getElementById('receipt-modal')?.classList.add('show');
+  gasModalShow('receipt-modal', 'receipt-modal-open');
 }
 
 function gasCloseReceiptModal(){
-  document.getElementById('receipt-modal')?.classList.remove('show');
+  gasModalHide('receipt-modal', 'receipt-modal-open');
+}
+
+function gasLoadPendingPayAny(){
+  try {
+    const p = JSON.parse(_lsGet('gas_pending_pay') || 'null');
+    if (!p || !p.period) return null;
+    if (Date.now() - (p.createdAt || 0) > GAS_PENDING_TTL) return null;
+    if (p.phone && gasPhone && p.phone !== gasPhone) return null;
+    return p;
+  } catch (e) { return null; }
 }
 
 function gasReceiptChoice(wants){
   gasCloseReceiptModal();
-  const p = gasLoadPendingPay();
+  const p = gasLoadPendingPay() || gasLoadPendingPayAny();
   if (p) {
     p.receiptAsked = true;
     gasSavePendingPay(p);
@@ -1153,8 +1223,15 @@ function gasCopyText(t){
 }
 
 function gasCopyPendingPhone(){
-  const p = gasLoadPendingPay();
+  const p = gasLoadPendingPay() || gasLoadPendingPayAny();
   gasCopyText(String(p?.paymentMethod || gasUserData?.paymentMethod || ''));
+}
+
+function gasCopyPendingSum(){
+  const p = gasLoadPendingPay() || gasLoadPendingPayAny();
+  if (!p) return;
+  gasCopyText(String(p.total || ''));
+  gasShowCopyToast('Сумма скопирована');
 }
 
 async function gasRefreshTg(){ await gasLogin(true); }
@@ -1780,7 +1857,36 @@ function chatEnterWithPhone(phone){
 }
 
 function chatEsc(s){
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+}
+
+function chatFormatText(text){
+  const s = String(text);
+  const urlRe = /(?:https?:\/\/[^\s<>"']+|(?:www\.|t\.me\/|telegram\.me\/)[^\s<>"']+)/gi;
+  let result = '';
+  let last = 0;
+  let match;
+  while ((match = urlRe.exec(s)) !== null) {
+    result += chatEsc(s.slice(last, match.index));
+    let raw = match[0];
+    let trail = '';
+    const tm = raw.match(/([.,;:!?)\]]+)$/);
+    if (tm) { trail = tm[1]; raw = raw.slice(0, -trail.length); }
+    let href = raw;
+    if (!/^https?:\/\//i.test(href)) href = 'https://' + href;
+    const safeHref = href.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    result += '<a class="chat-link" href="' + safeHref + '" target="_blank" rel="noopener noreferrer">' + chatEsc(raw) + '</a>' + chatEsc(trail);
+    last = match.index + match[0].length;
+  }
+  result += chatEsc(s.slice(last));
+  return result;
+}
+
+function chatOpenLink(url){
+  if (!url) return;
+  haptic();
+  try { window.open(url, '_blank', 'noopener,noreferrer'); }
+  catch (e) { location.href = url; }
 }
 
 function chatIsTmpId(id){ return String(id).startsWith('tmp_'); }
@@ -1823,7 +1929,7 @@ function chatRender(){
     const time = new Date(m.ts).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     const cls = m.sender === 'admin' ? 'admin' : 'user';
     const lbl = m.sender === 'admin' ? 'Поддержка' : 'Вы';
-    return '<div class="chat-bubble ' + cls + '"><div class="chat-bubble-meta">' + lbl + ' · ' + time + '</div><div class="chat-bubble-text">' + chatEsc(m.text) + '</div></div>';
+    return '<div class="chat-bubble ' + cls + '"><div class="chat-bubble-meta">' + lbl + ' · ' + time + '</div><div class="chat-bubble-text">' + chatFormatText(m.text) + '</div></div>';
   }).join('');
   box.scrollTop = box.scrollHeight;
 }
@@ -2026,9 +2132,48 @@ async function clearAllCache(){
   setTimeout(()=> location.reload(true), 1800);
 }
 
+function handleAppHash(){
+  const h = (location.hash || '').replace('#', '').toLowerCase();
+  if (!h) return;
+  if (h === 'support') {
+    setTimeout(() => chatOpen(), 400);
+    history.replaceState(null, '', location.pathname + location.search);
+  } else if (h === 'renew') {
+    setTimeout(() => {
+      const block = document.getElementById('gas-tariff-block');
+      if (block && !block.classList.contains('gas-hidden')) block.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      else document.getElementById('gas-phone-inp')?.focus();
+    }, 500);
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+}
+
+function gasInitModalBackdrops(){
+  document.querySelectorAll('.gas-modal-backdrop[data-modal-close]').forEach(el => {
+    let touchHandled = false;
+    const close = () => {
+      const kind = el.getAttribute('data-modal-close');
+      if (kind === 'pay') gasClosePayModal();
+      else if (kind === 'receipt-no') gasReceiptChoice(false);
+    };
+    el.addEventListener('touchend', e => {
+      e.preventDefault();
+      touchHandled = true;
+      close();
+      setTimeout(() => { touchHandled = false; }, 400);
+    }, { passive: false });
+    el.addEventListener('click', e => {
+      if (touchHandled) return;
+      e.preventDefault();
+      close();
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
   obInit();updateNet();startTimer();
   hideSplashNow();
+  gasInitModalBackdrops();
   const gasInp=document.getElementById('gas-phone-inp');
   if(gasInp) gasInp.addEventListener('input',function(){ this.value=this.value.replace(/\D/g,''); });
   if (isTgWebView) showTgOpenBrowser();
@@ -2054,6 +2199,18 @@ document.addEventListener('DOMContentLoaded',()=>{
       if (e.key === 'Enter') { e.preventDefault(); chatConfirmPhone(); }
     });
   }
+  const chatBox = document.getElementById('chat-messages');
+  if (chatBox) {
+    chatBox.addEventListener('click', e => {
+      const a = e.target.closest('.chat-link');
+      if (!a) return;
+      e.preventDefault();
+      e.stopPropagation();
+      chatOpenLink(a.getAttribute('href'));
+    });
+  }
+  handleAppHash();
+  window.addEventListener('hashchange', handleAppHash);
   (function sched(){const now=new Date(),next=new Date(now);next.setHours(9,0,0,0);if(next<=now)next.setDate(next.getDate()+1);setTimeout(()=>{checkExpiry();sched();},next-now);})();
 });
 
@@ -2077,42 +2234,47 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
   </div>
 </div>
 
-<div id="pay-modal" class="gas-modal" role="dialog" aria-modal="true" aria-labelledby="pay-modal-title">
-  <div class="gas-modal-backdrop" onclick="gasClosePayModal()"></div>
+<div id="pay-modal" class="gas-modal" role="dialog" aria-modal="true" aria-labelledby="pay-modal-title" aria-hidden="true">
+  <div class="gas-modal-backdrop" data-modal-close="pay"></div>
   <div class="gas-modal-sheet">
     <div class="gas-modal-handle"></div>
-    <div class="gas-modal-title" id="pay-modal-title">💳 Оплата подписки</div>
-    <div class="gas-modal-sub" id="pay-modal-period"></div>
-    <div id="pay-modal-individual">
-      <div class="pay-phone-box">
-        <div class="pay-phone-lbl">Номер для перевода</div>
-        <div class="pay-phone-num" id="pay-modal-phone"></div>
-        <button type="button" class="gas-btn sec" onclick="haptic();gasCopyPendingPhone()">📋 Копировать номер</button>
+    <div class="gas-modal-hdr">
+      <div class="gas-modal-hdr-text">
+        <div class="gas-modal-title" id="pay-modal-title">💳 Оплата подписки</div>
+        <div class="gas-modal-sub" id="pay-modal-period"></div>
       </div>
-      <div class="gas-row"><span>Банк</span><strong id="pay-modal-bank">—</strong></div>
+      <button type="button" class="gas-modal-close" onclick="haptic();gasClosePayModal()" aria-label="Закрыть">✕</button>
+    </div>
+    <div id="pay-modal-individual">
       <div class="pay-sum-big" id="pay-modal-sum"></div>
-      <div class="gas-msg" id="pay-modal-tax"></div>
-      <div class="gas-inst" style="margin-top:12px">
-        <strong>Как оплатить через СБП:</strong>
-        <ol>
-          <li>Откройте приложение банка</li>
-          <li>Раздел «Переводы» → «По номеру телефона»</li>
-          <li>Номер: <strong id="pay-inst-phone"></strong></li>
-          <li>Банк: <strong id="pay-inst-bank"></strong></li>
-          <li>Сумма: <strong id="pay-inst-sum"></strong> ₽</li>
-          <li>Комментарий оставьте пустым</li>
-        </ol>
+      <div class="gas-msg" id="pay-modal-tax" style="text-align:center"></div>
+      <div class="pay-action-row">
+        <button type="button" class="gas-btn sec" onclick="haptic();gasCopyPendingPhone()">📋 Номер</button>
+        <button type="button" class="gas-btn sec" onclick="haptic();gasCopyPendingSum()">💰 Сумма</button>
+      </div>
+      <div class="pay-phone-box">
+        <div class="pay-phone-lbl">Номер для перевода (СБП)</div>
+        <div class="pay-phone-num" id="pay-modal-phone"></div>
+        <div class="gas-row" style="margin:0"><span>Банк</span><strong id="pay-modal-bank">—</strong></div>
+      </div>
+      <div class="pay-steps">
+        <div class="pay-step"><span class="pay-step-num">1</span><span class="pay-step-text">Откройте приложение банка</span></div>
+        <div class="pay-step"><span class="pay-step-num">2</span><span class="pay-step-text">Переводы → <strong>по номеру телефона</strong></span></div>
+        <div class="pay-step"><span class="pay-step-num">3</span><span class="pay-step-text">Номер: <strong id="pay-inst-phone"></strong></span></div>
+        <div class="pay-step"><span class="pay-step-num">4</span><span class="pay-step-text">Банк: <strong id="pay-inst-bank"></strong></span></div>
+        <div class="pay-step"><span class="pay-step-num">5</span><span class="pay-step-text">Сумма: <strong id="pay-inst-sum"></strong> ₽ — точно!</span></div>
+        <div class="pay-step"><span class="pay-step-num">6</span><span class="pay-step-text">Комментарий оставьте <strong>пустым</strong></span></div>
       </div>
     </div>
     <div id="pay-modal-company" class="gas-hidden">
       <div class="gas-msg" style="margin:12px 0 16px"><strong>📄 Счёт формируется</strong><br>Заявка принята. Счёт придёт в Telegram.</div>
     </div>
-    <button type="button" class="gas-btn" style="margin-top:14px" onclick="haptic('medium');gasClosePayModal(true)">Понятно</button>
+    <button type="button" class="gas-btn" style="margin-top:14px" onclick="haptic('medium');gasClosePayModal(true)">Понятно, оплачу</button>
   </div>
 </div>
 
-<div id="receipt-modal" class="gas-modal" role="dialog" aria-modal="true">
-  <div class="gas-modal-backdrop" onclick="gasReceiptChoice(false)"></div>
+<div id="receipt-modal" class="gas-modal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="gas-modal-backdrop" data-modal-close="receipt-no"></div>
   <div class="gas-modal-sheet gas-modal-sm">
     <div class="gas-modal-handle"></div>
     <div class="gas-modal-title">🧾 Чек об оплате</div>
