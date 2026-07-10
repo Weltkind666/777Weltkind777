@@ -84,8 +84,6 @@
     .pay-phone-lbl{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
     .pay-phone-num{font-family:'JetBrains Mono',monospace;font-size:1.35rem;font-weight:700;color:var(--accent);letter-spacing:.04em;margin-bottom:10px;word-break:break-all;user-select:all;-webkit-user-select:all}
     .pay-sum-big{font-size:1.65rem;font-weight:700;color:var(--accent);text-align:center;margin:10px 0 4px;user-select:all;-webkit-user-select:all}
-    .pay-action-row{display:flex;gap:8px;margin:10px 0 4px}
-    .pay-action-row .gas-btn{flex:1;margin-bottom:0;font-size:.88rem;padding:11px 8px;touch-action:manipulation}
     .pay-steps{display:flex;flex-direction:column;gap:8px;margin-top:12px}
     .pay-step{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--border)}
     .pay-step-num{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:rgba(0,230,118,.15);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center}
@@ -1227,12 +1225,7 @@ function gasCopyPendingPhone(){
   gasCopyText(String(p?.paymentMethod || gasUserData?.paymentMethod || ''));
 }
 
-function gasCopyPendingSum(){
-  const p = gasLoadPendingPay() || gasLoadPendingPayAny();
-  if (!p) return;
-  gasCopyText(String(p.total || ''));
-  gasShowCopyToast('Сумма скопирована');
-}
+
 
 async function gasRefreshTg(){ await gasLogin(true); }
 async function gasTestTg(){
@@ -2248,9 +2241,6 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
     <div id="pay-modal-individual">
       <div class="pay-sum-big" id="pay-modal-sum"></div>
       <div class="gas-msg" id="pay-modal-tax" style="text-align:center"></div>
-      <div class="pay-action-row">
-        <button type="button" class="gas-btn sec" onclick="haptic();gasCopyPendingSum()">💰 Копировать сумму</button>
-      </div>
       <div class="pay-phone-box">
         <div class="pay-phone-lbl">Номер для перевода (СБП)</div>
         <div class="pay-phone-num" id="pay-modal-phone"></div>
