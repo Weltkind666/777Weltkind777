@@ -1,6 +1,6 @@
 {
   "version": 4,
-  "updated": "2026-07-09",
+  "updated": "2026-07-11",
   "packages": [
     "ru.sberbankmobile",
     "ru.sberbank.spasibo",
@@ -244,7 +244,8 @@
     "amnezia",
     "mail",
     "ru.yandex.games",
-    "com.apegroup.mcdonaldsrussia"
+    "com.apegroup.mcdonaldsrussia",
+    "com.voltmobi.yakitoriya"
   ],
   "markers": [
     "ru.sber",
@@ -402,7 +403,9 @@
     "yandex",
     "dodopizza",
     "mcdonaldsrussia",
-    "apegroup"
+    "apegroup",
+    "yakitoriya",
+    "voltmobi"
   ],
   "keywords": [
     "сбер",
@@ -584,7 +587,9 @@
     "games",
     "додо пицца доставка и ресторан",
     "вкусно — и точка: еда и акции",
-    "mcdonaldsrussia"
+    "mcdonaldsrussia",
+    "якитория – доставка еды",
+    "yakitoriya"
   ],
   "excludes": [
     "ru.google",
