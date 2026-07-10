@@ -476,17 +476,17 @@
         </div>
         <button class="gas-btn sec" onclick="haptic();chatOpen()" style="margin-top:4px">💬 Не можете войти? Напишите в поддержку</button>
         <div class="gas-apps-bottom">
-          <div id="gas-main-apps-card" class="gas-card">
+          <div class="gas-card">
             <div class="gas-lbl">📱 Основные приложения</div>
             <div class="gas-dl">
               <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#111">iPhone</a>
-              <button type="button" id="gas-apk-link" class="gas-hidden gas-dl-btn" style="background:var(--accent);color:#000" onclick="haptic('medium');gasDownloadApk('vpn')">Android APK</button>
+              <button type="button" class="gas-apk-btn gas-hidden gas-dl-btn" style="background:var(--accent);color:#000" onclick="haptic('medium');gasDownloadApk('vpn')">Android APK</button>
             </div>
           </div>
-          <div id="gas-iptv-card" class="gas-card gas-hidden">
+          <div class="gas-iptv-card gas-card gas-hidden">
             <div class="gas-lbl">📺 На телевизор</div>
             <div class="gas-dl">
-              <button type="button" id="gas-iptv-link" class="gas-hidden gas-dl-btn" style="background:#9c27b0" onclick="haptic('medium');gasDownloadApk('iptv')">TV IPTV</button>
+              <button type="button" class="gas-iptv-btn gas-hidden gas-dl-btn" style="background:#9c27b0" onclick="haptic('medium');gasDownloadApk('iptv')">TV IPTV</button>
             </div>
           </div>
         </div>
@@ -534,6 +534,21 @@
         <div class="gas-card">
           <button class="gas-btn sec" onclick="haptic();chatOpen()">💬 Чат с поддержкой</button>
           <button class="gas-btn sec" onclick="gasLogout()" style="margin-top:4px">↩ Выйти / сменить номер</button>
+        </div>
+        <div class="gas-apps-bottom">
+          <div class="gas-card">
+            <div class="gas-lbl">📱 Основные приложения</div>
+            <div class="gas-dl">
+              <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#111">iPhone</a>
+              <button type="button" class="gas-apk-btn gas-hidden gas-dl-btn" style="background:var(--accent);color:#000" onclick="haptic('medium');gasDownloadApk('vpn')">Android APK</button>
+            </div>
+          </div>
+          <div class="gas-iptv-card gas-card gas-hidden">
+            <div class="gas-lbl">📺 На телевизор</div>
+            <div class="gas-dl">
+              <button type="button" class="gas-iptv-btn gas-hidden gas-dl-btn" style="background:#9c27b0" onclick="haptic('medium');gasDownloadApk('iptv')">TV IPTV</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1187,9 +1202,10 @@ async function gasLoadAppLinks(){
         url: apk.apkUrl,
         fileName: 'Weltkind' + (apk.version ? '_' + apk.version : '') + '.apk'
       };
-      const a = document.getElementById('gas-apk-link');
-      a.textContent = 'Android' + (apk.version ? ' v' + apk.version : '');
-      a.classList.remove('gas-hidden');
+      document.querySelectorAll('.gas-apk-btn').forEach(a => {
+        a.textContent = 'Android' + (apk.version ? ' v' + apk.version : '');
+        a.classList.remove('gas-hidden');
+      });
     }
   } catch (e) {}
   try {
@@ -1200,10 +1216,11 @@ async function gasLoadAppLinks(){
         url: iptv.apkUrl,
         fileName: 'AuroraIPTV' + (iptv.version ? '_' + iptv.version : '') + '.apk'
       };
-      const a = document.getElementById('gas-iptv-link');
-      a.textContent = 'IPTV' + (iptv.version ? ' v' + iptv.version : '');
-      a.classList.remove('gas-hidden');
-      document.getElementById('gas-iptv-card').classList.remove('gas-hidden');
+      document.querySelectorAll('.gas-iptv-btn').forEach(a => {
+        a.textContent = 'IPTV' + (iptv.version ? ' v' + iptv.version : '');
+        a.classList.remove('gas-hidden');
+      });
+      document.querySelectorAll('.gas-iptv-card').forEach(c => c.classList.remove('gas-hidden'));
     }
   } catch (e) {}
 }
