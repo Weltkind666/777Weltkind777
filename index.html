@@ -2,6 +2,18 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8"/>
+  <script>
+  (function(){
+    try{
+      var q=location.search||'';
+      if(/stay=pwa|noredirect=1/.test(q))return;
+      if(/script\.google\.com/i.test(location.hostname))return;
+      if(!/iPhone|iPad|iPod/i.test(navigator.userAgent))return;
+      if(localStorage.getItem('prefer_gas')!=='1')return;
+      location.replace('https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec?from=pwa&auto=1&reason=prefer');
+    }catch(e){}
+  })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <meta name="theme-color" content="#050d14"/>
   <meta name="mobile-web-app-capable" content="yes"/>
@@ -739,6 +751,9 @@ function obFinish(){
 
 /* ════ ВСТРОЕННАЯ ПАНЕЛЬ ПОДПИСКИ (как на сайте Google) ════ */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isOnGasHost = /script\.google\.com/i.test(location.hostname);
+let gasProbeDone = false;
 let gasUserData = null;
 let gasPhone = '';
 let gasClientType = 'individual';
@@ -891,6 +906,7 @@ function getActivePhone(){
 }
 
 function initGasApp(){
+  if (gasAppReady) return;
   hideSplashNow();
   setGasLoading(false);
   const panel = document.getElementById('gas-app-panel');
@@ -934,7 +950,14 @@ async function gasLogin(silent){
       gasShowErr('Номер не найден. Нажмите «Написать в поддержку» ниже — поможем.');
     }
   } catch (e) {
-    if (!silent) gasShowErr('Нет связи с Google. Включите VPN и повторите.');
+    if (!silent) {
+      if (isIOS && !isOnGasHost && !sessionStorage.getItem('gas_redirect_done')) {
+        gasShowErr('Оператор блокирует — переход на Google...');
+        setTimeout(() => redirectToGoogle('login_fail'), 1200);
+      } else {
+        gasShowErr('Нет связи с Google. Включите VPN или нажмите «Веб ↗».');
+      }
+    }
   } finally {
     setGasLoading(false);
   }
@@ -1420,11 +1443,67 @@ async function gasLoadAppLinks(){
   } catch (e) {}
 }
 
-setTimeout(hideSplashNow, 1500);
+function getGasFallbackUrl(extra){
+  const u = new URL(GAS_URL);
+  u.searchParams.set('from', 'pwa');
+  if (extra) Object.entries(extra).forEach(([k, v]) => u.searchParams.set(k, v));
+  return u.toString();
+}
+
+function redirectToGoogle(reason){
+  if (isOnGasHost || sessionStorage.getItem('gas_redirect_done')) return;
+  sessionStorage.setItem('gas_redirect_done', '1');
+  try { _lsSet('prefer_gas', '1'); } catch (e) {}
+  const splashSub = document.querySelector('.splash-sub');
+  if (splashSub) splashSub.textContent = 'Переход на Google...';
+  location.replace(getGasFallbackUrl({ auto: '1', reason: reason || 'blocked' }));
+}
+
+async function probeGasReachable(ms){
+  try {
+    const res = await fetchWithTimeout(GAS_URL + '?action=appVersion', { cache: 'no-store', mode: 'cors' }, ms || (isIOS ? 6000 : 10000));
+    if (!res.ok) return false;
+    const json = await res.json();
+    return json && typeof json === 'object';
+  } catch (e) {
+    return false;
+  }
+}
+
+async function maybeAutoRedirectToGoogle(){
+  if (isTgWebView || isOnGasHost) return false;
+  const params = new URLSearchParams(location.search);
+  if (params.get('stay') === 'pwa' || params.get('noredirect') === '1') return false;
+  if (sessionStorage.getItem('gas_redirect_done')) return false;
+  if (_lsGet('prefer_gas') === '1') {
+    redirectToGoogle('prefer');
+    return true;
+  }
+  const splashSub = document.querySelector('.splash-sub');
+  if (splashSub) splashSub.textContent = isIOS ? 'Проверка сети (iPhone)...' : 'Проверка сети...';
+  const ok = await probeGasReachable();
+  if (ok) {
+    try { _lsSet('prefer_gas', ''); } catch (e) {}
+    return false;
+  }
+  redirectToGoogle('unreachable');
+  return true;
+}
+
+async function runStartupProbe(){
+  if (gasProbeDone) return;
+  gasProbeDone = true;
+  if (isTgWebView) {
+    hideSplashNow();
+    return;
+  }
+  const redirected = await maybeAutoRedirectToGoogle();
+  if (!redirected) hideSplashNow();
+}
 
 function openFullSite() {
   haptic('medium');
-  const url = GAS_URL + (GAS_URL.includes('?') ? '&' : '?') + 'from=pwa';
+  const url = getGasFallbackUrl();
   try {
     const a = document.createElement('a');
     a.href = url;
@@ -1466,11 +1545,9 @@ if('serviceWorker' in navigator){
     if('periodicSync' in reg)reg.periodicSync.register('check-subscription',{minInterval:86400000}).catch(()=>{});
     return navigator.serviceWorker.ready;
   }).then(()=>{
-    startGasWhenReady();
-  }).catch(()=>{ startGasWhenReady(); });
+    if (gasProbeDone) startGasWhenReady();
+  }).catch(()=>{ if (gasProbeDone) startGasWhenReady(); });
   navigator.serviceWorker.addEventListener('message',e=>{if(e.data?.type==='bg_check')checkExpiry();});
-} else {
-  startGasWhenReady();
 }
 
 /* ════ SW NOTIFY — настоящие мобильные уведомления ════ */
@@ -2163,10 +2240,11 @@ function gasInitModalBackdrops(){
   });
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded',async ()=>{
+  await runStartupProbe();
   obInit();updateNet();startTimer();
-  hideSplashNow();
   gasInitModalBackdrops();
+  startGasWhenReady();
   const gasInp=document.getElementById('gas-phone-inp');
   if(gasInp) gasInp.addEventListener('input',function(){ this.value=this.value.replace(/\D/g,''); });
   if (isTgWebView) showTgOpenBrowser();
