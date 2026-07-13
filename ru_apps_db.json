@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "updated": "2026-07-13",
   "packages": [
     "ru.sberbankmobile",
@@ -725,7 +725,8 @@
     "com.zhiliaoapp",
     "com.ss.android",
     "com.lemon",
-    "com.android"
+    "com.android",
+    "com.yandex.browser"
   ],
   "match_ru_prefix": true
 }
