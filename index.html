@@ -50,6 +50,10 @@
     .gas-inp{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(0,230,118,.05);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.95rem;box-sizing:border-box;margin-bottom:10px}
     .gas-btn{width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),#00b300);color:#000;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:8px}
     .gas-btn.sec{background:rgba(0,176,255,.12);border:1px solid rgba(0,176,255,.35);color:var(--accent2)}
+    .gas-btn-site{background:linear-gradient(135deg,#00b0ff,#0077cc);color:#fff;border:1px solid rgba(0,176,255,.55);box-shadow:0 4px 22px rgba(0,176,255,.35);font-size:1.05rem;padding:14px 12px;letter-spacing:.02em}
+    .gas-btn-site:active{transform:scale(.98);box-shadow:0 2px 12px rgba(0,176,255,.25)}
+    .gas-or-line{display:flex;align-items:center;gap:10px;margin:4px 0 10px;font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+    .gas-or-line::before,.gas-or-line::after{content:'';flex:1;height:1px;background:var(--border)}
     .gas-btn.tar{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text);display:flex;justify-content:space-between;align-items:center;text-align:left;font-size:.92rem}
     .gas-btn.tar strong{color:var(--accent);font-size:.95rem}
     .gas-lbl{font-family:'JetBrains Mono',monospace;font-size:.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 8px}
@@ -516,6 +520,9 @@
         <input type="tel" id="gas-phone-inp" class="gas-inp" placeholder="79161234567" inputmode="numeric"/>
         <div id="gas-login-err" class="gas-msg gas-err gas-hidden"></div>
         <button class="gas-btn" id="gas-login-btn" onclick="haptic('medium');gasLogin()">🚪 Войти</button>
+        <div class="gas-or-line">или</div>
+        <button type="button" class="gas-btn gas-btn-site" onclick="haptic('medium');openFullSite()">🌐 Оплатить через Сайт</button>
+        <div class="gas-msg" style="margin-top:-2px;margin-bottom:10px">Если приложение не открывается — оплата на сайте Google</div>
         <div id="gas-login-loader" class="gas-loader">
           <canvas class="gas-loader-canvas" width="80" height="80"></canvas>
           <span class="gas-loader-label">Загрузка...</span>
@@ -1503,17 +1510,10 @@ async function runStartupProbe(){
 
 function openFullSite() {
   haptic('medium');
-  const url = getGasFallbackUrl();
-  try {
-    const a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  } catch (e) {}
-  setTimeout(() => { location.assign(url); }, 250);
+  const phone = (document.getElementById('gas-phone-inp')?.value || gasPhone || _lsGet('gas_phone') || '').replace(/\D/g, '');
+  const extra = phone.length >= 10 ? { phone } : {};
+  const url = getGasFallbackUrl(extra);
+  location.assign(url);
 }
 
 function showTgOpenBrowser(){
