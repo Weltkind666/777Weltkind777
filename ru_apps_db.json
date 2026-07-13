@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "updated": "2026-07-13",
   "packages": [
     "ru.sberbankmobile",
@@ -268,7 +268,17 @@
     "com.allgoritm.youla",
     "com.chaevieprosto.app",
     "com.antiland",
-    "ru.oneme.app"
+    "ru.oneme.app",
+    "se.scmv.belarus",
+    "pro32connect.agent",
+    "com.tianxingjian.supersound",
+    "com.xiaomi.mipicks",
+    "com.aurora.iptv",
+    "fitness.ddx.ddx_fitness",
+    "com.huawei.appmarket",
+    "market.ruplay.store",
+    "com.truedevelopersstudio.automatictap.autoclicker",
+    "com.mobisystems.office"
   ],
   "markers": [
     "ru.sber",
@@ -478,7 +488,27 @@
     "allgoritm",
     "chaevieprosto",
     "antiland",
-    "oneme"
+    "oneme",
+    "belarus",
+    "scmv",
+    "agent",
+    "pro32connect",
+    "supersound",
+    "tianxingjian",
+    "mipicks",
+    "xiaomi",
+    "iptv",
+    "aurora",
+    "ddx_fitness",
+    "ddx",
+    "appmarket",
+    "huawei",
+    "store",
+    "ruplay",
+    "autoclicker",
+    "automatictap",
+    "office",
+    "mobisystems"
   ],
   "keywords": [
     "сбер",
@@ -707,7 +737,29 @@
     "яндекс чаевые: на карту по qr",
     "анонимный чат рулетка, россия",
     "antiland",
-    "макс: общение, звонки, сервисы"
+    "макс: общение, звонки, сервисы",
+    "куфар: товары, квартиры, авто",
+    "belarus",
+    "pro32 connect",
+    "agent",
+    "super sound",
+    "supersound",
+    "xiaomi master",
+    "mipicks",
+    "iptvportal",
+    "iptv",
+    "ddx fitness",
+    "ddx_fitness",
+    "huawei watch gt 4 pro guide",
+    "appmarket",
+    "rumarket",
+    "ru market",
+    "ruplay store",
+    "store",
+    "auto clicker - automatic tap",
+    "autoclicker",
+    "mobioffice: word, sheets, pdf",
+    "office"
   ],
   "excludes": [
     "ru.google",
@@ -726,7 +778,8 @@
     "com.ss.android",
     "com.lemon",
     "com.android",
-    "com.yandex.browser"
+    "com.yandex.browser",
+    "MobiOffice"
   ],
   "match_ru_prefix": true
 }
