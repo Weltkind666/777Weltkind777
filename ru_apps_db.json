@@ -275,7 +275,8 @@
     "com.nektome.talk",
     "com.allgoritm.youla",
     "com.chaevieprosto.app",
-    "com.antiland"
+    "com.antiland",
+    "ru.oneme.app"
   ],
   "markers": [
     "ru.sber",
@@ -484,7 +485,8 @@
     "youla",
     "allgoritm",
     "chaevieprosto",
-    "antiland"
+    "antiland",
+    "oneme"
   ],
   "keywords": [
     "сбер",
@@ -645,9 +647,7 @@
     "taximaxim",
     "urent",
     "zona",
-    "Zona",
     "буханка",
-    "Буханка",
     "buhanka",
     "мой налог",
     "moy nalog",
@@ -714,7 +714,8 @@
     "youla",
     "яндекс чаевые: на карту по qr",
     "анонимный чат рулетка, россия",
-    "antiland"
+    "antiland",
+    "макс: общение, звонки, сервисы"
   ],
   "excludes": [
     "ru.google",
