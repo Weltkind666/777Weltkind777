@@ -1,6 +1,6 @@
 {
   "version": 7,
-  "updated": "2026-07-13",
+  "updated": "2026-07-14",
   "packages": [
     "ru.sberbankmobile",
     "ru.sberbank.spasibo",
@@ -278,7 +278,8 @@
     "com.huawei.appmarket",
     "market.ruplay.store",
     "com.truedevelopersstudio.automatictap.autoclicker",
-    "com.mobisystems.office"
+    "com.mobisystems.office",
+    "tv.limehd.stb"
   ],
   "markers": [
     "ru.sber",
@@ -508,7 +509,9 @@
     "autoclicker",
     "automatictap",
     "office",
-    "mobisystems"
+    "mobisystems",
+    "stb",
+    "limehd"
   ],
   "keywords": [
     "сбер",
@@ -759,7 +762,8 @@
     "auto clicker - automatic tap",
     "autoclicker",
     "mobioffice: word, sheets, pdf",
-    "office"
+    "office",
+    "лайм hd stb"
   ],
   "excludes": [
     "ru.google",
