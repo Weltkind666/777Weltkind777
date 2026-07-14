@@ -1736,6 +1736,10 @@ function startTimer(){if(timerIv)clearInterval(timerIv);tickTimer();timerIv=setI
 /* postMessage */
 window.addEventListener('message',e=>{
   if(!e.data)return;
+  if(e.data.type==='weltkind_open'&&e.data.url){
+    openUrl(e.data.url);
+    return;
+  }
   if(e.data.type!=='weltkind_sub')return;
   handleSubData(e.data.expiryDate,e.data.status,e.data.phone,e.data.telegramConnected,e.data.telegramBotUrl,e.data.maxConnected,e.data.maxBotUrl);
 });
@@ -1944,8 +1948,23 @@ function fabMaxClick(e) {
   const url = getMaxUrl(phone);
   maxBotUrl = url;
   openUrl(url);
-  setTimeout(() => { if (gasPhone) gasLogin(true); }, 4000);
+  gasPollMaxConnection_(8);
   return false;
+}
+
+async function gasPollMaxConnection_(attempts) {
+  for (let i = 0; i < attempts; i++) {
+    await new Promise(r => setTimeout(r, i === 0 ? 4000 : 3000));
+    if (!gasPhone) return;
+    try {
+      const j = await gasApi({ action: 'checkMax', phone: gasPhone });
+      if (j.status === 'ok' && j.connected) {
+        await gasLogin(true);
+        return;
+      }
+    } catch (e) {}
+  }
+  if (gasPhone) gasLogin(true);
 }
 
 function showTgBanner(url) {
@@ -1953,8 +1972,9 @@ function showTgBanner(url) {
   const btn = document.getElementById('tg-banner-btn');
   if (!banner) return;
   const sub = loadSub();
-  btn.href = url || getTgUrl(sub.phone);
-  btn.target = '_blank';
+  const link = url || getTgUrl(sub.phone);
+  btn.href = link;
+  btn.removeAttribute('target');
   banner.classList.add('show');
   setTimeout(() => banner.classList.remove('show'), 12000);
 }
@@ -1999,25 +2019,65 @@ document.addEventListener('click',e=>{
   }
 });
 
+function buildTelegramOpenTargets_(httpsUrl) {
+  const m = String(httpsUrl || '').match(/^https:\/\/t\.me\/([^/?#]+)(?:\?start=([^&#]*))?/i);
+  if (!m) return [httpsUrl];
+  const bot = m[1];
+  const start = m[2] != null ? String(m[2]) : '';
+  const https = 'https://t.me/' + bot + (start ? '?start=' + encodeURIComponent(start) : '');
+  const tg = 'tg://resolve?domain=' + encodeURIComponent(bot) + (start ? '&start=' + encodeURIComponent(start) : '');
+  const fallback = encodeURIComponent(https);
+  const intent = 'intent://resolve?domain=' + encodeURIComponent(bot) +
+    (start ? '&start=' + encodeURIComponent(start) : '') +
+    '#Intent;scheme=tg;package=org.telegram.messenger;S.browser_fallback_url=' + fallback + ';end';
+  return [intent, tg, https];
+}
+
+function navigateExternalUrl_(url) {
+  if (!url || url === '#') return false;
+  const go = (target) => {
+    try { window.location.href = target; return true; } catch (e) {}
+    try {
+      const a = document.createElement('a');
+      a.href = target;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return true;
+    } catch (e2) {}
+    return false;
+  };
+  return go(url);
+}
+
 function openUrl(url){
   if (!url || url === '#') return;
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const isMessengerLink = /^https:\/\/(max\.ru|t\.me)\//i.test(url);
-  try {
-    if (isMobile && isMessengerLink) {
-      window.location.assign(url);
-      return;
-    }
-    const a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  } catch (e) {
-    try { window.location.assign(url); } catch (e2) {}
+  const ua = navigator.userAgent || '';
+  const isAndroid = /Android/i.test(ua);
+  const isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isTg = /^https:\/\/t\.me\//i.test(url);
+  const isMax = /^https:\/\/max\.ru\//i.test(url);
+  const isMobile = isAndroid || isIOS;
+
+  if (isTg && isAndroid) {
+    const tgTargets = buildTelegramOpenTargets_(url);
+    navigateExternalUrl_(tgTargets[0]);
+    setTimeout(() => navigateExternalUrl_(tgTargets[2]), 700);
+    return;
   }
+  if (isTg && isIOS) {
+    const iosTargets = buildTelegramOpenTargets_(url);
+    navigateExternalUrl_(iosTargets[2]);
+    setTimeout(() => navigateExternalUrl_(iosTargets[1]), 400);
+    return;
+  }
+  if (isMobile && (isTg || isMax)) {
+    navigateExternalUrl_(url);
+    return;
+  }
+  navigateExternalUrl_(url);
 }
 
 /* ════ ЧАТ ПОДДЕРЖКИ (PWA ↔ Telegram) ════ */
