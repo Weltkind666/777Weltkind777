@@ -251,6 +251,14 @@
     .tg-chip-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
     #tg-chip.connected .tg-chip-dot{background:var(--accent2);box-shadow:0 0 4px var(--accent2)}
 
+    /* ── MAX chip in header ── */
+    #max-chip{display:flex;align-items:center;gap:3px;padding:4px 8px;border-radius:20px;background:rgba(84,110,122,.12);border:1px solid rgba(84,110,122,.25);font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);cursor:pointer;transition:all .3s;white-space:nowrap;text-decoration:none;min-width:36px;justify-content:center}
+    #max-chip.connected{background:rgba(124,58,237,.14);border-color:rgba(124,58,237,.45);color:#c4b5fd}
+    #max-chip.connected:hover{background:rgba(124,58,237,.22)}
+    #max-chip:not(.connected):hover{background:rgba(84,110,122,.2)}
+    .max-chip-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
+    #max-chip.connected .max-chip-dot{background:#a78bfa;box-shadow:0 0 4px #a78bfa}
+
     /* ── FAB support button ── */
     #fab-support{position:fixed;bottom:24px;right:18px;z-index:300;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0088cc,#006daa);box-shadow:0 4px 20px rgba(0,136,204,.5);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;transition:transform .2s,box-shadow .2s;text-decoration:none}
     #fab-support:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(0,136,204,.7)}
@@ -270,6 +278,17 @@
     .tg-banner-text span{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted)}
     .tg-banner-btn{padding:8px 14px;background:linear-gradient(135deg,#0088cc,#006daa);border:none;border-radius:100px;color:#fff;font-family:'Rajdhani',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;text-decoration:none;display:block}
     .tg-banner-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:4px;flex-shrink:0}
+
+    /* ── MAX connect banner ── */
+    #max-banner{position:fixed;bottom:170px;left:12px;right:12px;z-index:289;background:var(--card);border:1px solid rgba(124,58,237,.35);border-radius:14px;padding:12px 14px;display:none;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.6);animation:bannerUp .4s cubic-bezier(.34,1.56,.64,1)}
+    #max-banner.show{display:flex}
+    .max-banner-icon{font-size:1.8rem;flex-shrink:0}
+    .max-banner-text{flex:1;min-width:0}
+    .max-banner-text strong{display:block;font-size:.9rem;font-weight:700;margin-bottom:2px}
+    .max-banner-text span{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted)}
+    .max-banner-btn{padding:8px 14px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border:none;border-radius:100px;color:#fff;font-family:'Rajdhani',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;text-decoration:none;display:block}
+    .max-banner-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:4px;flex-shrink:0}
+
     /* Confetti canvas */
     #confetti-canvas{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none}
     /* ── Адаптив шапки ── */
@@ -280,7 +299,7 @@
     }
     @media(max-width:360px){
       .hdr-brand{font-size:.85rem}
-      #tg-chip{min-width:28px;padding:3px 6px;font-size:.52rem}
+      #tg-chip,#max-chip{min-width:28px;padding:3px 6px;font-size:.52rem}
       #timer-pill{padding:3px 7px;font-size:.55rem}
       .bell-btn{padding:0 7px;height:30px;font-size:.8rem}
       .bell-label{display:none}
@@ -347,8 +366,8 @@
       text-decoration:none;-webkit-tap-highlight-color:transparent;
     }
     body.gas-logged-in #fab-support{display:flex!important}
-    body:not(.gas-logged-in) #tg-chip{opacity:0!important;visibility:hidden!important;pointer-events:none!important;width:0;min-width:0;padding:0;border:0;overflow:hidden}
-    body.gas-logged-in #tg-chip{opacity:1!important;visibility:visible!important;pointer-events:auto!important;width:auto}
+    body:not(.gas-logged-in) #tg-chip,body:not(.gas-logged-in) #max-chip{opacity:0!important;visibility:hidden!important;pointer-events:none!important;width:0;min-width:0;padding:0;border:0;overflow:hidden}
+    body.gas-logged-in #tg-chip,body.gas-logged-in #max-chip{opacity:1!important;visibility:visible!important;pointer-events:auto!important;width:auto}
     body.chat-open #float-support,body.chat-open #float-tooltip{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
     /* Chat support */
     body.chat-open #hdr,body.chat-open #offline-bar{visibility:hidden;pointer-events:none}
@@ -403,7 +422,7 @@
   <div class="ob-slide">
     <div class="ob-emoji">⚙️</div>
     <div class="ob-title">Уведомления</div>
-    <div class="ob-desc">Нажмите кнопку <strong>⚙️ Настройки</strong> в правом углу и подключите Telegram-бота.<br><br>Уведомление придёт <strong>за 3 дня</strong> до конца подписки.</div>
+    <div class="ob-desc">Подключите <strong>Telegram</strong> или <strong>MAX</strong> — уведомления о подписке и оплате прямо в мессенджере.<br><br>Напоминание придёт <strong>за 3 дня</strong> до конца подписки.</div>
   </div>
   <div class="ob-dots">
     <div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div>
@@ -427,6 +446,10 @@
     <a id="tg-chip" href="#" onclick="return fabTelegramClick(event)" title="Telegram уведомления">
       <div class="tg-chip-dot"></div>
       <span id="tg-chip-text">TG</span>
+    </a>
+    <a id="max-chip" href="#" onclick="return fabMaxClick(event)" title="MAX уведомления">
+      <div class="max-chip-dot"></div>
+      <span id="max-chip-text">MAX</span>
     </a>
     <div id="timer-pill" onclick="haptic();togglePanel()">
       <div class="t-dot" id="t-dot"></div>
@@ -575,6 +598,7 @@
           <button type="button" class="gas-btn tar" id="gas-ty" onclick="gasPickTariff('1year')"></button>
         </div>
         <div id="gas-tg-block" class="gas-card gas-hidden"></div>
+        <div id="gas-max-block" class="gas-card gas-hidden"></div>
         <div class="gas-card">
           <button class="gas-btn sec" onclick="haptic();chatOpen()">💬 Чат с поддержкой</button>
           <button class="gas-btn sec" onclick="gasLogout()" style="margin-top:4px">↩ Выйти / сменить номер</button>
@@ -700,6 +724,7 @@
 
 /* Telegram WebView detection */
 const isTgWebView = /Telegram|TelegramBrowser/i.test(navigator.userAgent) || !!window.TelegramWebApp || !!window.Telegram;
+const MAX_BOT_USERNAME = 'se13549304_bot';
 
 /* HAPTIC */
 function haptic(t='light'){
@@ -905,7 +930,7 @@ function gasShowErr(msg){
 
 function setGasLoggedIn(on){
   document.body.classList.toggle('gas-logged-in', !!on);
-  if (!on) closeTgBanner();
+  if (!on) { closeTgBanner(); closeMaxBanner(); }
 }
 
 function getActivePhone(){
@@ -950,7 +975,11 @@ async function gasLogin(silent){
       gasUserData = json.data;
       _lsSet('gas_phone', phone);
       _lsSet('phoneNumber', phone);
-      handleSubData(json.data.expiryDate, json.data.status, json.data.phoneNumber || phone, json.data.telegramConnected, 'https://t.me/WeltkindVPN_bot?start=' + phone);
+      handleSubData(
+        json.data.expiryDate, json.data.status, json.data.phoneNumber || phone,
+        json.data.telegramConnected, 'https://t.me/WeltkindVPN_bot?start=' + phone,
+        json.data.maxConnected, json.data.maxBotUrl || ('https://max.ru/' + MAX_BOT_USERNAME + '?start=' + phone)
+      );
       gasRenderMain(json.data);
       chatStartBgPoll();
     } else if (!silent) {
@@ -990,6 +1019,7 @@ function gasRenderMain(d){
   document.getElementById('gas-tariff-lbl').textContent = d.status === 'Не оплачено' ? 'Выберите тариф' : 'Продлить подписку';
   gasRenderTariffs(d);
   gasRenderTelegram(d);
+  gasRenderMax(d);
   if (d.status === 'Оплачено') {
     gasClearPendingPay();
   } else {
@@ -1020,6 +1050,22 @@ function gasRenderTelegram(d){
     block.innerHTML = '<div class="gas-lbl">Telegram уведомления</div><div class="gas-msg">Подключите бота для напоминаний об оплате</div>' +
       '<a href="' + link + '" target="_blank" rel="noopener" style="text-decoration:none"><button class="gas-btn">📲 Подключить Telegram</button></a>' +
       '<button class="gas-btn sec" onclick="gasRefreshTg()" style="margin-top:6px">🔄 Обновить статус</button>';
+  }
+  block.classList.remove('gas-hidden');
+}
+
+function gasRenderMax(d){
+  const block = document.getElementById('gas-max-block');
+  const phone = gasPhone || d.phoneNumber || '';
+  const link = d.maxBotUrl || ('https://max.ru/' + MAX_BOT_USERNAME + '?start=' + phone);
+  if (d.maxConnected) {
+    block.innerHTML = '<div class="gas-lbl">MAX</div><div class="gas-msg gas-ok">✅ Уведомления подключены</div>' +
+      '<button class="gas-btn sec" onclick="gasTestMax()">📩 Тестовое сообщение</button>' +
+      '<button class="gas-btn sec" onclick="gasClearMax()" style="margin-top:6px">❌ Отключить MAX</button>';
+  } else {
+    block.innerHTML = '<div class="gas-lbl">MAX уведомления</div><div class="gas-msg">Подписка, оплата и приложение — прямо в MAX</div>' +
+      '<a href="' + link + '" target="_blank" rel="noopener" style="text-decoration:none"><button class="gas-btn" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff">📲 Подключить MAX</button></a>' +
+      '<button class="gas-btn sec" onclick="gasRefreshMax()" style="margin-top:6px">🔄 Обновить статус</button>';
   }
   block.classList.remove('gas-hidden');
 }
@@ -1095,7 +1141,7 @@ function gasShowPendingBanner(p){
   const b = document.getElementById('gas-pending-banner');
   const s = document.getElementById('gas-pending-sum');
   if (!b || !s) return;
-  s.textContent = gasPeriodLabel(p.period) + ' · ' + gasFmtMoney(p.total) + ' ₽' + (p.isCompany ? ' · счёт в Telegram' : '');
+  s.textContent = gasPeriodLabel(p.period) + ' · ' + gasFmtMoney(p.total) + ' ₽' + (p.isCompany ? ' · счёт в Telegram или MAX' : '');
   b.classList.remove('gas-hidden');
 }
 
@@ -1273,6 +1319,22 @@ async function gasClearTg(){
   } catch (e) { alert('Ошибка связи'); }
 }
 
+async function gasRefreshMax(){ await gasLogin(true); }
+async function gasTestMax(){
+  try {
+    const j = await gasApi({ action: 'testTelegram', phone: gasPhone });
+    alert(j.message || (j.status === 'ok' ? 'Отправлено!' : 'Ошибка'));
+  } catch (e) { alert('Ошибка связи'); }
+}
+async function gasClearMax(){
+  if (!confirm('Отключить MAX уведомления?')) return;
+  try {
+    const j = await gasApi({ action: 'clearMax', phone: gasPhone });
+    alert(j.message || 'Готово');
+    gasLogin(true);
+  } catch (e) { alert('Ошибка связи'); }
+}
+
 function gasLogout(){
   chatStopBgPoll();
   chatClose();
@@ -1283,7 +1345,7 @@ function gasLogout(){
   document.getElementById('gas-main-view').classList.add('gas-hidden');
   document.getElementById('gas-login-view').classList.remove('gas-hidden');
   gasShowErr('');
-  updateTgStatus(loadSub());
+  updateMessengerStatus(loadSub());
 }
 
 function gasRefresh(){ if (gasPhone) gasLogin(true); else initGasApp(); }
@@ -1679,16 +1741,17 @@ function startTimer(){if(timerIv)clearInterval(timerIv);tickTimer();timerIv=setI
 window.addEventListener('message',e=>{
   if(!e.data)return;
   if(e.data.type!=='weltkind_sub')return;
-  handleSubData(e.data.expiryDate,e.data.status,e.data.phone,e.data.telegramConnected,e.data.telegramBotUrl);
+  handleSubData(e.data.expiryDate,e.data.status,e.data.phone,e.data.telegramConnected,e.data.telegramBotUrl,e.data.maxConnected,e.data.maxBotUrl);
 });
 
 /* HANDLE DATA */
-function handleSubData(expiryDate,status,phone,telegramConnected,telegramBotUrl){
+function handleSubData(expiryDate,status,phone,telegramConnected,telegramBotUrl,maxConnected,maxBotUrl){
   const iso=toISO(expiryDate);
   const prev=loadSub();
   let total=prev.totalDays||30;
   if(iso){const d=daysLeft(iso);if(d&&d>total)total=d;}
-  const sub={date:iso,displayDate:expiryDate,status,phone,totalDays:total,syncedAt:Date.now(),tgConnected:!!telegramConnected,tgBotUrl:telegramBotUrl||'https://t.me/WeltkindVPN_bot'};
+  const p=(phone||'').replace(/\D/g,'');
+  const sub={date:iso,displayDate:expiryDate,status,phone,totalDays:total,syncedAt:Date.now(),tgConnected:!!telegramConnected,tgBotUrl:telegramBotUrl||'https://t.me/WeltkindVPN_bot',maxConnected:!!maxConnected,maxBotUrl:maxBotUrl||('https://max.ru/'+MAX_BOT_USERNAME+(p?'?start='+p:''))};
   saveSub(sub);
   if(iso&&iso!==prev.date&&status==='Оплачено'){
     const hist=loadHist();
@@ -1696,7 +1759,7 @@ function handleSubData(expiryDate,status,phone,telegramConnected,telegramBotUrl)
     setTimeout(launchConfetti,400);
   }
   startTimer();checkExpiry();
-  updateTgStatus(sub);
+  updateMessengerStatus(sub);
   if(iso&&status==='Оплачено'){gasClearPendingPay();autoAskPerm();}
   if(document.getElementById('notif-panel').classList.contains('open'))renderDash();
 }
@@ -1767,30 +1830,41 @@ function checkExpiry(){
   swNotify(title, body, 'w-exp');
   document.getElementById('bell-badge').classList.add('show');
 }
-/* ════ TELEGRAM STATUS ════ */
+/* ════ TELEGRAM / MAX STATUS ════ */
 let tgBotUrl = 'https://t.me/WeltkindVPN_bot';
+let maxBotUrl = 'https://max.ru/' + MAX_BOT_USERNAME;
 
 function getTgUrl(phone) {
-  // Формируем ссылку с номером телефона — как в Apps Script
   const p = (phone || '').replace(/\D/g, '');
   if (p) return 'https://t.me/WeltkindVPN_bot?start=' + p;
   return 'https://t.me/WeltkindVPN_bot';
 }
 
-function updateTgStatus(sub) {
-  if (!sub) sub = loadSub();
-  const chip = document.getElementById('tg-chip');
-  const chipText = document.getElementById('tg-chip-text');
-  if (!chip) return;
+function getMaxUrl(phone) {
+  const p = (phone || '').replace(/\D/g, '');
+  if (p) return 'https://max.ru/' + MAX_BOT_USERNAME + '?start=' + p;
+  return 'https://max.ru/' + MAX_BOT_USERNAME;
+}
 
+function updateMessengerStatus(sub) {
+  if (!sub) sub = loadSub();
   const phone = getActivePhone();
   const loggedIn = document.body.classList.contains('gas-logged-in') && phone.length >= 10;
-  const connected = loggedIn && !!sub.tgConnected;
   tgBotUrl = getTgUrl(loggedIn ? phone : '');
+  maxBotUrl = sub.maxBotUrl || getMaxUrl(loggedIn ? phone : '');
 
   const fab = document.getElementById('fab-support');
   if (fab) fab.href = tgBotUrl;
 
+  updateTgChip_(sub, loggedIn);
+  updateMaxChip_(sub, loggedIn);
+}
+
+function updateTgChip_(sub, loggedIn) {
+  const chip = document.getElementById('tg-chip');
+  const chipText = document.getElementById('tg-chip-text');
+  if (!chip) return;
+  const connected = loggedIn && !!sub.tgConnected;
   if (!loggedIn) {
     chip.classList.remove('connected');
     if (chipText) chipText.textContent = 'TG';
@@ -1798,7 +1872,6 @@ function updateTgStatus(sub) {
     closeTgBanner();
     return;
   }
-
   if (connected) {
     chip.classList.add('connected');
     chipText.textContent = 'TG ✓';
@@ -1813,6 +1886,35 @@ function updateTgStatus(sub) {
     }
   }
 }
+
+function updateMaxChip_(sub, loggedIn) {
+  const chip = document.getElementById('max-chip');
+  const chipText = document.getElementById('max-chip-text');
+  if (!chip) return;
+  const connected = loggedIn && !!sub.maxConnected;
+  if (!loggedIn) {
+    chip.classList.remove('connected');
+    if (chipText) chipText.textContent = 'MAX';
+    chip.title = 'Войдите чтобы подключить MAX';
+    closeMaxBanner();
+    return;
+  }
+  if (connected) {
+    chip.classList.add('connected');
+    chipText.textContent = 'MAX ✓';
+    chip.title = 'MAX подключён ✅';
+    closeMaxBanner();
+  } else {
+    chip.classList.remove('connected');
+    chipText.textContent = 'MAX';
+    chip.title = 'Подключить MAX-бота';
+    if (!_ssGet('max_banner_closed')) {
+      setTimeout(() => showMaxBanner(maxBotUrl), 2200);
+    }
+  }
+}
+
+function updateTgStatus(sub){ updateMessengerStatus(sub); }
 
 function fabTelegramClick(e) {
   if (e) e.preventDefault();
@@ -1832,16 +1934,32 @@ function fabTelegramClick(e) {
   return false;
 }
 
+function fabMaxClick(e) {
+  if (e) e.preventDefault();
+  haptic([30, 20, 50]);
+  const phone = getActivePhone();
+  if (!phone || phone.length < 10 || !document.body.classList.contains('gas-logged-in')) {
+    alert('Сначала войдите по номеру — тогда MAX-бот привяжется к вашему аккаунту.');
+    document.getElementById('gas-login-view')?.classList.remove('gas-hidden');
+    document.getElementById('gas-main-view')?.classList.add('gas-hidden');
+    document.getElementById('gas-phone-inp')?.focus();
+    return false;
+  }
+  const url = getMaxUrl(phone);
+  maxBotUrl = url;
+  openUrl(url);
+  setTimeout(() => { if (gasPhone) gasLogin(true); }, 4000);
+  return false;
+}
+
 function showTgBanner(url) {
   const banner = document.getElementById('tg-banner');
   const btn = document.getElementById('tg-banner-btn');
   if (!banner) return;
-  // URL уже содержит номер клиента
   const sub = loadSub();
   btn.href = url || getTgUrl(sub.phone);
   btn.target = '_blank';
   banner.classList.add('show');
-  // Автоскрытие через 12 сек
   setTimeout(() => banner.classList.remove('show'), 12000);
 }
 
@@ -1850,6 +1968,24 @@ function closeTgBanner() {
   if (banner) banner.classList.remove('show');
   try{sessionStorage.setItem('tg_banner_closed', '1');}catch(e){_memStore['ss_tg_banner_closed']='1';}
 }
+
+function showMaxBanner(url) {
+  const banner = document.getElementById('max-banner');
+  const btn = document.getElementById('max-banner-btn');
+  if (!banner) return;
+  const sub = loadSub();
+  btn.href = url || getMaxUrl(sub.phone);
+  btn.target = '_blank';
+  banner.classList.add('show');
+  setTimeout(() => banner.classList.remove('show'), 12000);
+}
+
+function closeMaxBanner() {
+  const banner = document.getElementById('max-banner');
+  if (banner) banner.classList.remove('show');
+  try{sessionStorage.setItem('max_banner_closed', '1');}catch(e){_memStore['ss_max_banner_closed']='1';}
+}
+
 function _ssGet(k){try{return sessionStorage.getItem(k);}catch(e){return _memStore['ss_'+k]||null;}}
 
 
@@ -2335,7 +2471,7 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
       </div>
     </div>
     <div id="pay-modal-company" class="gas-hidden">
-      <div class="gas-msg" style="margin:12px 0 16px"><strong>📄 Счёт формируется</strong><br>Заявка принята. Счёт придёт в Telegram.</div>
+      <div class="gas-msg" style="margin:12px 0 16px"><strong>📄 Счёт формируется</strong><br>Заявка принята. Счёт придёт в Telegram или MAX.</div>
     </div>
     <button type="button" class="gas-btn" style="margin-top:14px" onclick="haptic('medium');gasClosePayModal(true)">Понятно, оплачу</button>
   </div>
@@ -2399,6 +2535,17 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
   </div>
   <a id="tg-banner-btn" class="tg-banner-btn" href="#" target="_blank">Подключить</a>
   <button class="tg-banner-close" onclick="closeTgBanner()">✕</button>
+</div>
+
+<!-- MAX connect banner -->
+<div id="max-banner">
+  <div class="max-banner-icon">💬</div>
+  <div class="max-banner-text">
+    <strong>Подключи MAX</strong>
+    <span>Подписка, оплата и приложение в боте</span>
+  </div>
+  <a id="max-banner-btn" class="max-banner-btn" href="#" target="_blank" onclick="haptic()">Подключить</a>
+  <button class="max-banner-close" onclick="closeMaxBanner()">✕</button>
 </div>
 
 </body>
