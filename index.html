@@ -1929,9 +1929,30 @@ function fabTelegramClick(e) {
   }
   const url = getTgUrl(phone);
   tgBotUrl = url;
+  gasWakeTelegramBot_();
   openUrl(url);
-  setTimeout(() => { if (gasPhone) gasLogin(true); }, 4000);
+  gasPollTelegramConnection_(8);
   return false;
+}
+
+async function gasWakeTelegramBot_() {
+  try { await gasApi({ action: 'telegramPoll' }); } catch (e) {}
+}
+
+async function gasPollTelegramConnection_(attempts) {
+  for (let i = 0; i < attempts; i++) {
+    await new Promise(r => setTimeout(r, i === 0 ? 3500 : 3000));
+    if (!gasPhone) return;
+    try {
+      if (i > 0 && i % 2 === 0) gasWakeTelegramBot_();
+      const j = await gasApi({ action: 'checkTelegram', phone: gasPhone });
+      if (j.status === 'ok' && j.connected) {
+        await gasLogin(true);
+        return;
+      }
+    } catch (e) {}
+  }
+  if (gasPhone) gasLogin(true);
 }
 
 function fabMaxClick(e) {
