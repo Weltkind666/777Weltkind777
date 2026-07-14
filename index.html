@@ -1040,32 +1040,28 @@ function gasRenderTariffs(d){
 
 function gasRenderTelegram(d){
   const block = document.getElementById('gas-tg-block');
-  const phone = gasPhone || d.phoneNumber || '';
-  const link = 'https://t.me/WeltkindVPN_bot?start=' + phone;
   if (d.telegramConnected) {
     block.innerHTML = '<div class="gas-lbl">Telegram</div><div class="gas-msg gas-ok">✅ Уведомления подключены</div>' +
       '<button class="gas-btn sec" onclick="gasTestTg()">📩 Тестовое сообщение</button>' +
       '<button class="gas-btn sec" onclick="gasClearTg()" style="margin-top:6px">❌ Отключить Telegram</button>';
   } else {
     block.innerHTML = '<div class="gas-lbl">Telegram уведомления</div><div class="gas-msg">Подключите бота для напоминаний об оплате</div>' +
-      '<a href="' + link + '" target="_blank" rel="noopener" style="text-decoration:none"><button class="gas-btn">📲 Подключить Telegram</button></a>' +
-      '<button class="gas-btn sec" onclick="gasRefreshTg()" style="margin-top:6px">🔄 Обновить статус</button>';
+      '<button type="button" class="gas-btn" onclick="fabTelegramClick(event)">📲 Подключить Telegram</button>' +
+      '<button type="button" class="gas-btn sec" onclick="gasRefreshTg()" style="margin-top:6px">🔄 Обновить статус</button>';
   }
   block.classList.remove('gas-hidden');
 }
 
 function gasRenderMax(d){
   const block = document.getElementById('gas-max-block');
-  const phone = gasPhone || d.phoneNumber || '';
-  const link = d.maxBotUrl || ('https://max.ru/' + MAX_BOT_USERNAME + '?start=' + phone);
   if (d.maxConnected) {
     block.innerHTML = '<div class="gas-lbl">MAX</div><div class="gas-msg gas-ok">✅ Уведомления подключены</div>' +
-      '<button class="gas-btn sec" onclick="gasTestMax()">📩 Тестовое сообщение</button>' +
-      '<button class="gas-btn sec" onclick="gasClearMax()" style="margin-top:6px">❌ Отключить MAX</button>';
+      '<button type="button" class="gas-btn sec" onclick="gasTestMax()">📩 Тестовое сообщение</button>' +
+      '<button type="button" class="gas-btn sec" onclick="gasClearMax()" style="margin-top:6px">❌ Отключить MAX</button>';
   } else {
     block.innerHTML = '<div class="gas-lbl">MAX уведомления</div><div class="gas-msg">Подписка, оплата и приложение — прямо в MAX</div>' +
-      '<a href="' + link + '" target="_blank" rel="noopener" style="text-decoration:none"><button class="gas-btn" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff">📲 Подключить MAX</button></a>' +
-      '<button class="gas-btn sec" onclick="gasRefreshMax()" style="margin-top:6px">🔄 Обновить статус</button>';
+      '<button type="button" class="gas-btn" onclick="fabMaxClick(event)" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff">📲 Подключить MAX</button>' +
+      '<button type="button" class="gas-btn sec" onclick="gasRefreshMax()" style="margin-top:6px">🔄 Обновить статус</button>';
   }
   block.classList.remove('gas-hidden');
 }
@@ -2003,7 +1999,26 @@ document.addEventListener('click',e=>{
   }
 });
 
-function openUrl(url){try{var w=window.open(url,'_blank');if(!w||w.closed){location.href=url;}}catch(e){location.href=url;}}
+function openUrl(url){
+  if (!url || url === '#') return;
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const isMessengerLink = /^https:\/\/(max\.ru|t\.me)\//i.test(url);
+  try {
+    if (isMobile && isMessengerLink) {
+      window.location.assign(url);
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch (e) {
+    try { window.location.assign(url); } catch (e2) {}
+  }
+}
 
 /* ════ ЧАТ ПОДДЕРЖКИ (PWA ↔ Telegram) ════ */
 let chatPollIv = null;
@@ -2533,7 +2548,7 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
     <strong>Подключи Telegram</strong>
     <span>Получай уведомления об оплате</span>
   </div>
-  <a id="tg-banner-btn" class="tg-banner-btn" href="#" target="_blank">Подключить</a>
+  <a id="tg-banner-btn" class="tg-banner-btn" href="#" onclick="return fabTelegramClick(event)">Подключить</a>
   <button class="tg-banner-close" onclick="closeTgBanner()">✕</button>
 </div>
 
@@ -2544,7 +2559,7 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
     <strong>Подключи MAX</strong>
     <span>Подписка, оплата и приложение в боте</span>
   </div>
-  <a id="max-banner-btn" class="max-banner-btn" href="#" target="_blank" onclick="haptic()">Подключить</a>
+  <a id="max-banner-btn" class="max-banner-btn" href="#" onclick="return fabMaxClick(event)">Подключить</a>
   <button class="max-banner-close" onclick="closeMaxBanner()">✕</button>
 </div>
 
