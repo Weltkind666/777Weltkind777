@@ -280,7 +280,8 @@
     "com.truedevelopersstudio.automatictap.autoclicker",
     "com.mobisystems.office",
     "tv.limehd.stb",
-    "lamoda"
+    "lamoda",
+    "logo.com.mbanking"
   ],
   "markers": [
     "ru.sber",
@@ -513,7 +514,9 @@
     "mobisystems",
     "stb",
     "limehd",
-    "lamoda"
+    "lamoda",
+    "mbanking",
+    "logo"
   ],
   "keywords": [
     "сбер",
@@ -767,7 +770,9 @@
     "office",
     "лайм hd stb",
     "lamoda: мода, красота, дом",
-    "lamoda"
+    "lamoda",
+    "logo maker : logo creator",
+    "mbanking"
   ],
   "excludes": [
     "ru.google",
