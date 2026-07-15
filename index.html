@@ -557,6 +557,7 @@
             <div class="gas-dl">
               <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#111">iPhone</a>
               <button type="button" class="gas-apk-btn gas-hidden gas-dl-btn" style="background:var(--accent);color:#000" onclick="haptic('medium');gasDownloadApk('vpn')">Android APK</button>
+              <a href="#" class="gas-desktop-btn gas-hidden gas-dl-btn" style="background:#29B6F6;color:#000;text-decoration:none;display:inline-flex;align-items:center;justify-content:center" target="_blank" rel="noopener">Windows ПК</a>
             </div>
           </div>
           <div class="gas-iptv-card gas-card gas-hidden">
@@ -609,6 +610,7 @@
             <div class="gas-dl">
               <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#111">iPhone</a>
               <button type="button" class="gas-apk-btn gas-hidden gas-dl-btn" style="background:var(--accent);color:#000" onclick="haptic('medium');gasDownloadApk('vpn')">Android APK</button>
+              <a href="#" class="gas-desktop-btn gas-hidden gas-dl-btn" style="background:#29B6F6;color:#000;text-decoration:none;display:inline-flex;align-items:center;justify-content:center" target="_blank" rel="noopener">Windows ПК</a>
             </div>
           </div>
           <div class="gas-iptv-card gas-card gas-hidden">
@@ -1487,6 +1489,16 @@ async function gasLoadAppLinks(){
       };
       document.querySelectorAll('.gas-apk-btn').forEach(a => {
         a.textContent = 'Android' + (apk.version ? ' v' + apk.version : '');
+        a.classList.remove('gas-hidden');
+      });
+    }
+  } catch (e) {}
+  try {
+    const desk = await gasApi({ action: 'desktopVersion' });
+    if (desk && desk.exeUrl) {
+      document.querySelectorAll('.gas-desktop-btn').forEach(a => {
+        a.href = desk.exeUrl;
+        a.textContent = 'Windows' + (desk.version ? ' v' + desk.version : '');
         a.classList.remove('gas-hidden');
       });
     }
