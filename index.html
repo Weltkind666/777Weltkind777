@@ -561,12 +561,14 @@
               <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#111">iPhone</a>
               <button type="button" class="gas-apk-btn gas-hidden gas-dl-btn" style="background:var(--accent);color:#000" onclick="haptic('medium');gasDownloadApk('vpn')">Android APK</button>
               <a href="#" class="gas-desktop-btn gas-hidden gas-dl-btn" style="background:#29B6F6;color:#000;text-decoration:none;display:inline-flex;align-items:center;justify-content:center" target="_blank" rel="noopener">Windows ПК</a>
+              <button type="button" class="gas-tv-btn gas-hidden gas-dl-btn" style="background:#7C4DFF;color:#fff" onclick="haptic('medium');gasDownloadApk('tv')">Android TV (VPN)</button>
             </div>
           </div>
           <div class="gas-iptv-card gas-card gas-hidden">
             <div class="gas-lbl">📺 На телевизор</div>
             <div class="gas-dl">
-              <button type="button" class="gas-iptv-btn gas-hidden gas-dl-btn" style="background:#9c27b0" onclick="haptic('medium');gasDownloadApk('iptv')">TV IPTV</button>
+              <button type="button" class="gas-tv-btn gas-hidden gas-dl-btn" style="background:#7C4DFF;color:#fff" onclick="haptic('medium');gasDownloadApk('tv')">Weltkind TV (VPN)</button>
+              <button type="button" class="gas-iptv-btn gas-hidden gas-dl-btn" style="background:#9c27b0" onclick="haptic('medium');gasDownloadApk('iptv')">IPTV (плейлисты)</button>
             </div>
           </div>
         </div>
@@ -615,12 +617,14 @@
               <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#111">iPhone</a>
               <button type="button" class="gas-apk-btn gas-hidden gas-dl-btn" style="background:var(--accent);color:#000" onclick="haptic('medium');gasDownloadApk('vpn')">Android APK</button>
               <a href="#" class="gas-desktop-btn gas-hidden gas-dl-btn" style="background:#29B6F6;color:#000;text-decoration:none;display:inline-flex;align-items:center;justify-content:center" target="_blank" rel="noopener">Windows ПК</a>
+              <button type="button" class="gas-tv-btn gas-hidden gas-dl-btn" style="background:#7C4DFF;color:#fff" onclick="haptic('medium');gasDownloadApk('tv')">Android TV (VPN)</button>
             </div>
           </div>
           <div class="gas-iptv-card gas-card gas-hidden">
             <div class="gas-lbl">📺 На телевизор</div>
             <div class="gas-dl">
-              <button type="button" class="gas-iptv-btn gas-hidden gas-dl-btn" style="background:#9c27b0" onclick="haptic('medium');gasDownloadApk('iptv')">TV IPTV</button>
+              <button type="button" class="gas-tv-btn gas-hidden gas-dl-btn" style="background:#7C4DFF;color:#fff" onclick="haptic('medium');gasDownloadApk('tv')">Weltkind TV (VPN)</button>
+              <button type="button" class="gas-iptv-btn gas-hidden gas-dl-btn" style="background:#9c27b0" onclick="haptic('medium');gasDownloadApk('iptv')">IPTV (плейлисты)</button>
             </div>
           </div>
         </div>
@@ -993,7 +997,15 @@ function initGasApp(){
   if (panel) panel.classList.remove('gas-hidden');
   gasAppReady = true;
   startTimer();
-  const saved = _lsGet('gas_phone') || loadSub().phone || _lsGet('phoneNumber') || '';
+  // From TV QR: ?phone=79… — prefill (scan QR → open PWA with number ready)
+  let phoneFromUrl = '';
+  try {
+    phoneFromUrl = (new URLSearchParams(location.search).get('phone') || '').replace(/\D/g, '');
+  } catch (e) {}
+  if (phoneFromUrl.length >= 10) {
+    try { _lsSet('gas_phone', phoneFromUrl); _lsSet('phoneNumber', phoneFromUrl); } catch (e) {}
+  }
+  const saved = phoneFromUrl || _lsGet('gas_phone') || loadSub().phone || _lsGet('phoneNumber') || '';
   const inp = document.getElementById('gas-phone-inp');
   if (inp && saved) inp.value = saved;
   gasLoadAppLinks();
@@ -1405,6 +1417,7 @@ function gasRefresh(){ if (gasPhone) gasLogin(true); else initGasApp(); }
 
 let gasApkMeta = { version: '', url: '', fileName: 'Weltkind.apk' };
 let gasIptvMeta = { version: '', url: '', fileName: 'AuroraIPTV.apk' };
+let gasTvMeta = { version: '', url: '', fileName: 'WeltkindTV.apk' };
 let apkDlCancelFlag = false;
 
 function gasFmtBytes(n){
@@ -1477,16 +1490,26 @@ async function gasOpenApkFile(blob, filename){
 }
 
 async function gasDownloadApk(kind){
-  const meta = kind === 'iptv' ? gasIptvMeta : gasApkMeta;
-  const label = kind === 'iptv' ? 'IPTV' : 'Android';
+  kind = String(kind || 'vpn');
+  const meta = kind === 'iptv' ? gasIptvMeta
+    : (kind === 'tv' || kind === 'tvvpn') ? gasTvMeta
+    : gasApkMeta;
+  const label = kind === 'iptv' ? 'IPTV'
+    : (kind === 'tv' || kind === 'tvvpn') ? 'Weltkind TV'
+    : 'Android';
   apkDlCancelFlag = false;
   apkDlShow('Скачивание ' + label, (meta.version ? 'Версия ' + meta.version : ''));
   const CHUNK = 524288;
   let offset = 0;
   let total = 0;
-  let fileName = meta.fileName || (kind === 'iptv' ? 'AuroraIPTV.apk' : 'Weltkind.apk');
+  let fileName = meta.fileName || (
+    kind === 'iptv' ? 'AuroraIPTV.apk'
+    : (kind === 'tv' || kind === 'tvvpn') ? 'WeltkindTV.apk'
+    : 'Weltkind.apk'
+  );
   const parts = [];
   try {
+    // type=tv uses TvAppVersion sheet + Weltkind_TV_APK folder (Code.gs)
     const m = await gasApi({ action: 'apkMeta', type: kind });
     if (m.status !== 'ok') throw new Error(m.message || 'APK не найден');
     total = Number(m.size) || 0;
@@ -1570,6 +1593,23 @@ async function gasLoadAppLinks(){
         a.textContent = 'IPTV' + (iptv.version ? ' v' + iptv.version : '');
         a.classList.remove('gas-hidden');
       });
+      document.querySelectorAll('.gas-iptv-card').forEach(c => c.classList.remove('gas-hidden'));
+    }
+  } catch (e) {}
+  // Weltkind TV (Android TV VPN) — separate from phone appVersion
+  try {
+    const tv = await gasApi({ action: 'tvVersion' });
+    if (tv && tv.apkUrl) {
+      gasTvMeta = {
+        version: tv.version || '',
+        url: tv.apkUrl,
+        fileName: 'WeltkindTV' + (tv.version ? '_' + tv.version : '') + '.apk'
+      };
+      document.querySelectorAll('.gas-tv-btn').forEach(a => {
+        a.textContent = 'Android TV' + (tv.version ? ' v' + tv.version : '');
+        a.classList.remove('gas-hidden');
+      });
+      // Show TV card if either Weltkind TV or IPTV is published
       document.querySelectorAll('.gas-iptv-card').forEach(c => c.classList.remove('gas-hidden'));
     }
   } catch (e) {}
