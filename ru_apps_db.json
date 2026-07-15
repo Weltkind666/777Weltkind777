@@ -1,6 +1,6 @@
 {
   "version": 7,
-  "updated": "2026-07-14",
+  "updated": "2026-07-15",
   "packages": [
     "ru.sberbankmobile",
     "ru.sberbank.spasibo",
@@ -279,7 +279,8 @@
     "market.ruplay.store",
     "com.truedevelopersstudio.automatictap.autoclicker",
     "com.mobisystems.office",
-    "tv.limehd.stb"
+    "tv.limehd.stb",
+    "lamoda"
   ],
   "markers": [
     "ru.sber",
@@ -511,7 +512,8 @@
     "office",
     "mobisystems",
     "stb",
-    "limehd"
+    "limehd",
+    "lamoda"
   ],
   "keywords": [
     "сбер",
@@ -763,7 +765,9 @@
     "autoclicker",
     "mobioffice: word, sheets, pdf",
     "office",
-    "лайм hd stb"
+    "лайм hd stb",
+    "lamoda: мода, красота, дом",
+    "lamoda"
   ],
   "excludes": [
     "ru.google",
