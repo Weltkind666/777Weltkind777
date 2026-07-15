@@ -56,6 +56,9 @@
     .gas-or-line::before,.gas-or-line::after{content:'';flex:1;height:1px;background:var(--border)}
     .gas-btn.tar{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text);display:flex;justify-content:space-between;align-items:center;text-align:left;font-size:.92rem}
     .gas-btn.tar strong{color:var(--accent);font-size:.95rem}
+    .gas-btn.tar:disabled,.gas-btn.tar.tariff-locked{opacity:.42;cursor:not-allowed;filter:grayscale(.4);pointer-events:none}
+    #gas-inn-hint{font-size:.72rem;color:#ff8a80;margin-top:6px;line-height:1.35;display:none}
+    #gas-inn-hint.ok{color:var(--accent)}
     .gas-lbl{font-family:'JetBrains Mono',monospace;font-size:.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 8px}
     .gas-row{display:flex;justify-content:space-between;gap:8px;font-size:.88rem;margin-bottom:6px}
     .gas-tax{display:flex;gap:8px;margin-bottom:10px}
@@ -583,8 +586,9 @@
             <button type="button" id="gas-tax-co" onclick="gasSetTax('company')">🏢 Юрлицо (6%)</button>
           </div>
           <div id="gas-inn-block" class="gas-hidden">
-            <input type="text" id="gas-inn" class="gas-inp" placeholder="ИНН компании / ИП"/>
-            <input type="text" id="gas-co-name" class="gas-inp" placeholder="Название компании / ИП"/>
+            <input type="text" id="gas-inn" class="gas-inp" placeholder="ИНН компании / ИП (обязательно)" inputmode="numeric" autocomplete="off" oninput="gasOnCompanyFieldsChange()"/>
+            <input type="text" id="gas-co-name" class="gas-inp" placeholder="Название компании / ИП (обязательно)" autocomplete="organization" oninput="gasOnCompanyFieldsChange()"/>
+            <div id="gas-inn-hint">Заполните ИНН и название — затем можно выбрать тариф</div>
           </div>
         </div>
         <div id="gas-pending-banner" class="gas-card gas-pending-card gas-hidden">
@@ -915,12 +919,54 @@ function gasCalcTax(base){
 
 function gasFmtMoney(n){ return Number(n || 0).toFixed(2); }
 
+function gasIsCompanyDetailsFilled(){
+  const inn = (document.getElementById('gas-inn')?.value || '').replace(/\D/g, '').trim();
+  const name = (document.getElementById('gas-co-name')?.value || '').trim();
+  return inn.length >= 10 && name.length >= 2;
+}
+
+function gasOnCompanyFieldsChange(){
+  gasUpdateTariffLock();
+}
+
+function gasUpdateTariffLock(){
+  const locked = gasClientType === 'company' && !gasIsCompanyDetailsFilled();
+  ['gas-t1', 'gas-t3', 'gas-ty'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.disabled = locked;
+    el.classList.toggle('tariff-locked', locked);
+    el.setAttribute('aria-disabled', locked ? 'true' : 'false');
+    if (locked) el.title = 'Сначала укажите ИНН и название компании';
+    else el.removeAttribute('title');
+  });
+  const hint = document.getElementById('gas-inn-hint');
+  if (!hint) return;
+  if (gasClientType !== 'company') {
+    hint.style.display = 'none';
+    hint.classList.remove('ok');
+  } else if (locked) {
+    hint.style.display = 'block';
+    hint.classList.remove('ok');
+    hint.textContent = 'Заполните ИНН и название — затем можно выбрать тариф';
+  } else {
+    hint.style.display = 'block';
+    hint.classList.add('ok');
+    hint.textContent = 'Данные заполнены — можно выбрать тариф';
+  }
+}
+
 function gasSetTax(type){
   gasClientType = type;
   document.getElementById('gas-tax-ind').classList.toggle('on', type === 'individual');
   document.getElementById('gas-tax-co').classList.toggle('on', type === 'company');
   document.getElementById('gas-inn-block').classList.toggle('gas-hidden', type !== 'company');
   if (gasUserData) gasRenderTariffs(gasUserData);
+  gasUpdateTariffLock();
+  if (type === 'company' && !gasIsCompanyDetailsFilled()) {
+    const innEl = document.getElementById('gas-inn');
+    if (innEl) setTimeout(() => { try { innEl.focus(); } catch (e) {} }, 50);
+  }
 }
 
 function gasShowErr(msg){
@@ -1038,6 +1084,7 @@ function gasRenderTariffs(d){
   document.getElementById('gas-t1').innerHTML = '1 месяц <strong>' + gasFmtMoney(t1.total) + ' ₽</strong>';
   document.getElementById('gas-t3').innerHTML = '3 месяца (−5%) <strong>' + gasFmtMoney(t3.total) + ' ₽</strong>';
   document.getElementById('gas-ty').innerHTML = '1 год (−15%) <strong>' + gasFmtMoney(ty.total) + ' ₽</strong>';
+  gasUpdateTariffLock();
 }
 
 function gasRenderTelegram(d){
@@ -1071,15 +1118,23 @@ function gasRenderMax(d){
 async function gasPickTariff(period){
   if (gasPickingTariff) return;
   if (!gasUserData || !gasPhone) return;
+  if (gasClientType === 'company' && !gasIsCompanyDetailsFilled()) {
+    gasUpdateTariffLock();
+    const innEl = document.getElementById('gas-inn');
+    const nameEl = document.getElementById('gas-co-name');
+    if (innEl && !(innEl.value || '').replace(/\D/g, '').trim()) {
+      try { innEl.focus(); } catch (e) {}
+    } else if (nameEl) {
+      try { nameEl.focus(); } catch (e) {}
+    }
+    alert('Для оплаты как юрлицо укажите ИНН и название компании');
+    return;
+  }
   haptic('medium');
   const base = period === '1month' ? Number(gasUserData.amount1Month) : period === '3months' ? Number(gasUserData.amount3Months) : Number(gasUserData.amount1Year);
   const tax = gasCalcTax(base);
   const inn = (document.getElementById('gas-inn')?.value || '').replace(/\D/g, '').trim();
   const coName = (document.getElementById('gas-co-name')?.value || '').trim();
-  if (gasClientType === 'company' && (!inn || !coName)) {
-    alert('Укажите ИНН и название компании');
-    return;
-  }
   gasPickingTariff = true;
   setGasLoading(true, 'overlay');
   try {
