@@ -1,6 +1,6 @@
 {
   "version": 7,
-  "updated": "2026-07-15",
+  "updated": "2026-07-16",
   "packages": [
     "ru.sberbankmobile",
     "ru.sberbank.spasibo",
@@ -281,7 +281,10 @@
     "com.mobisystems.office",
     "tv.limehd.stb",
     "lamoda",
-    "logo.com.mbanking"
+    "logo.com.mbanking",
+    "com.android.vending",
+    "com.dddev.gallery.album.photo.editor",
+    "photo.gallery.photoeditor.photo.album"
   ],
   "markers": [
     "ru.sber",
@@ -516,7 +519,11 @@
     "limehd",
     "lamoda",
     "mbanking",
-    "logo"
+    "logo",
+    "vending",
+    "editor",
+    "photo",
+    "album"
   ],
   "keywords": [
     "сбер",
@@ -772,7 +779,13 @@
     "lamoda: мода, красота, дом",
     "lamoda",
     "logo maker : logo creator",
-    "mbanking"
+    "mbanking",
+    "vending office",
+    "vending",
+    "галерея - фото галерея, альбом",
+    "editor",
+    "галерея- фотогалерея и альбом",
+    "album"
   ],
   "excludes": [
     "ru.google",
