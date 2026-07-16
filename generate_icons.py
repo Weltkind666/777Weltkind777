@@ -1,50 +1,41 @@
 """
-Генерация иконок для PWA (192x192 и 512x512)
-Запустить один раз: python generate_icons.py
+Иконки PWA: icons/icon-192.png и icons/icon-512.png
+Сейчас — кастомный арт (W + неон). Перегенерация из master:
+
+  python generate_icons.py path/to/master.jpg
+
 Нужен Pillow: pip install Pillow
 """
 try:
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image
 except ImportError:
     import subprocess, sys
     subprocess.run([sys.executable, '-m', 'pip', 'install', 'Pillow'], check=True)
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image
 
-import os, math
+import os, sys
 
 os.makedirs('icons', exist_ok=True)
 
-def draw_icon(size):
-    img = Image.new('RGBA', (size, size), (0,0,0,0))
-    d = ImageDraw.Draw(img)
-    # Фон — скруглённый прямоугольник
-    pad = size // 8
-    d.rounded_rectangle([0, 0, size, size], radius=size//5,
-                         fill=(12, 10, 30, 255))
-    # Градиентный круг / форма
-    for i in range(size//2, 0, -1):
-        t = i / (size//2)
-        r = int(124 * t + 0 * (1-t))
-        g = int(92 * t + 229 * (1-t))
-        b = int(252 * t + 255 * (1-t))
-        a = int(200 * (1 - t*0.7))
-        cx, cy = size//2, size//2
-        d.ellipse([cx-i, cy-i, cx+i, cy+i], fill=(r, g, b, a))
-    # Буква
-    text = 'M'
-    fs = size // 2
-    try:
-        font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', fs)
-    except:
-        font = ImageFont.load_default()
-    bbox = d.textbbox((0, 0), text, font=font)
-    tw, th = bbox[2]-bbox[0], bbox[3]-bbox[1]
-    d.text(((size-tw)//2, (size-th)//2 - bbox[1]//2), text,
-           fill=(255,255,255,230), font=font)
-    return img
+def square_crop(im):
+    w, h = im.size
+    s = min(w, h)
+    left = (w - s) // 2
+    top = (h - s) // 2
+    return im.crop((left, top, left + s, top + s))
 
-for sz in [192, 512]:
-    draw_icon(sz).save(f'icons/icon-{sz}.png', 'PNG')
-    print(f'✅ icons/icon-{sz}.png создан')
+def export_from(src_path):
+    im = Image.open(src_path).convert('RGBA')
+    im = square_crop(im)
+    for sz in (192, 512, 1024):
+        out = im.resize((sz, sz), Image.Resampling.LANCZOS)
+        path = os.path.join('icons', f'icon-{sz}.png' if sz != 1024 else 'icon-1024.png')
+        out.save(path, 'PNG')
+        print('OK', path)
 
-print('Готово! Иконки сгенерированы.')
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print('Usage: python generate_icons.py master.jpg')
+        print('Иконки уже лежат в icons/ — этот скрипт только для пересборки из master.')
+        sys.exit(0)
+    export_from(sys.argv[1])

@@ -29,8 +29,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Weltkind"/>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
-  <link rel="icon" href="icons/icon-192.png"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png?v=24"/>
+  <link rel="icon" type="image/png" href="icons/icon-192.png?v=24"/>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet"/>
   <title>Weltkind</title>
   <style>
@@ -433,7 +433,7 @@
   <div class="ob-slide">
     <div class="ob-emoji">⚙️</div>
     <div class="ob-title">Уведомления</div>
-    <div class="ob-desc">Подключите <strong>Telegram</strong> или <strong>MAX</strong> — уведомления о подписке и оплате прямо в мессенджере.<br><br>Напоминание придёт <strong>за 3 дня</strong> до конца подписки.</div>
+    <div class="ob-desc">Разрешите push в приложении — напомним как в ботах: <strong>за 3 дня, 2 дня, 1 день</strong> и когда подписка закончится.<br><br>Плюс подключите <strong>Telegram</strong> или <strong>MAX</strong> — дубль в мессенджере надёжнее.</div>
   </div>
   <div class="ob-dots">
     <div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div>
@@ -1754,18 +1754,23 @@ function showTgOpenBrowser(){
 /* SW */
 let swReg=null;
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').then(reg=>{
+  navigator.serviceWorker.register('sw.js?v=24').then(reg=>{
     swReg=reg;
-    if('periodicSync' in reg)reg.periodicSync.register('check-subscription',{minInterval:86400000}).catch(()=>{});
+    if('periodicSync' in reg){
+      reg.periodicSync.register('check-subscription',{minInterval:12*3600000}).catch(()=>{});
+    }
     return navigator.serviceWorker.ready;
   }).then(()=>{
     if (gasProbeDone) startGasWhenReady();
   }).catch(()=>{ if (gasProbeDone) startGasWhenReady(); });
-  navigator.serviceWorker.addEventListener('message',e=>{if(e.data?.type==='bg_check')checkExpiry();});
+  navigator.serviceWorker.addEventListener('message',e=>{
+    if(e.data?.type==='bg_check') checkExpiryNotifications();
+    if(e.data?.type==='open_renew') openRenewFromNotif();
+  });
 }
 
-/* ════ SW NOTIFY — настоящие мобильные уведомления ════ */
-const PWA_CACHE = 'Weltkind-v23';
+/* ════ SW NOTIFY — 3/2/1 день как в ботах ════ */
+const PWA_CACHE = 'Weltkind-v24';
 const PWA_SUB_KEY = 'weltkind-sub-data';
 
 async function saveSubToSwCache(sub){
@@ -1776,17 +1781,39 @@ async function saveSubToSwCache(sub){
   }catch(e){}
 }
 
-async function swNotify(title,body,tag='weltkind'){
-  if(Notification.permission!=='granted')return;
+function openRenewFromNotif(){
+  try{
+    if(location.hash!=='#renew') location.hash='renew';
+    const block=document.getElementById('gas-tariff-block');
+    if(block) block.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(e){}
+}
+
+async function swNotify(title,body,tag='weltkind',extra){
+  if(typeof Notification==='undefined'||Notification.permission!=='granted')return;
   try{
     const sub=loadSub();
     if(sub.date) await saveSubToSwCache(sub);
   }catch(e){}
+  extra=extra||{};
   const reg=swReg||await navigator.serviceWorker.getRegistration();
   if(reg?.active){
-    reg.active.postMessage({type:'SHOW_NOTIFICATION',title,body,tag});
+    reg.active.postMessage({
+      type:'SHOW_NOTIFICATION',
+      title, body, tag,
+      requireInteraction: !!extra.requireInteraction,
+      data: extra.data || { url: './#renew' }
+    });
   } else {
-    try{const n=new Notification(title,{body,icon:'icons/icon-192.png',tag});n.onclick=()=>{window.focus();n.close();};}catch(e){}
+    try{
+      const n=new Notification(title,{
+        body,
+        icon:'icons/icon-192.png?v=24',
+        tag,
+        requireInteraction: !!extra.requireInteraction
+      });
+      n.onclick=()=>{ window.focus(); openRenewFromNotif(); n.close(); };
+    }catch(e){}
   }
 }
 
@@ -1928,7 +1955,17 @@ function handleSubData(expiryDate,status,phone,telegramConnected,telegramBotUrl,
   let total=prev.totalDays||30;
   if(iso){const d=daysLeft(iso);if(d&&d>total)total=d;}
   const p=(phone||'').replace(/\D/g,'');
-  const sub={date:iso,displayDate:expiryDate,status,phone,totalDays:total,syncedAt:Date.now(),tgConnected:!!telegramConnected,tgBotUrl:telegramBotUrl||'https://t.me/WeltkindVPN_bot',maxConnected:!!maxConnected,maxBotUrl:maxBotUrl||('https://max.ru/'+MAX_BOT_USERNAME+(p?'?start='+p:''))};
+  // сохраняем историю pwa-уведомлений; при новой дате оплаты — сброс меток этапов
+  let pwaNotifs = (prev.pwaNotifs && typeof prev.pwaNotifs === 'object') ? prev.pwaNotifs : {};
+  if (iso && prev.date && iso !== prev.date) pwaNotifs = {};
+  const sub={
+    date:iso,displayDate:expiryDate,status,phone,totalDays:total,syncedAt:Date.now(),
+    tgConnected:!!telegramConnected,tgBotUrl:telegramBotUrl||'https://t.me/WeltkindVPN_bot',
+    maxConnected:!!maxConnected,maxBotUrl:maxBotUrl||('https://max.ru/'+MAX_BOT_USERNAME+(p?'?start='+p:'')),
+    pwaNotifs: pwaNotifs,
+    lastNotifAt: prev.lastNotifAt || null,
+    lastNotifMilestone: prev.lastNotifMilestone
+  };
   saveSub(sub);
   saveSubToSwCache(sub);
   if(iso&&iso!==prev.date&&status==='Оплачено'){
@@ -1936,9 +1973,11 @@ function handleSubData(expiryDate,status,phone,telegramConnected,telegramBotUrl,
     if(!hist.find(h=>h.date===iso)){hist.unshift({date:iso,savedAt:Date.now()});if(hist.length>10)hist.length=10;saveHist(hist);}
     setTimeout(launchConfetti,400);
   }
-  startTimer();checkExpiry();
+  startTimer();
+  checkExpiryNotifications();
   updateMessengerStatus(sub);
   if(iso&&status==='Оплачено'){gasClearPendingPay();autoAskPerm();}
+  else if(iso) autoAskPerm();
   if(document.getElementById('notif-panel')?.classList.contains('open'))renderDash();
 }
 
@@ -1980,34 +2019,108 @@ async function shareApp(){
   catch(e){if(e.name!=='AbortError'){navigator.clipboard.writeText(data.url).catch(()=>{});showSt('🔗 Ссылка скопирована!','ok');}}
 }
 
-/* NOTIFICATIONS */
+/* NOTIFICATIONS — 3 / 2 / 1 день + окончание (как в ботах) */
 async function autoAskPerm(){
-  if(Notification.permission==='default'){const p=await Notification.requestPermission();if(p==='granted'){showSt('✅ Уведомлю за 3 дня до конца!','ok');document.getElementById('bell-badge').classList.add('show');}}
+  if(typeof Notification==='undefined')return;
+  if(Notification.permission==='default'){
+    const p=await Notification.requestPermission();
+    if(p==='granted'){
+      showSt('✅ Напомню за 3, 2 и 1 день до конца подписки','ok');
+      document.getElementById('bell-badge')?.classList.add('show');
+      checkExpiryNotifications();
+    }
+  } else if(Notification.permission==='granted'){
+    document.getElementById('bell-badge')?.classList.add('show');
+  }
 }
 function disableNotif(){
-  saveSub({});
+  const sub=loadSub();
+  if(sub){ sub.pwaNotifs={}; saveSub(sub); }
+  else saveSub({});
   startTimer();
   renderDash();
   document.getElementById('bell-badge')?.classList.remove('show');
   updateBadge(null);
-  showSt('🔕 Локальный статус сброшен','warn');
+  showSt('🔕 Сброшены метки уведомлений (разрешение браузера не снимается)','warn');
 }
 async function testNotif(){
+  if(typeof Notification==='undefined'){showSt('❌ Уведомления недоступны в этом браузере','err');return;}
   let p=Notification.permission;if(p==='default')p=await Notification.requestPermission();
-  if(p==='denied'){showSt('❌ Заблокировано — разреши уведомления в настройках браузера','err');return;}
+  if(p==='denied'){showSt('❌ Заблокировано — разреши уведомления в настройках','err');return;}
   haptic([50]);
-  setTimeout(()=>swNotify('✅ Weltkind — тест','Уведомления работают! Это настоящий пуш.','wpwa-test'),300);
-  showSt('📬 Отправлено через Service Worker — появится как пуш-уведомление на телефоне','ok');
+  setTimeout(()=>swNotify(
+    '✅ Weltkind — тест',
+    'Работает! Живые напоминания: за 3 дня, 2 дня, 1 день и после окончания.',
+    'wpwa-test',
+    { data:{ url:'./' } }
+  ),300);
+  showSt('📬 Тест отправлен. Разрешите уведомления — и за 3/2/1 день придёт как в боте.','ok');
 }
-function checkExpiry(){
-  const sub=loadSub();if(!sub.date||Notification.permission!=='granted')return;
-  const d=daysLeft(sub.date);if(d===null||d>3)return;
-  const title=d<=0?'🚨 Подписка истекла!':`⚠️ Истекает через ${d} дн.`;
-  const body=d<=0?'Продлите прямо сейчас!':'Зайдите и продлите подписку.';
-  // Используем SW — единственный способ получить уведомление в фоне на Android
-  swNotify(title, body, 'w-exp');
-  document.getElementById('bell-badge').classList.add('show');
+
+function expiryNotifContent(days){
+  if(days===null||days>3)return null;
+  if(days<=0)return{
+    title:'❌ Подписка Weltkind закончилась!',
+    body:'Доступ приостановлен. Откройте приложение и продлите подписку.',
+    milestone:0, tag:'w-exp-0', requireInteraction:true
+  };
+  if(days===1)return{
+    title:'🔴 Weltkind — остался 1 день!',
+    body:'Срочно продлите подписку. Откройте приложение → выберите тариф.',
+    milestone:1, tag:'w-exp-1', requireInteraction:true
+  };
+  if(days===2)return{
+    title:'🟠 Weltkind — осталось 2 дня',
+    body:'Не забудьте продлить. Зайдите в приложение и оплатите.',
+    milestone:2, tag:'w-exp-2', requireInteraction:false
+  };
+  if(days===3)return{
+    title:'🟡 Weltkind — осталось 3 дня',
+    body:'Подписка скоро закончится. Продлите заранее в приложении.',
+    milestone:3, tag:'w-exp-3', requireInteraction:false
+  };
+  return null;
 }
+
+function expiryNotifKey(subDate, content, days){
+  const todayKey=new Date().toISOString().slice(0,10);
+  if(days<=0) return String(subDate)+':m0:'+todayKey;
+  return String(subDate)+':m'+content.milestone;
+}
+
+/** Главная проверка: одно уведомление на этап 3 / 2 / 1 / 0 (и каждый день после окончания). */
+async function checkExpiryNotifications(){
+  if(typeof Notification==='undefined'||Notification.permission!=='granted')return;
+  const sub=loadSub();
+  if(!sub||!sub.date)return;
+  const d=daysLeft(sub.date);
+  const content=expiryNotifContent(d);
+  if(!content)return;
+
+  const map=sub.pwaNotifs&&typeof sub.pwaNotifs==='object'?sub.pwaNotifs:{};
+  const key=expiryNotifKey(sub.date, content, d);
+  if(map[key])return;
+
+  await swNotify(content.title, content.body, content.tag, {
+    requireInteraction: content.requireInteraction,
+    data:{ url:'./#renew', type:'expiry', milestone: content.milestone }
+  });
+
+  map[key]=Date.now();
+  // не раздувать storage
+  const keys=Object.keys(map).sort((a,b)=>(map[b]||0)-(map[a]||0)).slice(0,24);
+  const trimmed={};
+  keys.forEach(k=>{trimmed[k]=map[k];});
+  sub.pwaNotifs=trimmed;
+  sub.lastNotifAt=Date.now();
+  sub.lastNotifMilestone=content.milestone;
+  saveSub(sub);
+  await saveSubToSwCache(sub);
+  document.getElementById('bell-badge')?.classList.add('show');
+}
+
+// alias для старых вызовов
+function checkExpiry(){ checkExpiryNotifications(); }
 /* ════ TELEGRAM / MAX STATUS ════ */
 let tgBotUrl = 'https://t.me/WeltkindVPN_bot';
 let maxBotUrl = 'https://max.ru/' + MAX_BOT_USERNAME;
@@ -2689,11 +2802,14 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     if (document.visibilityState === 'visible') {
       if (gasPhone) gasLogin(true);
       if (getChatPhone().length >= 10) chatStartBgPoll();
+      checkExpiryNotifications();
+      if (swReg && swReg.active) swReg.active.postMessage({ type: 'bg_check' });
     }
   });
-  if(_sub.date){checkExpiry(); saveSubToSwCache(_sub);}
+  if(_sub.date){ checkExpiryNotifications(); saveSubToSwCache(_sub); }
   if(getChatPhone().length >= 10) chatStartBgPoll();
-  setInterval(checkExpiry,3600000);
+  // каждый час + утро 9:00 — проверка этапов 3/2/1/0
+  setInterval(checkExpiryNotifications, 3600000);
   const chatInp = document.getElementById('chat-input');
   if (chatInp) {
     chatInp.addEventListener('keydown', e => {
