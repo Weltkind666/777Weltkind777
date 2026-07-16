@@ -9,7 +9,15 @@
       if(/stay=pwa|noredirect=1/.test(q))return;
       if(/script\.google\.com/i.test(location.hostname))return;
       if(!/iPhone|iPad|iPod/i.test(navigator.userAgent))return;
-      if(localStorage.getItem('prefer_gas')!=='1')return;
+      var pref=localStorage.getItem('prefer_gas');
+      if(pref!=='1')return;
+      // prefer_gas живёт максимум 24ч — иначе PWA «навсегда» уводит на Google
+      var at=parseInt(localStorage.getItem('prefer_gas_at')||'0',10)||0;
+      if(at && (Date.now()-at)>86400000){
+        localStorage.removeItem('prefer_gas');
+        localStorage.removeItem('prefer_gas_at');
+        return;
+      }
       location.replace('https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec?from=pwa&auto=1&reason=prefer');
     }catch(e){}
   })();
@@ -446,24 +454,23 @@
 <header id="hdr">
   <div class="hdr-brand">⚡ Weltkind</div>
   <div class="hdr-right">
-    <a id="tg-chip" href="#" onclick="return fabTelegramClick(event)" title="Telegram уведомления">
+    <a id="tg-chip" href="#" onclick="return fabTelegramClick(event)" title="Telegram">
       <div class="tg-chip-dot"></div>
       <span id="tg-chip-text">TG</span>
     </a>
-    <a id="max-chip" href="#" onclick="return fabMaxClick(event)" title="MAX уведомления">
+    <a id="max-chip" href="#" onclick="return fabMaxClick(event)" title="MAX">
       <div class="max-chip-dot"></div>
       <span id="max-chip-text">MAX</span>
     </a>
-    <div id="timer-pill" onclick="haptic();togglePanel()">
+    <div id="timer-pill" onclick="haptic();togglePanel()" title="Статус подписки">
       <div class="t-dot" id="t-dot"></div>
-      <span id="timer-text">загрузка...</span>
+      <span id="timer-text">—</span>
     </div>
-    <div class="bell-btn" onclick="haptic();togglePanel()" title="Настройки и подписка">
+    <div class="bell-btn" onclick="haptic();togglePanel()" title="Меню">
       <span>⚙️</span>
       <span class="bell-label">Меню</span>
       <div class="bell-badge" id="bell-badge"></div>
     </div>
-    <button class="site-btn" onclick="haptic();openFullSite()" title="Открыть веб-версию (запасной вариант)" style="opacity:.7">Веб ↗</button>
   </div>
 </header>
 
@@ -499,19 +506,14 @@
     <div style="height:8px"></div>
   </div>
   <div class="np-divider"></div>
-  <button class="np-btn np-btn-blue" onclick="haptic();shareApp()">🔗 Поделиться приложением</button>
-  <button class="np-btn np-btn-blue" onclick="haptic();openFullSite()" style="background:rgba(0,176,255,.12);border-color:rgba(0,176,255,.3)">🌐 Открыть сайт подписки</button>
-  <button class="np-btn np-btn-red" id="notif-off-btn" onclick="haptic();disableNotif()" style="display:none">🔕 Отключить уведомления</button>
-  <div class="np-divider"></div>
-  <div class="np-section">
-    <div class="np-label">Ввести дату вручную</div>
-    <input type="date" id="np-date" class="np-input"/>
-  </div>
-  <button class="np-btn np-btn-green" onclick="haptic('medium');saveNotif()">💾 Сохранить дату</button>
-  <button class="np-btn np-btn-blue" onclick="haptic();testNotif()">🧪 Тестовое уведомление</button>
+  <button class="np-btn np-btn-blue" onclick="haptic();shareApp()">🔗 Поделиться</button>
+  <button class="np-btn np-btn-blue" onclick="haptic();openFullSite()" style="background:rgba(0,176,255,.12);border-color:rgba(0,176,255,.3)">🌐 Запасной сайт (Google)</button>
+  <button class="np-btn np-btn-blue" onclick="haptic();testNotif()">🔔 Проверить уведомления</button>
+  <button class="np-btn np-btn-red" id="notif-off-btn" onclick="haptic();disableNotif()" style="display:none">🔕 Сбросить локальный статус</button>
   <div id="np-status" class="np-status"></div>
   <div class="np-divider"></div>
-  <button class="np-btn np-btn-cache" onclick="haptic('medium');clearAllCache()">⚙️ Очистить кэш</button>
+  <div class="np-hint" id="pwa-ver-label" style="margin-bottom:8px">PWA</div>
+  <button class="np-btn np-btn-cache" onclick="haptic('medium');clearAllCache()">🗑 Очистить кэш и перезагрузить</button>
 </div>
 
 <!-- FRAME -->
@@ -545,15 +547,13 @@
         <div class="gas-sub">Войдите по номеру 🦀</div>
         <input type="tel" id="gas-phone-inp" class="gas-inp" placeholder="79161234567" inputmode="numeric"/>
         <div id="gas-login-err" class="gas-msg gas-err gas-hidden"></div>
-        <button class="gas-btn" id="gas-login-btn" onclick="haptic('medium');gasLogin()">🚪 Войти</button>
-        <div class="gas-or-line">или</div>
-        <button type="button" class="gas-btn gas-btn-site" onclick="haptic('medium');openFullSite()">🌐 Оплатить через Сайт</button>
-        <div class="gas-msg" style="margin-top:-2px;margin-bottom:10px">Если приложение не открывается — оплата на сайте Google</div>
+        <button class="gas-btn" id="gas-login-btn" onclick="haptic('medium');gasLogin()">Войти</button>
         <div id="gas-login-loader" class="gas-loader">
           <canvas class="gas-loader-canvas" width="80" height="80"></canvas>
           <span class="gas-loader-label">Загрузка...</span>
         </div>
-        <button class="gas-btn sec" onclick="haptic();chatOpen()" style="margin-top:4px">💬 Не можете войти? Напишите в поддержку</button>
+        <button class="gas-btn sec" onclick="haptic();chatOpen()" style="margin-top:8px">💬 Поддержка</button>
+        <button type="button" class="gas-btn sec" onclick="haptic('medium');openFullSite()" style="margin-top:4px;opacity:.85">🌐 Запасной сайт</button>
         <div class="gas-apps-bottom">
           <div class="gas-card">
             <div class="gas-lbl">📱 Основные приложения</div>
@@ -581,18 +581,6 @@
           <div class="gas-row"><span>Активна до</span><strong id="gas-st-exp" class="gas-ok">—</strong></div>
           <div id="gas-st-warn" class="gas-msg gas-warn gas-hidden"></div>
         </div>
-        <div id="gas-tax-block" class="gas-card gas-hidden">
-          <div class="gas-lbl">Вы оплачиваете как</div>
-          <div class="gas-tax">
-            <button type="button" id="gas-tax-ind" class="on" onclick="gasSetTax('individual')">👤 Физлицо (4%)</button>
-            <button type="button" id="gas-tax-co" onclick="gasSetTax('company')">🏢 Юрлицо (6%)</button>
-          </div>
-          <div id="gas-inn-block" class="gas-hidden">
-            <input type="text" id="gas-inn" class="gas-inp" placeholder="ИНН компании / ИП (обязательно)" inputmode="numeric" autocomplete="off" oninput="gasOnCompanyFieldsChange()"/>
-            <input type="text" id="gas-co-name" class="gas-inp" placeholder="Название компании / ИП (обязательно)" autocomplete="organization" oninput="gasOnCompanyFieldsChange()"/>
-            <div id="gas-inn-hint">Заполните ИНН и название — затем можно выбрать тариф</div>
-          </div>
-        </div>
         <div id="gas-pending-banner" class="gas-card gas-pending-card gas-hidden">
           <div class="gas-pending-head">💳 Ожидает оплаты</div>
           <div class="gas-pending-sum" id="gas-pending-sum"></div>
@@ -600,33 +588,45 @@
         </div>
         <div id="gas-tariff-block" class="gas-card gas-hidden">
           <div class="gas-lbl" id="gas-tariff-lbl">Выберите тариф</div>
+          <div id="gas-tax-block" class="gas-hidden" style="margin-bottom:10px">
+            <div class="gas-lbl" style="margin-top:0">Оплачиваете как</div>
+            <div class="gas-tax">
+              <button type="button" id="gas-tax-ind" class="on" onclick="gasSetTax('individual')">👤 Физлицо (4%)</button>
+              <button type="button" id="gas-tax-co" onclick="gasSetTax('company')">🏢 Юрлицо (6%)</button>
+            </div>
+            <div id="gas-inn-block" class="gas-hidden">
+              <input type="text" id="gas-inn" class="gas-inp" placeholder="ИНН (обязательно)" inputmode="numeric" autocomplete="off" oninput="gasOnCompanyFieldsChange()"/>
+              <input type="text" id="gas-co-name" class="gas-inp" placeholder="Название компании / ИП" autocomplete="organization" oninput="gasOnCompanyFieldsChange()"/>
+              <div id="gas-inn-hint">Заполните ИНН и название — затем тариф</div>
+            </div>
+          </div>
           <button type="button" class="gas-btn tar" id="gas-t1" onclick="gasPickTariff('1month')"></button>
           <button type="button" class="gas-btn tar" id="gas-t3" onclick="gasPickTariff('3months')"></button>
           <button type="button" class="gas-btn tar" id="gas-ty" onclick="gasPickTariff('1year')"></button>
         </div>
         <div id="gas-tg-block" class="gas-card gas-hidden"></div>
         <div id="gas-max-block" class="gas-card gas-hidden"></div>
-        <div class="gas-card">
-          <button class="gas-btn sec" onclick="haptic();chatOpen()">💬 Чат с поддержкой</button>
-          <button class="gas-btn sec" onclick="gasLogout()" style="margin-top:4px">↩ Выйти / сменить номер</button>
-        </div>
         <div class="gas-apps-bottom">
           <div class="gas-card">
-            <div class="gas-lbl">📱 Основные приложения</div>
+            <div class="gas-lbl">📱 Приложения</div>
             <div class="gas-dl">
               <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#111">iPhone</a>
-              <button type="button" class="gas-apk-btn gas-hidden gas-dl-btn" style="background:var(--accent);color:#000" onclick="haptic('medium');gasDownloadApk('vpn')">Android APK</button>
-              <a href="#" class="gas-desktop-btn gas-hidden gas-dl-btn" style="background:#29B6F6;color:#000;text-decoration:none;display:inline-flex;align-items:center;justify-content:center" target="_blank" rel="noopener">Windows ПК</a>
-              <button type="button" class="gas-tv-btn gas-hidden gas-dl-btn" style="background:#7C4DFF;color:#fff" onclick="haptic('medium');gasDownloadApk('tv')">Android TV (VPN)</button>
+              <button type="button" class="gas-apk-btn gas-hidden gas-dl-btn" style="background:var(--accent);color:#000" onclick="haptic('medium');gasDownloadApk('vpn')">Android</button>
+              <a href="#" class="gas-desktop-btn gas-hidden gas-dl-btn" style="background:#29B6F6;color:#000;text-decoration:none;display:inline-flex;align-items:center;justify-content:center" target="_blank" rel="noopener">Windows</a>
+              <button type="button" class="gas-tv-btn gas-hidden gas-dl-btn" style="background:#7C4DFF;color:#fff" onclick="haptic('medium');gasDownloadApk('tv')">Android TV</button>
             </div>
           </div>
           <div class="gas-iptv-card gas-card gas-hidden">
-            <div class="gas-lbl">📺 На телевизор</div>
+            <div class="gas-lbl">📺 ТВ / IPTV</div>
             <div class="gas-dl">
-              <button type="button" class="gas-tv-btn gas-hidden gas-dl-btn" style="background:#7C4DFF;color:#fff" onclick="haptic('medium');gasDownloadApk('tv')">Weltkind TV (VPN)</button>
-              <button type="button" class="gas-iptv-btn gas-hidden gas-dl-btn" style="background:#9c27b0" onclick="haptic('medium');gasDownloadApk('iptv')">IPTV (плейлисты)</button>
+              <button type="button" class="gas-tv-btn gas-hidden gas-dl-btn" style="background:#7C4DFF;color:#fff" onclick="haptic('medium');gasDownloadApk('tv')">Weltkind TV</button>
+              <button type="button" class="gas-iptv-btn gas-hidden gas-dl-btn" style="background:#9c27b0" onclick="haptic('medium');gasDownloadApk('iptv')">IPTV</button>
             </div>
           </div>
+        </div>
+        <div class="gas-card">
+          <button class="gas-btn sec" onclick="haptic();chatOpen()">💬 Поддержка</button>
+          <button class="gas-btn sec" onclick="haptic();gasLogout()" style="margin-top:4px">↩ Выйти</button>
         </div>
       </div>
     </div>
@@ -641,13 +641,29 @@
 </div>
 
 <script>
-/* MATRIX */
+/* MATRIX bg — лёгкий, пауза в фоне */
 (function(){
-  const c=document.getElementById('bg-canvas'),ctx=c.getContext('2d');
-  let cols,drops;const chars='01アイウエオカキクケ';
-  function resize(){c.width=innerWidth;c.height=innerHeight;cols=Math.floor(c.width/18);drops=Array(cols).fill(1);}
-  function draw(){ctx.fillStyle='rgba(5,13,20,.06)';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#00e676';ctx.font='13px monospace';for(let i=0;i<drops.length;i++){ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*18,drops[i]*18);if(drops[i]*18>c.height&&Math.random()>.975)drops[i]=0;drops[i]++;}}
-  resize();window.addEventListener('resize',resize);setInterval(draw,55);
+  const c=document.getElementById('bg-canvas'); if(!c) return;
+  const ctx=c.getContext('2d');
+  let cols,drops,iv=null;
+  const chars='01';
+  function resize(){c.width=innerWidth;c.height=innerHeight;cols=Math.floor(c.width/22);drops=Array(cols).fill(1);}
+  function draw(){
+    if(document.hidden) return;
+    ctx.fillStyle='rgba(5,13,20,.08)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='rgba(0,230,118,.55)';ctx.font='12px monospace';
+    for(let i=0;i<drops.length;i++){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*22,drops[i]*18);
+      if(drops[i]*18>c.height&&Math.random()>.97)drops[i]=0;
+      drops[i]++;
+    }
+  }
+  resize();window.addEventListener('resize',resize);
+  iv=setInterval(draw,90);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){ if(iv){clearInterval(iv);iv=null;} }
+    else if(!iv) iv=setInterval(draw,90);
+  });
 })();
 
 
@@ -748,7 +764,7 @@ let cp=[],ca=null;
 function launchConfetti(){
   cc.width=innerWidth;cc.height=innerHeight;cc.style.display='block';
   const colors=['#00e676','#00b0ff','#ff6d00','#e040fb','#ffeb3b','#ff4081'];
-  cp=Array.from({length:160},()=>({
+  cp=Array.from({length:70},()=>({
     x:Math.random()*innerWidth,y:-10-Math.random()*innerHeight*.3,
     w:6+Math.random()*8,h:4+Math.random()*6,
     color:colors[Math.floor(Math.random()*colors.length)],
@@ -757,7 +773,7 @@ function launchConfetti(){
   }));
   if(ca)cancelAnimationFrame(ca);
   animC();haptic('success');
-  setTimeout(()=>{cc.style.display='none';cp=[];},4500);
+  setTimeout(()=>{cc.style.display='none';cp=[];},3200);
 }
 function animC(){
   ccx.clearRect(0,0,cc.width,cc.height);
@@ -909,9 +925,17 @@ async function fetchWithTimeout(url, opts, ms){
 }
 
 async function gasApi(params){
-  const q = new URLSearchParams(params);
+  const q = new URLSearchParams();
+  Object.keys(params || {}).forEach(k => {
+    const v = params[k];
+    if (v === undefined || v === null) return;
+    q.set(k, String(v));
+  });
   const res = await fetchWithTimeout(GAS_URL + '?' + q.toString(), { cache: 'no-store', mode: 'cors' }, 15000);
-  return await res.json();
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch (e) { throw new Error('bad_json'); }
 }
 
 function gasCalcTax(base){
@@ -1074,9 +1098,10 @@ function gasRenderMain(d){
     warn.textContent = '✅ Подписка активна';
     warn.classList.remove('gas-hidden');
   } else warn.classList.add('gas-hidden');
-  document.getElementById('gas-tax-block').classList.remove('gas-hidden');
-  document.getElementById('gas-tariff-block').classList.remove('gas-hidden');
-  document.getElementById('gas-tariff-lbl').textContent = d.status === 'Не оплачено' ? 'Выберите тариф' : 'Продлить подписку';
+  document.getElementById('gas-tax-block')?.classList.remove('gas-hidden');
+  document.getElementById('gas-tariff-block')?.classList.remove('gas-hidden');
+  const lbl = document.getElementById('gas-tariff-lbl');
+  if (lbl) lbl.textContent = (d.status === 'Не оплачено' || d.canRenew) ? 'Выберите тариф' : 'Продлить подписку';
   gasRenderTariffs(d);
   gasRenderTelegram(d);
   gasRenderMax(d);
@@ -1366,6 +1391,13 @@ function gasCopyPendingPhone(){
   gasCopyText(String(p?.paymentMethod || gasUserData?.paymentMethod || ''));
 }
 
+function gasCopyPendingSum(){
+  const p = gasLoadPendingPay() || gasLoadPendingPayAny();
+  const sum = p?.total != null ? gasFmtMoney(p.total) : '';
+  if (!sum) { gasShowCopyToast('Нет суммы'); return; }
+  gasCopyText(sum);
+}
+
 
 
 async function gasRefreshTg(){ await gasLogin(true); }
@@ -1387,6 +1419,7 @@ async function gasClearTg(){
 async function gasRefreshMax(){ await gasLogin(true); }
 async function gasTestMax(){
   try {
+    // GAS sendTestToClient покрывает TG+MAX; отдельного testMax нет
     const j = await gasApi({ action: 'testTelegram', phone: gasPhone });
     alert(j.message || (j.status === 'ok' ? 'Отправлено!' : 'Ошибка'));
   } catch (e) { alert('Ошибка связи'); }
@@ -1402,15 +1435,21 @@ async function gasClearMax(){
 
 function gasLogout(){
   chatStopBgPoll();
-  chatClose();
+  try { chatClose(); } catch (e) {}
   gasClearPendingPay();
   setGasLoggedIn(false);
   gasUserData = null;
   gasPhone = '';
-  document.getElementById('gas-main-view').classList.add('gas-hidden');
-  document.getElementById('gas-login-view').classList.remove('gas-hidden');
+  // не стираем vpn_s (офлайн-таймер), только сессию входа
+  _lsSet('gas_phone', '');
+  _lsSet('phoneNumber', '');
+  const inp = document.getElementById('gas-phone-inp');
+  if (inp) inp.value = '';
+  document.getElementById('gas-main-view')?.classList.add('gas-hidden');
+  document.getElementById('gas-login-view')?.classList.remove('gas-hidden');
   gasShowErr('');
   updateMessengerStatus(loadSub());
+  startTimer();
 }
 
 function gasRefresh(){ if (gasPhone) gasLogin(true); else initGasApp(); }
@@ -1556,63 +1595,65 @@ async function gasDownloadApk(kind){
   }
 }
 
-async function gasLoadAppLinks(){
-  try {
-    const apk = await gasApi({ action: 'appVersion' });
-    if (apk.apkUrl) {
-      gasApkMeta = {
-        version: apk.version || '',
-        url: apk.apkUrl,
-        fileName: 'Weltkind' + (apk.version ? '_' + apk.version : '') + '.apk'
-      };
-      document.querySelectorAll('.gas-apk-btn').forEach(a => {
-        a.textContent = 'Android' + (apk.version ? ' v' + apk.version : '');
-        a.classList.remove('gas-hidden');
-      });
-    }
-  } catch (e) {}
-  try {
-    const desk = await gasApi({ action: 'desktopVersion' });
-    if (desk && desk.exeUrl) {
-      document.querySelectorAll('.gas-desktop-btn').forEach(a => {
-        a.href = desk.exeUrl;
-        a.textContent = 'Windows' + (desk.version ? ' v' + desk.version : '');
-        a.classList.remove('gas-hidden');
-      });
-    }
-  } catch (e) {}
-  try {
-    const iptv = await gasApi({ action: 'iptvVersion' });
-    if (iptv.apkUrl) {
-      gasIptvMeta = {
-        version: iptv.version || '',
-        url: iptv.apkUrl,
-        fileName: 'AuroraIPTV' + (iptv.version ? '_' + iptv.version : '') + '.apk'
-      };
-      document.querySelectorAll('.gas-iptv-btn').forEach(a => {
-        a.textContent = 'IPTV' + (iptv.version ? ' v' + iptv.version : '');
-        a.classList.remove('gas-hidden');
-      });
-      document.querySelectorAll('.gas-iptv-card').forEach(c => c.classList.remove('gas-hidden'));
-    }
-  } catch (e) {}
-  // Weltkind TV (Android TV VPN) — separate from phone appVersion
-  try {
-    const tv = await gasApi({ action: 'tvVersion' });
-    if (tv && tv.apkUrl) {
-      gasTvMeta = {
-        version: tv.version || '',
-        url: tv.apkUrl,
-        fileName: 'WeltkindTV' + (tv.version ? '_' + tv.version : '') + '.apk'
-      };
-      document.querySelectorAll('.gas-tv-btn').forEach(a => {
-        a.textContent = 'Android TV' + (tv.version ? ' v' + tv.version : '');
-        a.classList.remove('gas-hidden');
-      });
-      // Show TV card if either Weltkind TV or IPTV is published
-      document.querySelectorAll('.gas-iptv-card').forEach(c => c.classList.remove('gas-hidden'));
-    }
-  } catch (e) {}
+let gasAppLinksLoadedAt = 0;
+const GAS_APP_LINKS_TTL = 60 * 60 * 1000; // 1 час
+
+async function gasLoadAppLinks(force){
+  if (!force && gasAppLinksLoadedAt && (Date.now() - gasAppLinksLoadedAt) < GAS_APP_LINKS_TTL) return;
+  const results = await Promise.allSettled([
+    gasApi({ action: 'appVersion' }),
+    gasApi({ action: 'desktopVersion' }),
+    gasApi({ action: 'iptvVersion' }),
+    gasApi({ action: 'tvVersion' })
+  ]);
+  const apk = results[0].status === 'fulfilled' ? results[0].value : null;
+  const desk = results[1].status === 'fulfilled' ? results[1].value : null;
+  const iptv = results[2].status === 'fulfilled' ? results[2].value : null;
+  const tv = results[3].status === 'fulfilled' ? results[3].value : null;
+
+  if (apk && apk.apkUrl) {
+    gasApkMeta = {
+      version: apk.version || '',
+      url: apk.apkUrl,
+      fileName: 'Weltkind' + (apk.version ? '_' + apk.version : '') + '.apk'
+    };
+    document.querySelectorAll('.gas-apk-btn').forEach(a => {
+      a.textContent = 'Android' + (apk.version ? ' v' + apk.version : '');
+      a.classList.remove('gas-hidden');
+    });
+  }
+  if (desk && desk.exeUrl) {
+    document.querySelectorAll('.gas-desktop-btn').forEach(a => {
+      a.href = desk.exeUrl;
+      a.textContent = 'Windows' + (desk.version ? ' v' + desk.version : '');
+      a.classList.remove('gas-hidden');
+    });
+  }
+  if (iptv && iptv.apkUrl) {
+    gasIptvMeta = {
+      version: iptv.version || '',
+      url: iptv.apkUrl,
+      fileName: 'AuroraIPTV' + (iptv.version ? '_' + iptv.version : '') + '.apk'
+    };
+    document.querySelectorAll('.gas-iptv-btn').forEach(a => {
+      a.textContent = 'IPTV' + (iptv.version ? ' v' + iptv.version : '');
+      a.classList.remove('gas-hidden');
+    });
+    document.querySelectorAll('.gas-iptv-card').forEach(c => c.classList.remove('gas-hidden'));
+  }
+  if (tv && tv.apkUrl) {
+    gasTvMeta = {
+      version: tv.version || '',
+      url: tv.apkUrl,
+      fileName: 'WeltkindTV' + (tv.version ? '_' + tv.version : '') + '.apk'
+    };
+    document.querySelectorAll('.gas-tv-btn').forEach(a => {
+      a.textContent = 'Android TV' + (tv.version ? ' v' + tv.version : '');
+      a.classList.remove('gas-hidden');
+    });
+    document.querySelectorAll('.gas-iptv-card').forEach(c => c.classList.remove('gas-hidden'));
+  }
+  gasAppLinksLoadedAt = Date.now();
 }
 
 function getGasFallbackUrl(extra){
@@ -1625,7 +1666,10 @@ function getGasFallbackUrl(extra){
 function redirectToGoogle(reason){
   if (isOnGasHost || sessionStorage.getItem('gas_redirect_done')) return;
   sessionStorage.setItem('gas_redirect_done', '1');
-  try { _lsSet('prefer_gas', '1'); } catch (e) {}
+  try {
+    _lsSet('prefer_gas', '1');
+    _lsSet('prefer_gas_at', String(Date.now()));
+  } catch (e) {}
   const splashSub = document.querySelector('.splash-sub');
   if (splashSub) splashSub.textContent = 'Переход на Google...';
   location.replace(getGasFallbackUrl({ auto: '1', reason: reason || 'blocked' }));
@@ -1648,14 +1692,19 @@ async function maybeAutoRedirectToGoogle(){
   if (params.get('stay') === 'pwa' || params.get('noredirect') === '1') return false;
   if (sessionStorage.getItem('gas_redirect_done')) return false;
   if (_lsGet('prefer_gas') === '1') {
-    redirectToGoogle('prefer');
-    return true;
+    const at = parseInt(_lsGet('prefer_gas_at') || '0', 10) || 0;
+    if (at && (Date.now() - at) > 86400000) {
+      try { _lsSet('prefer_gas', ''); _lsSet('prefer_gas_at', ''); } catch (e) {}
+    } else {
+      redirectToGoogle('prefer');
+      return true;
+    }
   }
   const splashSub = document.querySelector('.splash-sub');
   if (splashSub) splashSub.textContent = isIOS ? 'Проверка сети (iPhone)...' : 'Проверка сети...';
   const ok = await probeGasReachable();
   if (ok) {
-    try { _lsSet('prefer_gas', ''); } catch (e) {}
+    try { _lsSet('prefer_gas', ''); _lsSet('prefer_gas_at', ''); } catch (e) {}
     return false;
   }
   redirectToGoogle('unreachable');
@@ -1716,19 +1765,27 @@ if('serviceWorker' in navigator){
 }
 
 /* ════ SW NOTIFY — настоящие мобильные уведомления ════ */
+const PWA_CACHE = 'Weltkind-v23';
+const PWA_SUB_KEY = 'weltkind-sub-data';
+
+async function saveSubToSwCache(sub){
+  if(!sub||!sub.date||!('caches' in window))return;
+  try{
+    const cache=await caches.open(PWA_CACHE);
+    await cache.put(PWA_SUB_KEY,new Response(JSON.stringify(sub)));
+  }catch(e){}
+}
+
 async function swNotify(title,body,tag='weltkind'){
   if(Notification.permission!=='granted')return;
-  // Сохраняем данные для фонового синка
   try{
     const sub=loadSub();
-    if(sub.date){const cache=await caches.open('Weltkind-v18');await cache.put('weltkind-sub-data',new Response(JSON.stringify(sub)));}
+    if(sub.date) await saveSubToSwCache(sub);
   }catch(e){}
-  // Показываем через SW — приходит как настоящий пуш на мобильном
   const reg=swReg||await navigator.serviceWorker.getRegistration();
   if(reg?.active){
     reg.active.postMessage({type:'SHOW_NOTIFICATION',title,body,tag});
   } else {
-    // Fallback десктоп
     try{const n=new Notification(title,{body,icon:'icons/icon-192.png',tag});n.onclick=()=>{window.focus();n.close();};}catch(e){}
   }
 }
@@ -1807,38 +1864,51 @@ function updateBadge(d){
   d===null?navigator.clearAppBadge().catch(()=>{}):d<=0?navigator.setAppBadge(99).catch(()=>{}):d<=30?navigator.setAppBadge(d).catch(()=>{}):navigator.clearAppBadge().catch(()=>{});
 }
 
-/* LIVE TIMER */
+/* LIVE TIMER — 1с только когда ≤7 дней, иначе раз в минуту */
 let timerIv=null;
 function tickTimer(){
   const sub=loadSub();
   const pill=document.getElementById('timer-pill');
   const tdot=document.getElementById('t-dot');
   const ttxt=document.getElementById('timer-text');
+  if(!pill||!ttxt)return;
   if(!sub||!sub.date){
-    pill.className='';tdot.className='t-dot';
-    ttxt.textContent=isTgWebView?'загрузка...':'войдите';
-    updateBadge(null);return;
+    pill.className='';if(tdot)tdot.className='t-dot';
+    ttxt.textContent=isTgWebView?'…':'войдите';
+    updateBadge(null);
+    return { urgent:false };
   }
   const msLeft=new Date(sub.date)-Date.now();
   const days=Math.floor(msLeft/86400000);
   updateBadge(days);
   if(msLeft<=0){
-    pill.className='err';tdot.className='t-dot err';ttxt.textContent='истекла!';
-    document.getElementById('bell-badge').classList.add('show');
-  } else if(days<=7){
+    pill.className='err';if(tdot)tdot.className='t-dot err';ttxt.textContent='истекла!';
+    document.getElementById('bell-badge')?.classList.add('show');
+    return { urgent:true };
+  }
+  if(days<=7){
     const h=Math.floor((msLeft%86400000)/3600000);
     const m=Math.floor((msLeft%3600000)/60000);
     const s=Math.floor((msLeft%60000)/1000);
     const pad=n=>String(n).padStart(2,'0');
     ttxt.textContent=days>0?`${days}д ${pad(h)}ч ${pad(m)}м`:`${pad(h)}:${pad(m)}:${pad(s)}`;
     pill.className=days<=3?'err':'warn';
-    tdot.className=days<=3?'t-dot err':'t-dot warn';
-    document.getElementById('bell-badge').classList.add('show');
-  } else {
-    pill.className='';tdot.className='t-dot ok';ttxt.textContent=days+' дн.';
+    if(tdot)tdot.className=days<=3?'t-dot err':'t-dot warn';
+    document.getElementById('bell-badge')?.classList.add('show');
+    return { urgent:true };
   }
+  pill.className='';if(tdot)tdot.className='t-dot ok';ttxt.textContent=days+' дн.';
+  return { urgent:false };
 }
-function startTimer(){if(timerIv)clearInterval(timerIv);tickTimer();timerIv=setInterval(tickTimer,1000);}
+function startTimer(){
+  if(timerIv)clearInterval(timerIv);
+  const run=()=>{
+    const r=tickTimer();
+    if(timerIv)clearInterval(timerIv);
+    timerIv=setInterval(run, (r&&r.urgent)?1000:60000);
+  };
+  run();
+}
 
 /* postMessage */
 window.addEventListener('message',e=>{
@@ -1860,6 +1930,7 @@ function handleSubData(expiryDate,status,phone,telegramConnected,telegramBotUrl,
   const p=(phone||'').replace(/\D/g,'');
   const sub={date:iso,displayDate:expiryDate,status,phone,totalDays:total,syncedAt:Date.now(),tgConnected:!!telegramConnected,tgBotUrl:telegramBotUrl||'https://t.me/WeltkindVPN_bot',maxConnected:!!maxConnected,maxBotUrl:maxBotUrl||('https://max.ru/'+MAX_BOT_USERNAME+(p?'?start='+p:''))};
   saveSub(sub);
+  saveSubToSwCache(sub);
   if(iso&&iso!==prev.date&&status==='Оплачено'){
     const hist=loadHist();
     if(!hist.find(h=>h.date===iso)){hist.unshift({date:iso,savedAt:Date.now()});if(hist.length>10)hist.length=10;saveHist(hist);}
@@ -1868,7 +1939,7 @@ function handleSubData(expiryDate,status,phone,telegramConnected,telegramBotUrl,
   startTimer();checkExpiry();
   updateMessengerStatus(sub);
   if(iso&&status==='Оплачено'){gasClearPendingPay();autoAskPerm();}
-  if(document.getElementById('notif-panel').classList.contains('open'))renderDash();
+  if(document.getElementById('notif-panel')?.classList.contains('open'))renderDash();
 }
 
 /* DASHBOARD */
@@ -1898,7 +1969,7 @@ function renderDash(){
 function togglePanel(){
   const p=document.getElementById('notif-panel'),d=document.getElementById('dimmer');
   if(p.classList.contains('open')){closePanel();}
-  else{p.classList.add('open');d.classList.add('show');renderDash();const s=loadSub();if(s.date)document.getElementById('np-date').value=s.date;}
+  else{p.classList.add('open');d.classList.add('show');renderDash();}
 }
 function closePanel(){haptic();document.getElementById('notif-panel').classList.remove('open');document.getElementById('dimmer').classList.remove('show');}
 
@@ -1913,14 +1984,14 @@ async function shareApp(){
 async function autoAskPerm(){
   if(Notification.permission==='default'){const p=await Notification.requestPermission();if(p==='granted'){showSt('✅ Уведомлю за 3 дня до конца!','ok');document.getElementById('bell-badge').classList.add('show');}}
 }
-async function saveNotif(){
-  const date=document.getElementById('np-date').value;if(!date){showSt('⚠️ Укажите дату','warn');return;}
-  let p=Notification.permission;if(p==='default')p=await Notification.requestPermission();
-  if(p==='denied'){showSt('❌ Заблокировано браузером','err');return;}
-  const sub=loadSub();sub.date=date;sub.totalDays=sub.totalDays||30;sub.savedAt=Date.now();
-  saveSub(sub);startTimer();renderDash();showSt('✅ Сохранено!','ok');document.getElementById('bell-badge').classList.add('show');checkExpiry();
+function disableNotif(){
+  saveSub({});
+  startTimer();
+  renderDash();
+  document.getElementById('bell-badge')?.classList.remove('show');
+  updateBadge(null);
+  showSt('🔕 Локальный статус сброшен','warn');
 }
-function disableNotif(){saveSub({});startTimer();renderDash();document.getElementById('bell-badge').classList.remove('show');document.getElementById('np-date').value='';updateBadge(null);showSt('🔕 Отключено','warn');}
 async function testNotif(){
   let p=Notification.permission;if(p==='default')p=await Notification.requestPermission();
   if(p==='denied'){showSt('❌ Заблокировано — разреши уведомления в настройках браузера','err');return;}
@@ -1960,9 +2031,6 @@ function updateMessengerStatus(sub) {
   tgBotUrl = getTgUrl(loggedIn ? phone : '');
   maxBotUrl = sub.maxBotUrl || getMaxUrl(loggedIn ? phone : '');
 
-  const fab = document.getElementById('fab-support');
-  if (fab) fab.href = tgBotUrl;
-
   updateTgChip_(sub, loggedIn);
   updateMaxChip_(sub, loggedIn);
 }
@@ -1988,10 +2056,20 @@ function updateTgChip_(sub, loggedIn) {
     chip.classList.remove('connected');
     chipText.textContent = 'TG';
     chip.title = 'Подключить Telegram-бота';
-    if (!_ssGet('tg_banner_closed')) {
-      setTimeout(() => showTgBanner(tgBotUrl), 1500);
+    // баннер только раз в 7 дней, если нет ни TG ни MAX
+    if (!connected && !sub.maxConnected && !messengerBannerRecentlyShown_()) {
+      setTimeout(() => showTgBanner(tgBotUrl), 2500);
     }
   }
+}
+
+function messengerBannerRecentlyShown_(){
+  const at = parseInt(_lsGet('msg_banner_at') || '0', 10) || 0;
+  return at && (Date.now() - at) < 7 * 86400000;
+}
+
+function markMessengerBannerShown_(){
+  _lsSet('msg_banner_at', String(Date.now()));
 }
 
 function updateMaxChip_(sub, loggedIn) {
@@ -2015,9 +2093,7 @@ function updateMaxChip_(sub, loggedIn) {
     chip.classList.remove('connected');
     chipText.textContent = 'MAX';
     chip.title = 'Подключить MAX-бота';
-    if (!_ssGet('max_banner_closed')) {
-      setTimeout(() => showMaxBanner(maxBotUrl), 2200);
-    }
+    // не спамим вторым баннером — достаточно chips + блок на экране
   }
 }
 
@@ -2096,38 +2172,33 @@ async function gasPollMaxConnection_(attempts) {
 }
 
 function showTgBanner(url) {
+  if (messengerBannerRecentlyShown_()) return;
   const banner = document.getElementById('tg-banner');
   const btn = document.getElementById('tg-banner-btn');
-  if (!banner) return;
+  if (!banner || !btn) return;
   const sub = loadSub();
   const link = url || getTgUrl(sub.phone);
   btn.href = link;
   btn.removeAttribute('target');
   banner.classList.add('show');
-  setTimeout(() => banner.classList.remove('show'), 12000);
+  markMessengerBannerShown_();
+  setTimeout(() => banner.classList.remove('show'), 10000);
 }
 
 function closeTgBanner() {
   const banner = document.getElementById('tg-banner');
   if (banner) banner.classList.remove('show');
-  try{sessionStorage.setItem('tg_banner_closed', '1');}catch(e){_memStore['ss_tg_banner_closed']='1';}
+  markMessengerBannerShown_();
 }
 
 function showMaxBanner(url) {
-  const banner = document.getElementById('max-banner');
-  const btn = document.getElementById('max-banner-btn');
-  if (!banner) return;
-  const sub = loadSub();
-  btn.href = url || getMaxUrl(sub.phone);
-  btn.target = '_blank';
-  banner.classList.add('show');
-  setTimeout(() => banner.classList.remove('show'), 12000);
+  // MAX-баннер отключён — меньше шума; подключение в карточке после входа
+  return;
 }
 
 function closeMaxBanner() {
   const banner = document.getElementById('max-banner');
   if (banner) banner.classList.remove('show');
-  try{sessionStorage.setItem('max_banner_closed', '1');}catch(e){_memStore['ss_max_banner_closed']='1';}
 }
 
 function _ssGet(k){try{return sessionStorage.getItem(k);}catch(e){return _memStore['ss_'+k]||null;}}
@@ -2390,13 +2461,25 @@ async function chatPoll(){
   } catch (e) {}
 }
 
+function chatPollIntervalMs(){
+  const panel = document.getElementById('chat-panel');
+  const open = panel && panel.classList.contains('open');
+  if (open) return 5000;
+  if (document.hidden) return 120000;
+  return 45000;
+}
+
 function chatStartBgPoll(){
   const phone = getChatPhone();
   if (!phone || phone.length < 10) return;
   chatSince = parseInt(_lsGet(chatTsKey(phone)) || '0', 10) || 0;
   if (chatPollIv) clearInterval(chatPollIv);
-  chatPoll();
-  chatPollIv = setInterval(chatPoll, 5000);
+  const tick = () => {
+    chatPoll();
+    if (chatPollIv) clearInterval(chatPollIv);
+    chatPollIv = setInterval(tick, chatPollIntervalMs());
+  };
+  tick();
 }
 
 function chatStopBgPoll(){
@@ -2452,6 +2535,7 @@ function chatOpen(){
     chatShowStatus('Укажите номер — так мы найдём ваш чат и ответим', true);
     setTimeout(() => document.getElementById('chat-phone-inp')?.focus(), 350);
   }
+  chatStartBgPoll();
 }
 
 function chatClose(){
@@ -2459,6 +2543,8 @@ function chatClose(){
   document.getElementById('chat-panel')?.classList.remove('open');
   chatResetViewport();
   chatShowStatus('', false);
+  // после закрытия — редкий poll, если номер есть
+  if (getChatPhone().length >= 10) chatStartBgPoll();
 }
 
 async function chatSend(){
@@ -2584,16 +2670,28 @@ document.addEventListener('DOMContentLoaded',async ()=>{
   obInit();updateNet();startTimer();
   gasInitModalBackdrops();
   startGasWhenReady();
+  try {
+    const vr = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+    const vj = await vr.json();
+    const el = document.getElementById('pwa-ver-label');
+    if (el && vj) el.textContent = 'PWA v' + (vj.version_name || vj.version_code || '—');
+  } catch (e) {}
   const gasInp=document.getElementById('gas-phone-inp');
-  if(gasInp) gasInp.addEventListener('input',function(){ this.value=this.value.replace(/\D/g,''); });
+  if(gasInp){
+    gasInp.addEventListener('input',function(){ this.value=this.value.replace(/\D/g,''); });
+    gasInp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); gasLogin(); }});
+  }
   if (isTgWebView) showTgOpenBrowser();
   setGasLoggedIn(false);
   const _sub=loadSub();
   updateTgStatus(_sub);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && gasPhone) gasLogin(true);
+    if (document.visibilityState === 'visible') {
+      if (gasPhone) gasLogin(true);
+      if (getChatPhone().length >= 10) chatStartBgPoll();
+    }
   });
-  if(_sub.date){checkExpiry();}
+  if(_sub.date){checkExpiry(); saveSubToSwCache(_sub);}
   if(getChatPhone().length >= 10) chatStartBgPoll();
   setInterval(checkExpiry,3600000);
   const chatInp = document.getElementById('chat-input');
@@ -2662,6 +2760,7 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
         <div class="pay-phone-lbl">Номер для перевода (СБП)</div>
         <div class="pay-phone-num" id="pay-modal-phone"></div>
         <button type="button" class="gas-btn sec" onclick="haptic();gasCopyPendingPhone()">📋 Копировать номер</button>
+        <button type="button" class="gas-btn sec" onclick="haptic();gasCopyPendingSum()" style="margin-top:6px">💰 Копировать сумму</button>
         <div class="gas-row" style="margin:10px 0 0"><span>Банк</span><strong id="pay-modal-bank">—</strong></div>
       </div>
       <div class="pay-steps">
@@ -2722,30 +2821,23 @@ window.addEventListener('appinstalled',()=>document.getElementById('install-bann
   </div>
 </div>
 
-<!-- FAB Telegram bot -->
-<a id="fab-support" href="#" target="_blank" onclick="return fabTelegramClick(event)" title="Telegram-бот">
-  <div class="fab-pulse"></div>
-  <span>✈️</span>
-  <div class="fab-tooltip">Подключить Telegram</div>
-</a>
-
-<!-- Telegram connect banner -->
+<!-- Telegram connect banner (редко) -->
 <div id="tg-banner">
   <div class="tg-banner-icon">📲</div>
   <div class="tg-banner-text">
-    <strong>Подключи Telegram</strong>
-    <span>Получай уведомления об оплате</span>
+    <strong>Подключите Telegram</strong>
+    <span>Напоминания об оплате</span>
   </div>
   <a id="tg-banner-btn" class="tg-banner-btn" href="#" onclick="return fabTelegramClick(event)">Подключить</a>
   <button class="tg-banner-close" onclick="closeTgBanner()">✕</button>
 </div>
 
-<!-- MAX connect banner -->
-<div id="max-banner">
+<!-- MAX banner (не используется, заглушка для JS) -->
+<div id="max-banner" style="display:none!important" aria-hidden="true">
   <div class="max-banner-icon">💬</div>
   <div class="max-banner-text">
     <strong>Подключи MAX</strong>
-    <span>Подписка, оплата и приложение в боте</span>
+    <span>Подписка и оплата в боте</span>
   </div>
   <a id="max-banner-btn" class="max-banner-btn" href="#" onclick="return fabMaxClick(event)">Подключить</a>
   <button class="max-banner-close" onclick="closeMaxBanner()">✕</button>

@@ -1,11 +1,12 @@
 {
   "name": "Weltkind VPN",
   "short_name": "Weltkind",
-  "description": "Управление подпиской Weltkind VPN",
-  "start_url": ".",
+  "description": "Подписка, оплата и уведомления Weltkind VPN",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#050d14",
   "theme_color": "#050d14",
+  "id": "./",
   "orientation": "any",
   "scope": ".",
   "icons": [
