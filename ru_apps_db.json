@@ -334,7 +334,15 @@
     "ru.ozon.fintech.finance",
     "ru.rshb.dbo",
     "ru.lewis.dbo",
-    "ru.coffeemania.app"
+    "ru.coffeemania.app",
+    "com.google.android.apps.maps",
+    "com.ilyabogdanovich.geotracker",
+    "taxi.ya.voditel",
+    "ua.com.ontaxi.drivernew",
+    "com.rulyouru.office4.rulyouru",
+    "com.taptaxi.terminal",
+    "taxi.vibor",
+    "ru.citymobil.cargo"
   ],
   "markers": [
     "ru.sber",
@@ -644,7 +652,18 @@
     "dbo",
     "rshb",
     "lewis",
-    "coffeemania"
+    "coffeemania",
+    "geotracker",
+    "ilyabogdanovich",
+    "voditel",
+    "drivernew",
+    "ontaxi",
+    "rulyouru",
+    "office4",
+    "terminal",
+    "taptaxi",
+    "vibor",
+    "cargo"
   ],
   "keywords": [
     "сбер",
@@ -996,7 +1015,23 @@
     "finance",
     "мобильный банк, россельхозбанк",
     "мтс деньги",
-    "кофемания"
+    "кофемания",
+    "google карты",
+    "maps",
+    "геотрекер - gps трекер",
+    "geotracker",
+    "я водитель - работа в такси",
+    "voditel",
+    "новый ontaxi driver: работа",
+    "drivernew",
+    "moon clock: lunar phase widget",
+    "rulyouru",
+    "таптакси водитель",
+    "terminal",
+    "работа в такси. партнёр выбор.",
+    "vibor",
+    "дальнобой: навигатор для фур",
+    "cargo"
   ],
   "excludes": [
     "ru.google",
