@@ -1,6 +1,6 @@
 {
-  "name": "Weltkind VPN",
-  "short_name": "Weltkind",
+  "name": "Личный Кабинет",
+  "short_name": "Личный Кабинет",
   "description": "Подписка, оплата и уведомления Weltkind VPN",
   "start_url": "./",
   "display": "standalone",
