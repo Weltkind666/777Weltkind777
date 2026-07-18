@@ -1,6 +1,6 @@
 {
   "version": 8,
-  "updated": "2026-07-16",
+  "updated": "2026-07-18",
   "packages": [
     "ru.sberbankmobile",
     "ru.sberbank.spasibo",
@@ -342,7 +342,19 @@
     "com.rulyouru.office4.rulyouru",
     "com.taptaxi.terminal",
     "taxi.vibor",
-    "ru.citymobil.cargo"
+    "ru.citymobil.cargo",
+    "com.kiloo.subwaysurf",
+    "mek.mobile.v1",
+    "ru.mcmedic.client",
+    "ru.polyclinika.mobile",
+    "ru.smclinic.app.lk",
+    "ru.gosuslugi.school",
+    "ru.mdrk",
+    "ru.swan.kvrachu",
+    "info.emias.spb",
+    "ru.wildberries.team",
+    "ru.wb.courier",
+    "ru.wb.go"
   ],
   "markers": [
     "ru.sber",
@@ -663,7 +675,22 @@
     "terminal",
     "taptaxi",
     "vibor",
-    "cargo"
+    "cargo",
+    "subwaysurf",
+    "kiloo",
+    "mek",
+    "mcmedic",
+    "polyclinika",
+    "smclinic",
+    "school",
+    "gosuslugi",
+    "mdrk",
+    "kvrachu",
+    "swan",
+    "spb",
+    "emias",
+    "team",
+    "courier"
   ],
   "keywords": [
     "сбер",
@@ -1031,7 +1058,23 @@
     "работа в такси. партнёр выбор.",
     "vibor",
     "дальнобой: навигатор для фур",
-    "cargo"
+    "cargo",
+    "subway blast",
+    "subwaysurf",
+    "мой мэк",
+    "частная клиника «медик»",
+    "поликлиника.ру 2.0",
+    "см-клиника",
+    "госуслуги моя школа",
+    "school",
+    "mdrk",
+    "к-врачу",
+    "kvrachu",
+    "wb job",
+    "team",
+    "wb курьер",
+    "courier",
+    "wb go"
   ],
   "excludes": [
     "ru.google",
