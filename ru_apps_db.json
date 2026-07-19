@@ -1,6 +1,6 @@
 {
   "version": 8,
-  "updated": "2026-07-18",
+  "updated": "2026-07-19",
   "packages": [
     "ru.sberbankmobile",
     "ru.sberbank.spasibo",
@@ -354,7 +354,8 @@
     "info.emias.spb",
     "ru.wildberries.team",
     "ru.wb.courier",
-    "ru.wb.go"
+    "ru.wb.go",
+    "com.weltkind.vpnclients.debug"
   ],
   "markers": [
     "ru.sber",
@@ -690,7 +691,9 @@
     "spb",
     "emias",
     "team",
-    "courier"
+    "courier",
+    "debug",
+    "vpnclients"
   ],
   "keywords": [
     "сбер",
@@ -1074,7 +1077,9 @@
     "team",
     "wb курьер",
     "courier",
-    "wb go"
+    "wb go",
+    "shelly ble debug",
+    "debug"
   ],
   "excludes": [
     "ru.google",
