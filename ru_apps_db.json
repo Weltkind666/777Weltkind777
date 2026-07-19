@@ -1,5 +1,5 @@
 {
-  "version": 8,
+  "version": 9,
   "updated": "2026-07-19",
   "packages": [
     "ru.sberbankmobile",
@@ -355,7 +355,8 @@
     "ru.wildberries.team",
     "ru.wb.courier",
     "ru.wb.go",
-    "com.weltkind.vpnclients.debug"
+    "com.weltkind.vpnclients.debug",
+    "com.weltkind.vpnclients"
   ],
   "markers": [
     "ru.sber",
@@ -692,7 +693,6 @@
     "emias",
     "team",
     "courier",
-    "debug",
     "vpnclients"
   ],
   "keywords": [
@@ -1078,8 +1078,8 @@
     "wb курьер",
     "courier",
     "wb go",
-    "shelly ble debug",
-    "debug"
+    "vpn клиенты",
+    "vpnclients"
   ],
   "excludes": [
     "ru.google",
