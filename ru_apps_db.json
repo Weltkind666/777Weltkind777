@@ -1,6 +1,6 @@
 {
   "version": 9,
-  "updated": "2026-07-19",
+  "updated": "2026-07-24",
   "packages": [
     "ru.sberbankmobile",
     "ru.sberbank.spasibo",
@@ -356,7 +356,8 @@
     "ru.wb.courier",
     "ru.wb.go",
     "com.weltkind.vpnclients.debug",
-    "com.weltkind.vpnclients"
+    "com.weltkind.vpnclients",
+    "com.soulcompany.bubbleshooter.relaxing"
   ],
   "markers": [
     "ru.sber",
@@ -693,7 +694,9 @@
     "emias",
     "team",
     "courier",
-    "vpnclients"
+    "vpnclients",
+    "relaxing",
+    "bubbleshooter"
   ],
   "keywords": [
     "сбер",
@@ -1079,7 +1082,9 @@
     "courier",
     "wb go",
     "vpn клиенты",
-    "vpnclients"
+    "vpnclients",
+    "bubble shooter relaxing",
+    "relaxing"
   ],
   "excludes": [
     "ru.google",
