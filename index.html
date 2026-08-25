@@ -103,6 +103,12 @@
     .dl{display:flex;flex-wrap:wrap;gap:8px}
     .dl a,.dl .gas-dl-btn{padding:10px 14px;border-radius:12px;text-decoration:none;font-weight:650;font-size:.82rem;color:#fff;border:none;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center}
     .pending{background:#FFF8F1!important;border-color:#F3D5B5!important}
+    .home-notif{margin-top:12px;padding:12px;border-radius:14px;background:#F3FBFA;text-align:left}
+    .home-notif-title{font-size:.92rem;font-weight:700;margin-bottom:4px}
+    .home-notif-sub{font-size:.78rem;color:var(--muted);line-height:1.4;margin-bottom:10px}
+    .home-notif-btns{display:flex;gap:8px}
+    .home-notif-btns .btn{flex:1;margin:0}
+    .home-notif-max{background:#6D5AE6!important;color:#fff!important}
 
     #tabbar{position:fixed;left:0;right:0;bottom:0;z-index:300;height:calc(var(--nav) + var(--safe-bot));padding:6px 8px var(--safe-bot);display:flex;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border-top:1px solid var(--border)}
     .nav-btn{flex:1;border:0;background:none;color:#8A97A3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:.68rem;font-weight:600;cursor:pointer;position:relative}
@@ -232,6 +238,14 @@
           <div class="bar"><i id="sub-fill"></i></div>
           <div id="gas-st-warn" class="msg warn gas-hidden"></div>
           <button class="btn" id="home-pay-btn" onclick="haptic();showTab('pay')">Продлить подписку</button>
+          <div id="home-notif-box" class="home-notif gas-hidden">
+            <div class="home-notif-title">Подключите уведомления</div>
+            <div class="home-notif-sub">Напомним за 3, 2 и 1 день до окончания подписки</div>
+            <div class="home-notif-btns">
+              <button type="button" class="btn sec" onclick="fabTelegramClick(event)">Telegram</button>
+              <button type="button" class="btn home-notif-max" onclick="fabMaxClick(event)">MAX</button>
+            </div>
+          </div>
         </div>
         <div id="gas-pending-banner" class="card pending gas-hidden">
           <div style="font-weight:700;margin-bottom:4px">Ожидает оплаты</div>
@@ -710,6 +724,7 @@ function gasRenderMain(d){
   gasRenderTariffs(d);
   gasRenderTelegram(d);
   gasRenderMax(d);
+  gasRenderHomeNotif(d);
   updateHomeHero(loadSub());
   if(d.status==='Оплачено') gasClearPendingPay();
   else {
@@ -726,6 +741,12 @@ function gasRenderTariffs(d){
   document.getElementById('gas-t3').innerHTML = '3 месяца (−5%) <strong>'+gasFmtMoney(t3.total)+' ₽</strong>';
   document.getElementById('gas-ty').innerHTML = '1 год (−15%) <strong>'+gasFmtMoney(ty.total)+' ₽</strong>';
   gasUpdateTariffLock();
+}
+function gasRenderHomeNotif(d){
+  const box=document.getElementById('home-notif-box');
+  if(!box) return;
+  const connected = !!(d && (d.telegramConnected || d.maxConnected));
+  box.classList.toggle('gas-hidden', connected);
 }
 function gasRenderTelegram(d){
   const block=document.getElementById('gas-tg-block');
