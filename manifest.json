@@ -1,14 +1,19 @@
 {
-  "name": "Личный Кабинет",
-  "short_name": "Личный Кабинет",
-  "description": "Подписка, оплата и уведомления Weltkind VPN",
-  "start_url": "./",
+  "name": "Weltkind — Личный кабинет",
+  "short_name": "Weltkind",
+  "description": "Подписка, оплата, уведомления и поддержка Weltkind",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "id": "https://weltkind666.github.io/777Weltkind777/",
   "display": "standalone",
-  "background_color": "#050d14",
-  "theme_color": "#050d14",
-  "id": "./",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#F4F7FB",
+  "theme_color": "#F4F7FB",
   "orientation": "any",
-  "scope": ".",
+  "lang": "ru",
+  "dir": "ltr",
+  "categories": ["utilities", "finance"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "icons/icon-192.png",
@@ -23,13 +28,13 @@
       "purpose": "any"
     },
     {
-      "src": "icons/icon-192.png",
+      "src": "icons/icon-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "icons/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -39,18 +44,16 @@
     {
       "name": "Продлить подписку",
       "short_name": "Продлить",
-      "description": "Быстрый переход к оплате",
-      "url": "./#renew",
+      "description": "Выбрать тариф и оплатить",
+      "url": "./?source=pwa#renew",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Поддержка",
-      "short_name": "Поддержка",
-      "description": "Чат поддержки в приложении",
-      "url": "./#support",
+      "short_name": "Чат",
+      "description": "Написать в поддержку",
+      "url": "./?source=pwa#support",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     }
-  ],
-  "categories": ["utilities"],
-  "lang": "ru"
+  ]
 }

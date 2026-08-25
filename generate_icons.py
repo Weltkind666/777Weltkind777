@@ -27,10 +27,20 @@ def square_crop(im):
 def export_from(src_path):
     im = Image.open(src_path).convert('RGBA')
     im = square_crop(im)
-    for sz in (192, 512, 1024):
+    for sz in (180, 192, 512, 1024):
         out = im.resize((sz, sz), Image.Resampling.LANCZOS)
         path = os.path.join('icons', f'icon-{sz}.png' if sz != 1024 else 'icon-1024.png')
         out.save(path, 'PNG')
+        print('OK', path)
+    bg = (5, 13, 20, 255)
+    for sz in (192, 512):
+        canvas = Image.new('RGBA', (sz, sz), bg)
+        inner = int(sz * 0.70)
+        icon = im.resize((inner, inner), Image.Resampling.LANCZOS)
+        off = (sz - inner) // 2
+        canvas.paste(icon, (off, off), icon)
+        path = os.path.join('icons', f'icon-maskable-{sz}.png')
+        canvas.save(path, 'PNG')
         print('OK', path)
 
 if __name__ == '__main__':
