@@ -451,7 +451,7 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
 const PWA_URL = 'https://weltkind666.github.io/777Weltkind777/';
 const MAX_BOT_USERNAME = 'se13549304_bot';
-const PWA_CACHE = 'Weltkind-v29';
+const PWA_CACHE = 'Weltkind-v30';
 const PWA_SUB_KEY = 'weltkind-sub-data';
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isAndroid = /Android/i.test(navigator.userAgent);
@@ -865,25 +865,49 @@ async function createWebKey(){
   const msg=document.getElementById('home-key-msg');
   const ta=document.getElementById('home-key-text');
   if(btn) btn.disabled=true;
-  if(msg){ msg.className='msg'; msg.textContent='Удаляем старый и создаём новый, 10–20 сек…'; }
+  if(msg){ msg.className='msg'; msg.textContent='Задание серверу… обычно до минуты (пульс).'; }
   try{
-    const j=await gasApiOnce_({ action:'createWebKey', phone:gasPhone, deviceId:webDeviceId() }, 55000);
-    if(j.status!=='ok'){
+    const j=await gasApiOnce_({ action:'createWebKey', phone:gasPhone, deviceId:webDeviceId() }, 25000);
+    if(j.status==='error' || (j.status!=='ok' && j.status!=='pending')){
       if(msg){ msg.className='msg err'; msg.textContent=j.message||'Не удалось создать'; }
       toast(j.message||'Ошибка');
       return;
     }
-    const vpn=j.vpn||j.conf||'';
+    let done=j;
+    if(j.status==='pending' && j.jobId){
+      const t0=Date.now();
+      done=null;
+      while(Date.now()-t0<95000){
+        await new Promise(r=>setTimeout(r,2500));
+        const p=await gasApiOnce_({ action:'webKeyJob', jobId:j.jobId, phone:gasPhone }, 15000);
+        if(p.status==='ok' && (p.vpn||p.conf)){ done=p; break; }
+        if(p.status==='error'){
+          if(msg){ msg.className='msg err'; msg.textContent=p.message||'Не удалось создать'; }
+          toast(p.message||'Ошибка');
+          return;
+        }
+        if(msg) msg.textContent='Сервер создаёт ключ… ещё немного';
+      }
+      if(!done){
+        if(msg){ msg.className='msg err'; msg.textContent='Сервер не успел ответить. Нажмите ещё раз через минуту.'; }
+        return;
+      }
+    }
+    const vpn=done.vpn||done.conf||'';
+    if(!vpn){
+      if(msg){ msg.className='msg err'; msg.textContent='Сервер не вернул ключ'; }
+      return;
+    }
     if(ta) ta.value=vpn;
     _lsSet(webKeyStoreKey(), vpn);
-    if(msg){ msg.className='msg ok'; msg.textContent='Готово: '+(j.name||j.host||'сервер')+'. Скопируйте vpn:// и вставьте в Amnezia.'; }
-    toast('Ключ пересоздан');
+    if(msg){ msg.className='msg ok'; msg.textContent='Готово: '+(done.name||done.host||j.host||'сервер')+'. Скопируйте vpn:// и вставьте в Amnezia.'; }
+    toast('Ключ готов');
     if(btn) btn.textContent='Пересоздать ключ';
     const countEl=document.getElementById('home-dev-count');
     const thisEl=document.getElementById('home-dev-this');
     const heroDev=document.getElementById('gas-st-devices');
     const lim = Number(j.deviceLimit);
-    const used = Number(j.deviceUsed);
+    const used = Number(done.deviceUsed!=null?done.deviceUsed:j.deviceUsed);
     if(countEl && !isNaN(used) && !isNaN(lim)) countEl.textContent = used + ' из ' + lim;
     if(heroDev && !isNaN(used) && !isNaN(lim)) heroDev.textContent = used + ' из ' + lim;
     if(thisEl) thisEl.textContent = 'этот браузер: ключ есть';
@@ -1212,7 +1236,7 @@ function openFullSite(){
 
 let swReg=null, waitingWorker=null;
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js?v=29', { updateViaCache:'none' }).then(reg=>{
+  navigator.serviceWorker.register('sw.js?v=30', { updateViaCache:'none' }).then(reg=>{
     swReg=reg;
     if('periodicSync' in reg){ reg.periodicSync.register('check-subscription', { minInterval:12*3600000 }).catch(()=>{}); }
     if(reg.waiting){ waitingWorker=reg.waiting; showUpdateBar(); }
