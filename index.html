@@ -793,7 +793,7 @@ function gasRenderKeyCard(d){
     if(btn){ btn.disabled=true; btn.textContent='Ключи отключены'; }
     return;
   }
-  if(hint) hint.textContent='Для Amnezia на iPhone и Mac. Новый ключ удаляет старый конфиг с сервера. 1 устройство = 1 ключ.';
+  if(hint) hint.textContent='Для  iPhone и Mac. Новый ключ удаляет старый конфиг с сервера. 1 устройство = 1 ключ.';
   if(btn){ btn.disabled=false; btn.textContent= cached ? 'Создать новый ключ' : 'Создать ключ'; }
 }
 
@@ -829,7 +829,7 @@ async function createWebKey(){
     const vpn=j.vpn||j.conf||'';
     if(ta) ta.value=vpn;
     _lsSet(webKeyStoreKey(), vpn);
-    if(msg){ msg.className='msg ok'; msg.textContent='Готово: '+(j.name||j.host||'сервер')+'. Скопируйте и вставьте в Amnezia.'; }
+    if(msg){ msg.className='msg ok'; msg.textContent='Готово: '+(j.name||j.host||'сервер')+'. Скопируйте и вставьте в Приложение.'; }
     toast('Ключ создан');
     if(btn) btn.textContent='Создать новый ключ';
   }catch(e){
@@ -845,7 +845,7 @@ async function copyWebKey(){
   if(!text){ toast('Сначала создайте ключ'); return; }
   try{
     await navigator.clipboard.writeText(text);
-    toast('Скопировано — вставьте в Amnezia');
+    toast('Скопировано — вставьте в Приложение');
   }catch(e){
     if(ta){ ta.focus(); ta.select(); document.execCommand('copy'); toast('Скопировано'); }
   }
