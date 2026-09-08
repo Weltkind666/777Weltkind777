@@ -245,7 +245,8 @@
           <div id="gas-st-warn" class="msg warn gas-hidden"></div>
           <button class="btn" id="home-pay-btn" onclick="haptic();showTab('pay')">Продлить подписку</button>
           <div id="home-key-card" class="gas-hidden" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-            <div class="lbl">Ключ для iPhone / Mac</div>
+            <button type="button" class="btn ghost" id="home-key-toggle" onclick="haptic();toggleIosKeyPanel()" style="margin-bottom:0">Ключ для iPhone / Mac</button>
+            <div id="home-key-body" class="gas-hidden" style="margin-top:12px">
             <div class="dev-meter" id="home-dev-meter">
               <div>
                 <div class="sub">Подвязано устройств</div>
@@ -253,11 +254,13 @@
               </div>
               <div class="sub" id="home-dev-this" style="text-align:right;max-width:58%">этот браузер</div>
             </div>
-            <div class="sub" id="home-key-hint" style="margin-bottom:10px">Один ключ на это устройство. «Пересоздать» удаляет старый конфиг с сервера и выдаёт новый vpn://.</div>
-            <textarea id="home-key-text" class="inp" readonly rows="4" placeholder="Нажмите «Создать ключ»" style="font-size:.72rem;min-height:96px;resize:vertical"></textarea>
-            <button type="button" class="btn" id="home-key-create" onclick="haptic('medium');createWebKey()">Создать ключ</button>
+            <div class="sub" id="home-key-hint" style="margin-bottom:10px">1 устройство = 1 ключ. Скопируйте vpn:// в Amnezia. «Пересоздать» удаляет старый конфиг на сервере и выдаёт новый.</div>
+            <textarea id="home-key-text" class="inp mono" readonly rows="8" placeholder="Ключ появится здесь — его можно скопировать" style="font-size:.78rem;min-height:140px;resize:vertical;word-break:break-all" onclick="this.select()"></textarea>
+            <button type="button" class="btn" id="home-key-create" onclick="haptic('medium');createWebKey(false)">Создать ключ</button>
+            <button type="button" class="btn danger gas-hidden" id="home-key-recreate" onclick="haptic('medium');createWebKey(true)">Пересоздать ключ</button>
             <button type="button" class="btn sec" id="home-key-copy" onclick="haptic();copyWebKey()">Скопировать vpn://</button>
             <div class="msg" id="home-key-msg"></div>
+            </div>
           </div>
           <div id="home-notif-box" class="home-notif gas-hidden">
             <div class="home-notif-title">Подключите уведомления</div>
@@ -451,7 +454,7 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
 const PWA_URL = 'https://weltkind666.github.io/777Weltkind777/';
 const MAX_BOT_USERNAME = 'se13549304_bot';
-const PWA_CACHE = 'Weltkind-v30';
+const PWA_CACHE = 'Weltkind-v32';
 const PWA_SUB_KEY = 'weltkind-sub-data';
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isAndroid = /Android/i.test(navigator.userAgent);
@@ -790,11 +793,22 @@ function gasRenderMain(d){
   }
 }
 
+function toggleIosKeyPanel(forceOpen){
+  const body=document.getElementById('home-key-body');
+  const tog=document.getElementById('home-key-toggle');
+  if(!body) return;
+  const open = forceOpen===true ? true : forceOpen===false ? false : body.classList.contains('gas-hidden');
+  body.classList.toggle('gas-hidden', !open);
+  if(tog) tog.textContent = open ? 'Скрыть ключ iPhone / Mac' : 'Ключ для iPhone / Mac';
+}
+
 function gasRenderKeyCard(d){
   const card=document.getElementById('home-key-card');
   const hint=document.getElementById('home-key-hint');
   const ta=document.getElementById('home-key-text');
   const btn=document.getElementById('home-key-create');
+  const rec=document.getElementById('home-key-recreate');
+  const copy=document.getElementById('home-key-copy');
   const msg=document.getElementById('home-key-msg');
   const meter=document.getElementById('home-dev-meter');
   const countEl=document.getElementById('home-dev-count');
@@ -809,34 +823,43 @@ function gasRenderKeyCard(d){
   const cached = _lsGet(webKeyStoreKey()) || '';
   const hasLease = !!(d.lease && (d.lease.host || d.lease.configName));
   const noSlot = d.deviceStatus === 'no_slot';
+  const hasKey = !!(cached || (ta && ta.value));
   if(ta && cached && !ta.value) ta.value = cached;
   if(msg){ msg.textContent=''; msg.className='msg'; }
   if(countEl) countEl.textContent = n + ' из ' + lim;
   if(meter) meter.classList.toggle('full', lim > 0 && n >= lim);
   if(thisEl){
     if(noSlot) thisEl.textContent = 'это устройство не в лимите';
-    else if(hasLease || cached) thisEl.textContent = 'этот браузер: ключ есть';
+    else if(hasLease || hasKey) thisEl.textContent = 'этот браузер: ключ есть';
     else thisEl.textContent = 'этот браузер: ключа ещё нет';
   }
+  const showRecreate = !!(hasKey || hasLease);
+  if(copy) copy.disabled = !((ta && ta.value) || cached);
   if(!paid){
     if(hint) hint.textContent='Пока подписка не активна, ключ создать нельзя.';
-    if(btn){ btn.disabled=true; btn.textContent='Сначала оплатите подписку'; }
+    if(btn){ btn.disabled=true; btn.classList.remove('gas-hidden'); btn.textContent='Сначала оплатите подписку'; }
+    if(rec) rec.classList.add('gas-hidden');
     return;
   }
   if(!isNaN(limit) && limit===0){
     if(hint) hint.textContent='Для этого аккаунта ключи отключены (устройств: 0). Напишите в поддержку.';
-    if(btn){ btn.disabled=true; btn.textContent='Ключи отключены'; }
+    if(btn){ btn.disabled=true; btn.classList.remove('gas-hidden'); btn.textContent='Ключи отключены'; }
+    if(rec) rec.classList.add('gas-hidden');
     return;
   }
-  if(noSlot){
-    if(hint) hint.textContent='Все устройства уже заняты ('+n+' из '+lim+'). Напишите в поддержку, чтобы добавить слот.';
-    if(btn){ btn.disabled=true; btn.textContent='Нет свободного устройства'; }
+  if(noSlot && !hasKey){
+    if(hint) hint.textContent='Все устройства уже заняты ('+n+' из '+lim+'). Админ может сбросить привязки.';
+    if(btn){ btn.disabled=true; btn.classList.remove('gas-hidden'); btn.textContent='Нет свободного устройства'; }
+    if(rec) rec.classList.add('gas-hidden');
     return;
   }
-  if(hint) hint.textContent='Для iPhone и Mac. «Пересоздать» удаляет старый конфиг с сервера и выдаёт новый vpn://. 1 устройство = 1 ключ.';
-  if(btn){
-    btn.disabled=false;
-    btn.textContent = (cached || hasLease) ? 'Пересоздать ключ' : 'Создать ключ';
+  if(hint) hint.textContent='1 устройство = 1 ключ. Скопируйте vpn:// ниже в Amnezia. «Пересоздать» удаляет старый конфиг на сервере и выдаёт новый.';
+  if(showRecreate){
+    if(btn) btn.classList.add('gas-hidden');
+    if(rec){ rec.classList.remove('gas-hidden'); rec.disabled=false; }
+  } else {
+    if(btn){ btn.classList.remove('gas-hidden'); btn.disabled=false; btn.textContent='Создать ключ'; }
+    if(rec) rec.classList.add('gas-hidden');
   }
 }
 
@@ -854,13 +877,15 @@ function isPaymentUiActive_(d){
   }catch(e){ return false; }
 }
 
-async function createWebKey(){
+async function createWebKey(recreate){
   if(!gasPhone){ toast('Сначала войдите'); return; }
   const had = !!((document.getElementById('home-key-text')||{}).value || _lsGet(webKeyStoreKey()));
-  const ask = had
+  const isRecreate = !!recreate || had;
+  const ask = isRecreate
     ? 'Пересоздать ключ для этого iPhone/Mac?\n\nСтарый конфиг удалится с сервера, новый vpn:// нужно снова вставить в Amnezia.'
     : 'Создать ключ для этого iPhone/Mac?\n\nПотом скопируйте vpn:// и вставьте в Amnezia.';
   if(!confirm(ask)) return;
+  toggleIosKeyPanel(true);
   const btn=document.getElementById('home-key-create');
   const msg=document.getElementById('home-key-msg');
   const ta=document.getElementById('home-key-text');
@@ -902,7 +927,11 @@ async function createWebKey(){
     _lsSet(webKeyStoreKey(), vpn);
     if(msg){ msg.className='msg ok'; msg.textContent='Готово: '+(done.name||done.host||j.host||'сервер')+'. Скопируйте vpn:// и вставьте в Amnezia.'; }
     toast('Ключ готов');
-    if(btn) btn.textContent='Пересоздать ключ';
+    if(btn) btn.classList.add('gas-hidden');
+    const rec=document.getElementById('home-key-recreate');
+    if(rec){ rec.classList.remove('gas-hidden'); rec.disabled=false; }
+    const copyBtn=document.getElementById('home-key-copy');
+    if(copyBtn) copyBtn.disabled=false;
     const countEl=document.getElementById('home-dev-count');
     const thisEl=document.getElementById('home-dev-this');
     const heroDev=document.getElementById('gas-st-devices');
@@ -1236,7 +1265,7 @@ function openFullSite(){
 
 let swReg=null, waitingWorker=null;
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js?v=30', { updateViaCache:'none' }).then(reg=>{
+  navigator.serviceWorker.register('sw.js?v=32', { updateViaCache:'none' }).then(reg=>{
     swReg=reg;
     if('periodicSync' in reg){ reg.periodicSync.register('check-subscription', { minInterval:12*3600000 }).catch(()=>{}); }
     if(reg.waiting){ waitingWorker=reg.waiting; showUpdateBar(); }
