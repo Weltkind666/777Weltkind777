@@ -238,6 +238,14 @@
           <div class="bar"><i id="sub-fill"></i></div>
           <div id="gas-st-warn" class="msg warn gas-hidden"></div>
           <button class="btn" id="home-pay-btn" onclick="haptic();showTab('pay')">Продлить подписку</button>
+          <div id="home-key-card" class="gas-hidden" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <div class="lbl">Ключ для iPhone / Mac (Amnezia)</div>
+            <div class="sub" id="home-key-hint" style="margin-bottom:10px">Один ключ на это устройство. Новый ключ удаляет старый конфиг с сервера.</div>
+            <textarea id="home-key-text" class="inp" readonly rows="4" placeholder="Нажмите «Создать ключ»" style="font-size:.72rem;min-height:96px;resize:vertical"></textarea>
+            <button type="button" class="btn" id="home-key-create" onclick="haptic('medium');createWebKey()">Создать ключ</button>
+            <button type="button" class="btn sec" id="home-key-copy" onclick="haptic();copyWebKey()">Скопировать vpn://</button>
+            <div class="msg" id="home-key-msg"></div>
+          </div>
           <div id="home-notif-box" class="home-notif gas-hidden">
             <div class="home-notif-title">Подключите уведомления</div>
             <div class="home-notif-sub">Напомним за 3, 2 и 1 день до окончания подписки</div>
@@ -515,7 +523,32 @@ async function fetchWithTimeout(url, opts, ms){
   try{ return await fetch(url, Object.assign({}, opts||{}, { signal: ctrl.signal })); }
   finally{ clearTimeout(timer); }
 }
-async function gasApi(params){
+async function gasApiOnce_(params, timeoutMs){
+  const q = new URLSearchParams();
+  Object.keys(params||{}).forEach(k=>{
+    const v=params[k];
+    if(v===undefined||v===null) return;
+    q.set(k, String(v));
+  });
+  const res = await fetchWithTimeout(GAS_URL+'?'+q.toString(), { cache:'no-store', mode:'cors' }, timeoutMs||15000);
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  const text = await res.text();
+  try{ return JSON.parse(text); }
+  catch(e){ throw new Error('bad_json'); }
+}
+function webDeviceId(){
+  let id=_lsGet('wk_device_id')||'';
+  id=String(id).replace(/[^A-Za-z0-9]/g,'');
+  if(id.length>=8) return id;
+  id=('web'+Math.random().toString(36).slice(2)+Date.now().toString(36)).replace(/[^A-Za-z0-9]/g,'').slice(0,24);
+  _lsSet('wk_device_id', id);
+  return id;
+}
+function webKeyStoreKey(){
+  return 'wk_vpn_'+normalizePhone(gasPhone||'');
+}
+
+async function gasApi(params, timeoutMs){
   const q = new URLSearchParams();
   Object.keys(params||{}).forEach(k=>{
     const v=params[k];
@@ -525,7 +558,7 @@ async function gasApi(params){
   let lastErr;
   for(let i=0;i<2;i++){
     try{
-      const res = await fetchWithTimeout(GAS_URL+'?'+q.toString(), { cache:'no-store', mode:'cors' }, 15000);
+      const res = await fetchWithTimeout(GAS_URL+'?'+q.toString(), { cache:'no-store', mode:'cors' }, timeoutMs||15000);
       if(!res.ok) throw new Error('HTTP '+res.status);
       const text = await res.text();
       try{ return JSON.parse(text); }
@@ -725,8 +758,92 @@ function gasRenderMain(d){
   gasRenderTelegram(d);
   gasRenderMax(d);
   gasRenderHomeNotif(d);
+  gasRenderKeyCard(d);
   updateHomeHero(loadSub());
   if(d.status==='Оплачено') gasClearPendingPay();
+}
+
+function gasRenderKeyCard(d){
+  const card=document.getElementById('home-key-card');
+  const hint=document.getElementById('home-key-hint');
+  const ta=document.getElementById('home-key-text');
+  const btn=document.getElementById('home-key-create');
+  const msg=document.getElementById('home-key-msg');
+  if(!card) return;
+  card.classList.remove('gas-hidden');
+  const limit = Number(d.deviceLimit);
+  const active = String(d.status||'').indexOf('Оплачено')>=0 && !d.canRenew ? true : false;
+  const paid = isPaymentUiActive_(d);
+  const cached = _lsGet(webKeyStoreKey()) || '';
+  if(ta && cached && !ta.value) ta.value = cached;
+  if(msg){ msg.textContent=''; msg.className='msg'; }
+  if(!paid){
+    if(hint) hint.textContent='Пока подписка не активна, ключ создать нельзя.';
+    if(btn){ btn.disabled=true; btn.textContent='Сначала оплатите подписку'; }
+    return;
+  }
+  if(!isNaN(limit) && limit===0){
+    if(hint) hint.textContent='Для этого аккаунта ключи отключены (устройств: 0). Напишите в поддержку.';
+    if(btn){ btn.disabled=true; btn.textContent='Ключи отключены'; }
+    return;
+  }
+  if(hint) hint.textContent='Для Amnezia на iPhone и Mac. Новый ключ удаляет старый конфиг с сервера. 1 устройство = 1 ключ.';
+  if(btn){ btn.disabled=false; btn.textContent= cached ? 'Создать новый ключ' : 'Создать ключ'; }
+}
+
+function isPaymentUiActive_(d){
+  if(!d) return false;
+  if(d.status==='Не оплачено') return false;
+  const exp=d.expiryDate;
+  if(!exp || exp==='Не определено') return false;
+  try{
+    const p=String(exp).split(/[./-]/);
+    if(p.length<3) return false;
+    const dt=new Date(Number(p[2]), Number(p[1])-1, Number(p[0]));
+    const t=new Date(); t.setHours(0,0,0,0);
+    return dt>=t;
+  }catch(e){ return false; }
+}
+
+async function createWebKey(){
+  if(!gasPhone){ toast('Сначала войдите'); return; }
+  if(!confirm('Создать ключ? Старый конфиг на сервере будет удалён, новый — на самом свободном живом сервере.')) return;
+  const btn=document.getElementById('home-key-create');
+  const msg=document.getElementById('home-key-msg');
+  const ta=document.getElementById('home-key-text');
+  if(btn) btn.disabled=true;
+  if(msg){ msg.className='msg'; msg.textContent='Создаём ключ, 10–20 сек…'; }
+  try{
+    const j=await gasApiOnce_({ action:'createWebKey', phone:gasPhone, deviceId:webDeviceId() }, 55000);
+    if(j.status!=='ok'){
+      if(msg){ msg.className='msg err'; msg.textContent=j.message||'Не удалось создать'; }
+      toast(j.message||'Ошибка');
+      return;
+    }
+    const vpn=j.vpn||j.conf||'';
+    if(ta) ta.value=vpn;
+    _lsSet(webKeyStoreKey(), vpn);
+    if(msg){ msg.className='msg ok'; msg.textContent='Готово: '+(j.name||j.host||'сервер')+'. Скопируйте и вставьте в Amnezia.'; }
+    toast('Ключ создан');
+    if(btn) btn.textContent='Создать новый ключ';
+  }catch(e){
+    if(msg){ msg.className='msg err'; msg.textContent='Нет связи с сервером. Попробуйте ещё раз.'; }
+  }finally{
+    if(btn) btn.disabled=false;
+  }
+}
+
+async function copyWebKey(){
+  const ta=document.getElementById('home-key-text');
+  const text=(ta && ta.value)||_lsGet(webKeyStoreKey())||'';
+  if(!text){ toast('Сначала создайте ключ'); return; }
+  try{
+    await navigator.clipboard.writeText(text);
+    toast('Скопировано — вставьте в Amnezia');
+  }catch(e){
+    if(ta){ ta.focus(); ta.select(); document.execCommand('copy'); toast('Скопировано'); }
+  }
+}
   else {
     const pending = gasLoadPendingPay() || gasLoadPendingPayAny();
     if(pending) gasRestorePendingPayment(pending);
