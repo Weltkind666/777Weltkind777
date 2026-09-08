@@ -451,7 +451,7 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
 const PWA_URL = 'https://weltkind666.github.io/777Weltkind777/';
 const MAX_BOT_USERNAME = 'se13549304_bot';
-const PWA_CACHE = 'Weltkind-v27';
+const PWA_CACHE = 'Weltkind-v29';
 const PWA_SUB_KEY = 'weltkind-sub-data';
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isAndroid = /Android/i.test(navigator.userAgent);
@@ -816,7 +816,7 @@ function gasRenderKeyCard(d){
   if(thisEl){
     if(noSlot) thisEl.textContent = 'это устройство не в лимите';
     else if(hasLease || cached) thisEl.textContent = 'этот браузер: ключ есть';
-    else thisEl.textContent = 'этот браузер: слот занят, ключа ещё нет';
+    else thisEl.textContent = 'этот браузер: ключа ещё нет';
   }
   if(!paid){
     if(hint) hint.textContent='Пока подписка не активна, ключ создать нельзя.';
@@ -856,7 +856,11 @@ function isPaymentUiActive_(d){
 
 async function createWebKey(){
   if(!gasPhone){ toast('Сначала войдите'); return; }
-  if(!confirm('Пересоздать ключ для этого iPhone/Mac?\n\nСтарый конфиг удалится с сервера, новый vpn:// нужно снова вставить в Amnezia.')) return;
+  const had = !!((document.getElementById('home-key-text')||{}).value || _lsGet(webKeyStoreKey()));
+  const ask = had
+    ? 'Пересоздать ключ для этого iPhone/Mac?\n\nСтарый конфиг удалится с сервера, новый vpn:// нужно снова вставить в Amnezia.'
+    : 'Создать ключ для этого iPhone/Mac?\n\nПотом скопируйте vpn:// и вставьте в Amnezia.';
+  if(!confirm(ask)) return;
   const btn=document.getElementById('home-key-create');
   const msg=document.getElementById('home-key-msg');
   const ta=document.getElementById('home-key-text');
@@ -1208,7 +1212,7 @@ function openFullSite(){
 
 let swReg=null, waitingWorker=null;
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js?v=28', { updateViaCache:'none' }).then(reg=>{
+  navigator.serviceWorker.register('sw.js?v=29', { updateViaCache:'none' }).then(reg=>{
     swReg=reg;
     if('periodicSync' in reg){ reg.periodicSync.register('check-subscription', { minInterval:12*3600000 }).catch(()=>{}); }
     if(reg.waiting){ waitingWorker=reg.waiting; showUpdateBar(); }
