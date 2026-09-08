@@ -93,6 +93,11 @@
     .hero.err .badge{background:#FDECEC;color:var(--danger)}
     .bar{height:6px;border-radius:99px;background:#EEF2F7;margin-top:14px;overflow:hidden}
     .bar>i{display:block;height:100%;background:var(--accent);width:0;border-radius:99px}
+    .dev-meter{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#F7FAFC;border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:0 0 10px;text-align:left}
+    .dev-meter b{font-size:1.05rem;color:var(--text)}
+    .dev-meter .sub{margin:0}
+    .dev-meter.full{background:#FDECEC;border-color:#F5C2C2}
+    .dev-meter.full b{color:var(--danger)}
 
     .tax{display:flex;gap:8px;margin-bottom:10px}
     .tax button{flex:1;padding:10px 6px;border-radius:12px;border:0;background:#F4F7FB;color:var(--muted);font-size:.8rem;font-weight:600;cursor:pointer}
@@ -235,12 +240,20 @@
           <div class="hero-sub" id="dc-days-sub">дней до окончания</div>
           <div class="row" style="margin-top:12px"><span>Оплата</span><span id="gas-st-pay">—</span></div>
           <div class="row"><span>Активна до</span><strong id="gas-st-exp">—</strong></div>
+          <div class="row"><span>Устройства</span><strong id="gas-st-devices">—</strong></div>
           <div class="bar"><i id="sub-fill"></i></div>
           <div id="gas-st-warn" class="msg warn gas-hidden"></div>
           <button class="btn" id="home-pay-btn" onclick="haptic();showTab('pay')">Продлить подписку</button>
           <div id="home-key-card" class="gas-hidden" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-            <div class="lbl">Ключ для iPhone / Mac </div>
-            <div class="sub" id="home-key-hint" style="margin-bottom:10px">Один ключ на это устройство. Новый ключ удаляет старый конфиг с сервера.</div>
+            <div class="lbl">Ключ для iPhone / Mac</div>
+            <div class="dev-meter" id="home-dev-meter">
+              <div>
+                <div class="sub">Подвязано устройств</div>
+                <b id="home-dev-count">—</b>
+              </div>
+              <div class="sub" id="home-dev-this" style="text-align:right;max-width:58%">этот браузер</div>
+            </div>
+            <div class="sub" id="home-key-hint" style="margin-bottom:10px">Один ключ на это устройство. «Пересоздать» удаляет старый конфиг с сервера и выдаёт новый vpn://.</div>
             <textarea id="home-key-text" class="inp" readonly rows="4" placeholder="Нажмите «Создать ключ»" style="font-size:.72rem;min-height:96px;resize:vertical"></textarea>
             <button type="button" class="btn" id="home-key-create" onclick="haptic('medium');createWebKey()">Создать ключ</button>
             <button type="button" class="btn sec" id="home-key-copy" onclick="haptic();copyWebKey()">Скопировать vpn://</button>
@@ -739,6 +752,14 @@ function gasRenderMain(d){
   document.getElementById('gas-st-status').textContent = (d.displayName ? (d.displayName+' · ') : '') + (d.status || '—');
   document.getElementById('gas-st-pay').textContent = d.paymentDate || '—';
   document.getElementById('gas-st-exp').textContent = d.expiryDate || '—';
+  const usedN = Number(d.deviceUsed);
+  const limN = Number(d.deviceLimit);
+  const devEl = document.getElementById('gas-st-devices');
+  if (devEl) {
+    const used = isNaN(usedN) ? 0 : usedN;
+    const lim = isNaN(limN) ? 1 : limN;
+    devEl.textContent = used + ' из ' + lim;
+  }
   const warn=document.getElementById('gas-st-warn');
   const payBtn=document.getElementById('home-pay-btn');
   if(d.canRenew){
@@ -775,14 +796,28 @@ function gasRenderKeyCard(d){
   const ta=document.getElementById('home-key-text');
   const btn=document.getElementById('home-key-create');
   const msg=document.getElementById('home-key-msg');
+  const meter=document.getElementById('home-dev-meter');
+  const countEl=document.getElementById('home-dev-count');
+  const thisEl=document.getElementById('home-dev-this');
   if(!card) return;
   card.classList.remove('gas-hidden');
   const limit = Number(d.deviceLimit);
-  const active = String(d.status||'').indexOf('Оплачено')>=0 && !d.canRenew ? true : false;
+  const used = Number(d.deviceUsed);
+  const lim = isNaN(limit) ? 1 : limit;
+  const n = isNaN(used) ? 0 : used;
   const paid = isPaymentUiActive_(d);
   const cached = _lsGet(webKeyStoreKey()) || '';
+  const hasLease = !!(d.lease && (d.lease.host || d.lease.configName));
+  const noSlot = d.deviceStatus === 'no_slot';
   if(ta && cached && !ta.value) ta.value = cached;
   if(msg){ msg.textContent=''; msg.className='msg'; }
+  if(countEl) countEl.textContent = n + ' из ' + lim;
+  if(meter) meter.classList.toggle('full', lim > 0 && n >= lim);
+  if(thisEl){
+    if(noSlot) thisEl.textContent = 'это устройство не в лимите';
+    else if(hasLease || cached) thisEl.textContent = 'этот браузер: ключ есть';
+    else thisEl.textContent = 'этот браузер: слот занят, ключа ещё нет';
+  }
   if(!paid){
     if(hint) hint.textContent='Пока подписка не активна, ключ создать нельзя.';
     if(btn){ btn.disabled=true; btn.textContent='Сначала оплатите подписку'; }
@@ -793,8 +828,16 @@ function gasRenderKeyCard(d){
     if(btn){ btn.disabled=true; btn.textContent='Ключи отключены'; }
     return;
   }
-  if(hint) hint.textContent='Для  iPhone и Mac. Новый ключ удаляет старый конфиг с сервера. 1 устройство = 1 ключ.';
-  if(btn){ btn.disabled=false; btn.textContent= cached ? 'Создать новый ключ' : 'Создать ключ'; }
+  if(noSlot){
+    if(hint) hint.textContent='Все устройства уже заняты ('+n+' из '+lim+'). Напишите в поддержку, чтобы добавить слот.';
+    if(btn){ btn.disabled=true; btn.textContent='Нет свободного устройства'; }
+    return;
+  }
+  if(hint) hint.textContent='Для iPhone и Mac. «Пересоздать» удаляет старый конфиг с сервера и выдаёт новый vpn://. 1 устройство = 1 ключ.';
+  if(btn){
+    btn.disabled=false;
+    btn.textContent = (cached || hasLease) ? 'Пересоздать ключ' : 'Создать ключ';
+  }
 }
 
 function isPaymentUiActive_(d){
@@ -813,12 +856,12 @@ function isPaymentUiActive_(d){
 
 async function createWebKey(){
   if(!gasPhone){ toast('Сначала войдите'); return; }
-  if(!confirm('Создать ключ? Старый конфиг на сервере будет удалён, новый — на самом свободном живом сервере.')) return;
+  if(!confirm('Пересоздать ключ для этого iPhone/Mac?\n\nСтарый конфиг удалится с сервера, новый vpn:// нужно снова вставить в Amnezia.')) return;
   const btn=document.getElementById('home-key-create');
   const msg=document.getElementById('home-key-msg');
   const ta=document.getElementById('home-key-text');
   if(btn) btn.disabled=true;
-  if(msg){ msg.className='msg'; msg.textContent='Создаём ключ, 10–20 сек…'; }
+  if(msg){ msg.className='msg'; msg.textContent='Удаляем старый и создаём новый, 10–20 сек…'; }
   try{
     const j=await gasApiOnce_({ action:'createWebKey', phone:gasPhone, deviceId:webDeviceId() }, 55000);
     if(j.status!=='ok'){
@@ -829,9 +872,17 @@ async function createWebKey(){
     const vpn=j.vpn||j.conf||'';
     if(ta) ta.value=vpn;
     _lsSet(webKeyStoreKey(), vpn);
-    if(msg){ msg.className='msg ok'; msg.textContent='Готово: '+(j.name||j.host||'сервер')+'. Скопируйте и вставьте в Приложение.'; }
-    toast('Ключ создан');
-    if(btn) btn.textContent='Создать новый ключ';
+    if(msg){ msg.className='msg ok'; msg.textContent='Готово: '+(j.name||j.host||'сервер')+'. Скопируйте vpn:// и вставьте в Amnezia.'; }
+    toast('Ключ пересоздан');
+    if(btn) btn.textContent='Пересоздать ключ';
+    const countEl=document.getElementById('home-dev-count');
+    const thisEl=document.getElementById('home-dev-this');
+    const heroDev=document.getElementById('gas-st-devices');
+    const lim = Number(j.deviceLimit);
+    const used = Number(j.deviceUsed);
+    if(countEl && !isNaN(used) && !isNaN(lim)) countEl.textContent = used + ' из ' + lim;
+    if(heroDev && !isNaN(used) && !isNaN(lim)) heroDev.textContent = used + ' из ' + lim;
+    if(thisEl) thisEl.textContent = 'этот браузер: ключ есть';
   }catch(e){
     if(msg){ msg.className='msg err'; msg.textContent='Нет связи с сервером. Попробуйте ещё раз.'; }
   }finally{
@@ -1157,7 +1208,7 @@ function openFullSite(){
 
 let swReg=null, waitingWorker=null;
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js?v=27', { updateViaCache:'none' }).then(reg=>{
+  navigator.serviceWorker.register('sw.js?v=28', { updateViaCache:'none' }).then(reg=>{
     swReg=reg;
     if('periodicSync' in reg){ reg.periodicSync.register('check-subscription', { minInterval:12*3600000 }).catch(()=>{}); }
     if(reg.waiting){ waitingWorker=reg.waiting; showUpdateBar(); }
