@@ -438,7 +438,7 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
 const PWA_URL = 'https://weltkind666.github.io/777Weltkind777/';
 const MAX_BOT_USERNAME = 'se13549304_bot';
-const PWA_CACHE = 'Weltkind-v25';
+const PWA_CACHE = 'Weltkind-v27';
 const PWA_SUB_KEY = 'weltkind-sub-data';
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isAndroid = /Android/i.test(navigator.userAgent);
@@ -723,6 +723,7 @@ function updateHomeHero(sub){
   const daysEl=document.getElementById('home-days');
   const subEl=document.getElementById('dc-days-sub');
   const fill=document.getElementById('sub-fill');
+  if(!hero || !daysEl || !subEl || !fill) return;
   const d = daysLeft(sub && sub.date);
   hero.className='card hero';
   if(d===null){ daysEl.textContent='—'; subEl.textContent='нет данных'; fill.style.width='0'; }
@@ -735,7 +736,7 @@ function gasRenderMain(d){
   setGasLoggedIn(true);
   document.getElementById('gas-login-view')?.classList.add('gas-hidden');
   document.getElementById('gas-home-view')?.classList.remove('gas-hidden');
-  document.getElementById('gas-st-status').textContent = d.status || '—';
+  document.getElementById('gas-st-status').textContent = (d.displayName ? (d.displayName+' · ') : '') + (d.status || '—');
   document.getElementById('gas-st-pay').textContent = d.paymentDate || '—';
   document.getElementById('gas-st-exp').textContent = d.expiryDate || '—';
   const warn=document.getElementById('gas-st-warn');
@@ -761,6 +762,11 @@ function gasRenderMain(d){
   gasRenderKeyCard(d);
   updateHomeHero(loadSub());
   if(d.status==='Оплачено') gasClearPendingPay();
+  else {
+    const pending = gasLoadPendingPay() || gasLoadPendingPayAny();
+    if(pending) gasRestorePendingPayment(pending);
+    else gasHidePendingBanner();
+  }
 }
 
 function gasRenderKeyCard(d){
@@ -842,12 +848,6 @@ async function copyWebKey(){
     toast('Скопировано — вставьте в Amnezia');
   }catch(e){
     if(ta){ ta.focus(); ta.select(); document.execCommand('copy'); toast('Скопировано'); }
-  }
-}
-  else {
-    const pending = gasLoadPendingPay() || gasLoadPendingPayAny();
-    if(pending) gasRestorePendingPayment(pending);
-    else gasHidePendingBanner();
   }
 }
 function gasRenderTariffs(d){
@@ -1042,9 +1042,10 @@ function gasRefresh(){ if(gasPhone) gasLogin(true); else initGasApp(); }
 async function gasRegister(){
   const phone=phoneFromInput(document.getElementById('gas-phone-inp'));
   if(phone.length<10){ gasShowErr('Сначала введите номер'); return; }
+  const name=(prompt('Как к вам обращаться? (имя)')||'').trim().slice(0,40);
   setGasLoading(true,'inline');
   try{
-    const j=await gasApi({ action:'register', phone, name:'' });
+    const j=await gasApi({ action:'register', phone, name });
     if(j.status==='ok'){ toast('Заявка отправлена. Напишите в чат — так быстрее.'); chatOpen(); }
     else toast(j.message||'Не удалось отправить заявку');
   }catch(e){ toast('Нет связи'); }
@@ -1156,7 +1157,7 @@ function openFullSite(){
 
 let swReg=null, waitingWorker=null;
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js?v=25', { updateViaCache:'none' }).then(reg=>{
+  navigator.serviceWorker.register('sw.js?v=27', { updateViaCache:'none' }).then(reg=>{
     swReg=reg;
     if('periodicSync' in reg){ reg.periodicSync.register('check-subscription', { minInterval:12*3600000 }).catch(()=>{}); }
     if(reg.waiting){ waitingWorker=reg.waiting; showUpdateBar(); }
