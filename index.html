@@ -454,7 +454,7 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
 const PWA_URL = 'https://weltkind666.github.io/777Weltkind777/';
 const MAX_BOT_USERNAME = 'se13549304_bot';
-const PWA_CACHE = 'Weltkind-v32';
+const PWA_CACHE = 'Weltkind-v34';
 const PWA_SUB_KEY = 'weltkind-sub-data';
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isAndroid = /Android/i.test(navigator.userAgent);
@@ -536,8 +536,30 @@ function showTab(name){
 async function fetchWithTimeout(url, opts, ms){
   const ctrl = new AbortController();
   const timer = setTimeout(()=>ctrl.abort(), ms||12000);
-  try{ return await fetch(url, Object.assign({}, opts||{}, { signal: ctrl.signal })); }
+  try{
+    return await fetch(url, Object.assign({ cache:'no-store', mode:'cors', redirect:'follow', credentials:'omit' }, opts||{}, { signal: ctrl.signal }));
+  }
   finally{ clearTimeout(timer); }
+}
+function parseGasJson_(text){
+  const t=String(text||'').trim();
+  try{ return JSON.parse(t); }catch(e){}
+  const a=t.indexOf('{');
+  const b=t.lastIndexOf('}');
+  if(a>=0 && b>a){
+    try{ return JSON.parse(t.substring(a,b+1)); }catch(e2){}
+  }
+  throw new Error('bad_json');
+}
+function gasErrText_(e){
+  const m=String((e&&e.message)||e||'');
+  const name=String((e&&e.name)||'');
+  if(m==='bad_json') return 'Google вернул не JSON. В Apps Script залей Code.gs и нажми «Новая версия».';
+  if(/^HTTP/.test(m)) return 'Google HTTP '+m.replace('HTTP ','')+'. Проверь деплой /exec.';
+  if(name==='AbortError' || /abort/i.test(m)) return 'Google отвечает дольше обычного. Нажмите ещё раз.';
+  if(/Failed to fetch|NetworkError|Load failed|network/i.test(m)) return 'Нет ответа от Google. Проверьте интернет и нажмите ещё раз.';
+  if(m) return 'Ошибка: '+m.slice(0,160);
+  return 'Нет связи с Google. Попробуйте ещё раз.';
 }
 async function gasApiOnce_(params, timeoutMs){
   const q = new URLSearchParams();
@@ -546,11 +568,9 @@ async function gasApiOnce_(params, timeoutMs){
     if(v===undefined||v===null) return;
     q.set(k, String(v));
   });
-  const res = await fetchWithTimeout(GAS_URL+'?'+q.toString(), { cache:'no-store', mode:'cors' }, timeoutMs||15000);
+  const res = await fetchWithTimeout(GAS_URL+'?'+q.toString(), {}, timeoutMs||15000);
   if(!res.ok) throw new Error('HTTP '+res.status);
-  const text = await res.text();
-  try{ return JSON.parse(text); }
-  catch(e){ throw new Error('bad_json'); }
+  return parseGasJson_(await res.text());
 }
 function webDeviceId(){
   let id=_lsGet('wk_device_id')||'';
@@ -565,21 +585,10 @@ function webKeyStoreKey(){
 }
 
 async function gasApi(params, timeoutMs){
-  const q = new URLSearchParams();
-  Object.keys(params||{}).forEach(k=>{
-    const v=params[k];
-    if(v===undefined||v===null) return;
-    q.set(k, String(v));
-  });
   let lastErr;
-  for(let i=0;i<2;i++){
-    try{
-      const res = await fetchWithTimeout(GAS_URL+'?'+q.toString(), { cache:'no-store', mode:'cors' }, timeoutMs||15000);
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      const text = await res.text();
-      try{ return JSON.parse(text); }
-      catch(e){ throw new Error('bad_json'); }
-    }catch(e){ lastErr=e; if(i===0) await new Promise(r=>setTimeout(r,500)); }
+  for(let i=0;i<3;i++){
+    try{ return await gasApiOnce_(params, timeoutMs); }
+    catch(e){ lastErr=e; if(i<2) await new Promise(r=>setTimeout(r,700)); }
   }
   throw lastErr;
 }
@@ -887,34 +896,44 @@ async function createWebKey(recreate){
   if(!confirm(ask)) return;
   toggleIosKeyPanel(true);
   const btn=document.getElementById('home-key-create');
+  const rec=document.getElementById('home-key-recreate');
   const msg=document.getElementById('home-key-msg');
   const ta=document.getElementById('home-key-text');
   if(btn) btn.disabled=true;
+  if(rec) rec.disabled=true;
   if(msg){ msg.className='msg'; msg.textContent='Задание серверу… обычно до минуты (пульс).'; }
   try{
-    const j=await gasApiOnce_({ action:'createWebKey', phone:gasPhone, deviceId:webDeviceId() }, 25000);
-    if(j.status==='error' || (j.status!=='ok' && j.status!=='pending')){
-      if(msg){ msg.className='msg err'; msg.textContent=j.message||'Не удалось создать'; }
-      toast(j.message||'Ошибка');
+    const j=await gasApi({ action:'createWebKey', phone:gasPhone, deviceId:webDeviceId() }, 45000);
+    if(!j || j.status==='error' || (j.status!=='ok' && j.status!=='pending')){
+      if(msg){ msg.className='msg err'; msg.textContent=(j&&j.message)||'Не удалось создать'; }
+      toast((j&&j.message)||'Ошибка');
       return;
     }
     let done=j;
     if(j.status==='pending' && j.jobId){
       const t0=Date.now();
       done=null;
-      while(Date.now()-t0<95000){
+      while(Date.now()-t0<120000){
         await new Promise(r=>setTimeout(r,2500));
-        const p=await gasApiOnce_({ action:'webKeyJob', jobId:j.jobId, phone:gasPhone }, 15000);
+        let p=null;
+        try{ p=await gasApiOnce_({ action:'webKeyJob', jobId:j.jobId, phone:gasPhone }, 20000); }
+        catch(pollErr){
+          const sec=Math.round((Date.now()-t0)/1000);
+          if(msg) msg.textContent='Ждём сервер… '+sec+' сек ('+gasErrText_(pollErr)+')';
+          continue;
+        }
+        if(!p) continue;
         if(p.status==='ok' && (p.vpn||p.conf)){ done=p; break; }
         if(p.status==='error'){
           if(msg){ msg.className='msg err'; msg.textContent=p.message||'Не удалось создать'; }
           toast(p.message||'Ошибка');
           return;
         }
-        if(msg) msg.textContent='Сервер создаёт ключ… ещё немного';
+        const sec=Math.round((Date.now()-t0)/1000);
+        if(msg) msg.textContent='Сервер создаёт ключ… '+sec+' сек (пульс раз в 60 сек)';
       }
       if(!done){
-        if(msg){ msg.className='msg err'; msg.textContent='Сервер не успел ответить. Нажмите ещё раз через минуту.'; }
+        if(msg){ msg.className='msg err'; msg.textContent='Сервер не успел ответить за 2 минуты. Нажмите ещё раз — задание уже в очереди.'; }
         return;
       }
     }
@@ -928,7 +947,6 @@ async function createWebKey(recreate){
     if(msg){ msg.className='msg ok'; msg.textContent='Готово: '+(done.name||done.host||j.host||'сервер')+'. Скопируйте vpn:// и вставьте в Amnezia.'; }
     toast('Ключ готов');
     if(btn) btn.classList.add('gas-hidden');
-    const rec=document.getElementById('home-key-recreate');
     if(rec){ rec.classList.remove('gas-hidden'); rec.disabled=false; }
     const copyBtn=document.getElementById('home-key-copy');
     if(copyBtn) copyBtn.disabled=false;
@@ -941,9 +959,10 @@ async function createWebKey(recreate){
     if(heroDev && !isNaN(used) && !isNaN(lim)) heroDev.textContent = used + ' из ' + lim;
     if(thisEl) thisEl.textContent = 'этот браузер: ключ есть';
   }catch(e){
-    if(msg){ msg.className='msg err'; msg.textContent='Нет связи с сервером. Попробуйте ещё раз.'; }
+    if(msg){ msg.className='msg err'; msg.textContent=gasErrText_(e); }
   }finally{
     if(btn) btn.disabled=false;
+    if(rec) rec.disabled=false;
   }
 }
 
@@ -1265,7 +1284,7 @@ function openFullSite(){
 
 let swReg=null, waitingWorker=null;
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js?v=32', { updateViaCache:'none' }).then(reg=>{
+  navigator.serviceWorker.register('sw.js?v=33', { updateViaCache:'none' }).then(reg=>{
     swReg=reg;
     if('periodicSync' in reg){ reg.periodicSync.register('check-subscription', { minInterval:12*3600000 }).catch(()=>{}); }
     if(reg.waiting){ waitingWorker=reg.waiting; showUpdateBar(); }
