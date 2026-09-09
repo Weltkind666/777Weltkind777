@@ -461,7 +461,7 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
 const PWA_URL = 'https://weltkind666.github.io/777Weltkind777/';
 const MAX_BOT_USERNAME = 'se13549304_bot';
-const PWA_CACHE = 'Weltkind-v40';
+const PWA_CACHE = 'Weltkind-v41';
 const PWA_SUB_KEY = 'weltkind-sub-data';
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isAndroid = /Android/i.test(navigator.userAgent);
@@ -630,6 +630,7 @@ function syncWebKeysWithServer_(d){
   list.forEach(function(s){
     if(!s || !s.id) return;
     if(s.vpn && !live[s.id]){
+      // Сброс привязок: слота нет. Не трогаем ключ, если в ответе нет массива devices.
       changed=true;
       next.push({ id:s.id, vpn:'', label:s.label||'' });
     } else next.push(s);
@@ -887,7 +888,8 @@ function toggleIosKeyPanel(forceOpen){
   if(tog) tog.textContent = open ? 'Скрыть ключи iPhone / Mac' : 'Ключи для iPhone / Mac';
 }
 
-function gasRenderKeyCard(d){
+function gasRenderKeyCard(d, opt){
+  opt = opt || {};
   const card=document.getElementById('home-key-card');
   const hint=document.getElementById('home-key-hint');
   const addBtn=document.getElementById('home-key-add');
@@ -903,10 +905,10 @@ function gasRenderKeyCard(d){
   const n = isNaN(used) ? 0 : used;
   const paid = isPaymentUiActive_(d);
   const hadVpn = migrateWebKeys_().filter(function(s){ return !!(s.vpn); }).length;
-  const list = syncWebKeysWithServer_(d);
+  const list = opt.skipSync ? migrateWebKeys_() : syncWebKeysWithServer_(d);
   const localReady = list.filter(function(s){ return !!(s.vpn); }).length;
   fillFleetSelect_(d);
-  const resetKeys = hadVpn>0 && localReady===0;
+  const resetKeys = !opt.skipSync && hadVpn>0 && localReady===0;
   if(resetKeys && msg){
     msg.textContent='Привязки сброшены. Старые ключи больше не действуют — создайте новый.';
     msg.className='msg';
@@ -1110,20 +1112,30 @@ async function createWebKey(slotId, recreate){
     }
     list=loadWebKeys();
     slot=list.find(function(s){ return s.id===slotId; })||slot;
+    if(list.indexOf(slot)<0) list.push(slot);
     slot.vpn=vpn;
-    if(!slot.label) slot.label='Ключ '+(list.indexOf(slot)+1);
+    if(!slot.label) slot.label=label || ('Ключ '+(list.indexOf(slot)+1));
     saveWebKeys(list);
-    if(ta) ta.value=vpn;
     _lsSet('wk_vpn_'+normalizePhone(gasPhone||''), vpn);
     if(msg){ msg.className='msg ok'; msg.textContent='Готово: '+(done.name||done.host||j.host||'сервер')+'. Скопируйте ключ и вставьте в приложение.'; }
     toast('Ключ готов');
+    if(!gasUserData) gasUserData={};
+    if(!Array.isArray(gasUserData.devices)) gasUserData.devices=[];
+    var haveDev=false;
+    gasUserData.devices.forEach(function(x){
+      if(x && String(x.deviceId)===String(slot.id)){ x.hasKey=true; haveDev=true; }
+    });
+    if(!haveDev) gasUserData.devices.push({ deviceId: slot.id, hasKey: true, host: done.host||j.host||'', label: slot.label });
     const used=Number(done.deviceUsed!=null?done.deviceUsed:j.deviceUsed);
     const lim=Number(j.deviceLimit);
     if(!isNaN(used)) gasUserData.deviceUsed=used;
+    else gasUserData.deviceUsed=gasUserData.devices.length;
     if(!isNaN(lim)) gasUserData.deviceLimit=lim;
     const heroDev=document.getElementById('gas-st-devices');
-    if(heroDev && !isNaN(used) && !isNaN(lim)) heroDev.textContent = used + ' из ' + lim;
-    gasRenderKeyCard(gasUserData);
+    if(heroDev) heroDev.textContent = (gasUserData.deviceUsed||0) + ' из ' + (gasUserData.deviceLimit||1);
+    gasRenderKeyCard(gasUserData, { skipSync: true });
+    const ta2=document.getElementById('wk-ta-'+slot.id);
+    if(ta2) ta2.value=vpn;
   }catch(e){
     if(msg){ msg.className='msg err'; msg.textContent=gasErrText_(e); }
   }finally{
