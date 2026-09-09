@@ -981,7 +981,11 @@ function fillFleetSelect_(d){
   const sel=document.getElementById('home-key-server');
   if(!sel) return;
   const cur=sel.value;
-  const fleet=(d && d.fleet)||[];
+  const fleet=((d && d.fleet)||[]).slice().sort(function(a,b){
+    const dlt=(Number(a.online)||0)-(Number(b.online)||0);
+    if(dlt!==0) return dlt;
+    return String(a.name||a.host||'').localeCompare(String(b.name||b.host||''),'ru');
+  });
   sel.innerHTML='<option value="">Авто — самый свободный</option>';
   fleet.forEach(function(s){
     if(!s || !s.host) return;
