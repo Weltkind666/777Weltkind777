@@ -1,6 +1,6 @@
-/* Weltkind PWA Service Worker — v34 */
-const SW_VER = 34;
-const CACHE = 'Weltkind-v34';
+/* Weltkind PWA Service Worker — v39 */
+const SW_VER = 39;
+const CACHE = 'Weltkind-v39';
 const SUB_KEY = 'weltkind-sub-data';
 const ASSETS = [
   './',

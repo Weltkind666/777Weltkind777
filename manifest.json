@@ -1,7 +1,7 @@
 {
-  "name": "Weltkind — Личный кабинет",
-  "short_name": "Weltkind",
-  "description": "Подписка, оплата, уведомления и поддержка Weltkind",
+  "name": "Оплата подписки Weltkind",
+  "short_name": "Оплата",
+  "description": "Оплата и продление подписки Weltkind",
   "start_url": "./?source=pwa",
   "scope": "./",
   "id": "https://weltkind666.github.io/777Weltkind777/",
