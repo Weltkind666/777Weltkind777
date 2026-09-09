@@ -461,7 +461,7 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
 const PWA_URL = 'https://weltkind666.github.io/777Weltkind777/';
 const MAX_BOT_USERNAME = 'se13549304_bot';
-const PWA_CACHE = 'Weltkind-v39';
+const PWA_CACHE = 'Weltkind-v40';
 const PWA_SUB_KEY = 'weltkind-sub-data';
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isAndroid = /Android/i.test(navigator.userAgent);
@@ -616,6 +616,34 @@ function migrateWebKeys_(){
     saveWebKeys(list);
   }
   return list;
+}
+/** Админ сбросил привязки — в Google слотов нет, локальный vpn:// больше не действует. */
+function syncWebKeysWithServer_(d){
+  let list=migrateWebKeys_();
+  if(!d || !Array.isArray(d.devices)) return list;
+  const live={};
+  d.devices.forEach(function(x){
+    if(x && x.deviceId) live[String(x.deviceId)]=true;
+  });
+  let changed=false;
+  const next=[];
+  list.forEach(function(s){
+    if(!s || !s.id) return;
+    if(s.vpn && !live[s.id]){
+      changed=true;
+      next.push({ id:s.id, vpn:'', label:s.label||'' });
+    } else next.push(s);
+  });
+  const anyVpn=next.some(function(s){ return !!s.vpn; });
+  if(!anyVpn){
+    if(next.length!==1 || (next[0] && next[0].vpn)){
+      next.length=0;
+      next.push({ id:newWebDeviceId(), vpn:'', label:'Ключ 1' });
+      changed=true;
+    }
+  }
+  if(changed) saveWebKeys(next);
+  return next;
 }
 
 async function gasApi(params, timeoutMs){
@@ -874,13 +902,19 @@ function gasRenderKeyCard(d){
   const lim = isNaN(limit) ? 1 : limit;
   const n = isNaN(used) ? 0 : used;
   const paid = isPaymentUiActive_(d);
-  const list = migrateWebKeys_();
+  const hadVpn = migrateWebKeys_().filter(function(s){ return !!(s.vpn); }).length;
+  const list = syncWebKeysWithServer_(d);
   const localReady = list.filter(function(s){ return !!(s.vpn); }).length;
   fillFleetSelect_(d);
+  const resetKeys = hadVpn>0 && localReady===0;
+  if(resetKeys && msg){
+    msg.textContent='Привязки сброшены. Старые ключи больше не действуют — создайте новый.';
+    msg.className='msg';
+  }
   if(countEl) countEl.textContent = n + ' из ' + lim;
   if(meter) meter.classList.toggle('full', lim > 0 && n >= lim);
   if(thisEl) thisEl.textContent = localReady ? ('в кабинете ключей: '+localReady) : 'ключей iPhone/Mac ещё нет';
-  if(msg && !webKeyBusy_){ msg.textContent=''; msg.className='msg'; }
+  if(msg && !webKeyBusy_ && !resetKeys){ msg.textContent=''; msg.className='msg'; }
 
   if(!paid){
     if(hint) hint.textContent='Подписка неактивна — ключи на паузе. После оплаты те же ключи снова заработают. Удаляем только если месяц не было сети.';
