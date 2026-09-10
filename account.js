@@ -64,6 +64,40 @@ function accountButton_(parent, text, action, danger) {
   };
   parent.appendChild(button); return button;
 }
+// Отдельный экран для отвязанных устройств вместо растущего списка кнопок в основной панели.
+function accountRevokedModal_(devices, onAllow) {
+  document.getElementById('account-revoked-modal')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'account-revoked-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:900;display:flex;align-items:flex-end;justify-content:center;background:rgba(28,36,48,.28)';
+  const box = document.createElement('div');
+  box.style.cssText = 'width:100%;max-width:440px;max-height:80vh;overflow-y:auto;margin:0 auto;background:#fff;border-radius:22px 22px 0 0;padding:20px 20px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 32px rgba(28,36,48,.08)';
+  const title = document.createElement('h3'); title.textContent = 'Отвязанные устройства'; box.appendChild(title);
+  const hint = document.createElement('p'); hint.className = 'sub';
+  hint.textContent = 'Эти устройства были отвязаны. Разрешите повторный вход, чтобы устройство снова могло получить ключ.';
+  box.appendChild(hint);
+  if (!devices.length) {
+    const empty = document.createElement('p'); empty.textContent = 'Отвязанных устройств нет.'; box.appendChild(empty);
+  }
+  devices.forEach(function(device) {
+    const item = document.createElement('div'); item.className = 'card';
+    const name = document.createElement('strong'); name.textContent = device.label || device.configName || device.deviceTail; item.appendChild(name);
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn sec'; btn.textContent = 'Разрешить повторный вход';
+    btn.onclick = async function() {
+      btn.disabled = true;
+      try { await onAllow(device); overlay.remove(); }
+      catch (e) { toast(e.message || 'Ошибка'); btn.disabled = false; }
+    };
+    item.appendChild(btn);
+    box.appendChild(item);
+  });
+  const close = document.createElement('button'); close.type = 'button'; close.className = 'btn ghost'; close.textContent = 'Закрыть';
+  close.onclick = function() { overlay.remove(); };
+  box.appendChild(close);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+}
 let accountDevicesPollTimer_ = null;
 async function openAccountDevices(opt) {
   opt = opt || {};
@@ -106,12 +140,14 @@ async function openAccountDevices(opt) {
       panel.appendChild(item);
     });
     if (!(data.devices || []).length) { const empty = document.createElement('p'); empty.textContent = 'Привязанных устройств пока нет.'; panel.appendChild(empty); }
-    for (const device of result.revokedDevices || []) {
-      if (resets.some(r => r.deviceId === device.deviceId)) continue;
-      accountButton_(panel, 'Разрешить повторный вход · ' + device.label, async function() {
-        if (!confirm('Снова разрешить этому устройству получать ключ? Оно сможет занять свободный слот.')) return;
-        const reply = await accountCall_('authorizeDevice', {deviceId:device.deviceId});
-        toast(reply.message); await openAccountDevices();
+    const revokedPending = (result.revokedDevices || []).filter(d => !resets.some(r => r.deviceId === d.deviceId));
+    if (revokedPending.length) {
+      accountButton_(panel, 'Отвязанные устройства (' + revokedPending.length + ')', async function() {
+        accountRevokedModal_(revokedPending, async function(device) {
+          if (!confirm('Снова разрешить этому устройству получать ключ? Оно сможет занять свободный слот.')) return;
+          const reply = await accountCall_('authorizeDevice', {deviceId:device.deviceId});
+          toast(reply.message); await openAccountDevices();
+        });
       });
     }
     if (data.deviceLimit > 1 && data.deviceLimit > data.deviceUsed && !result.change && !resets.length) {
