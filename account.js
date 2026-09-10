@@ -6,13 +6,42 @@ async function accountCall_(op, extra) {
   if (!result || result.status === 'error') throw new Error((result && result.message) || 'Нет ответа');
   return result;
 }
+function accountEscapeHtml_(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// Custom in-page modal instead of window.prompt(): many mobile browsers/PWA
+// webviews auto-dismiss native prompt()/confirm()/alert() dialogs when the
+// tab loses visibility (e.g. user switches to Telegram/MAX to read the code).
+// A regular DOM element does not get dismissed and survives backgrounding.
+function accountCodeModal_(message) {
+  return new Promise(function(resolve) {
+    document.getElementById('account-code-modal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'account-code-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:900;display:flex;align-items:flex-end;justify-content:center;background:rgba(28,36,48,.28)';
+    overlay.innerHTML =
+      '<div style="width:100%;max-width:440px;margin:0 auto;background:#fff;border-radius:22px 22px 0 0;padding:20px 20px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 32px rgba(28,36,48,.08)">' +
+        '<div style="font-size:.92rem;color:#44515C;margin-bottom:14px;white-space:pre-wrap;line-height:1.5">' + accountEscapeHtml_(message) + '</div>' +
+        '<input id="account-code-input" class="inp" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Код из мессенджера" autocomplete="one-time-code" style="text-align:center;letter-spacing:.3em;font-size:1.2rem">' +
+        '<button type="button" class="btn" id="account-code-ok">Подтвердить</button>' +
+        '<button type="button" class="btn ghost" id="account-code-cancel">Отмена</button>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('#account-code-input');
+    const finish = function(value) { overlay.remove(); resolve(value); };
+    overlay.querySelector('#account-code-ok').onclick = function() { finish((input.value || '').trim()); };
+    overlay.querySelector('#account-code-cancel').onclick = function() { finish(null); };
+    input.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); finish((input.value || '').trim()); } });
+    setTimeout(function() { input.focus(); }, 50);
+  });
+}
 async function ensureAccountAuth_() {
   if (accountToken_()) {
     try { await accountCall_('status'); return true; }
     catch (e) { if (!/Подтвердите вход/.test(e.message)) throw e; sessionStorage.removeItem('wkAccount_' + gasPhone); }
   }
   const sent = await accountCall_('requestCode');
-  const code = prompt(sent.message + '\nВведите шестизначный код:');
+  const code = await accountCodeModal_(sent.message + '\nВведите шестизначный код:');
   if (!code) return false;
   const verified = await accountCall_('verifyCode', { code: code.trim() });
   saveAccountToken_(gasPhone, verified.accountToken);
