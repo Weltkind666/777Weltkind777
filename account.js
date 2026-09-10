@@ -64,7 +64,10 @@ function accountButton_(parent, text, action, danger) {
   };
   parent.appendChild(button); return button;
 }
-async function openAccountDevices() {
+let accountDevicesPollTimer_ = null;
+async function openAccountDevices(opt) {
+  opt = opt || {};
+  if (accountDevicesPollTimer_) { clearTimeout(accountDevicesPollTimer_); accountDevicesPollTimer_ = null; }
   try {
     if (!gasPhone) { toast('Сначала войдите по номеру'); return; }
     if (!await ensureAccountAuth_()) return;
@@ -72,9 +75,9 @@ async function openAccountDevices() {
     const data = result.data;
     gasUserData = data;
     const panel = accountPanel_(); panel.replaceChildren();
-    const title = document.createElement('h3'); title.textContent = 'Ваши устройства · ' + data.deviceLimit + ' в тарифе'; panel.appendChild(title);
+    const title = document.createElement('h3'); title.textContent = 'Устройства (' + data.deviceUsed + ' из ' + data.deviceLimit + ')'; panel.appendChild(title);
     const text = document.createElement('p'); text.className = 'sub';
-    text.textContent = 'Сброс освобождает привязку без изменения тарифа. Отмена устройства уменьшает следующий платёж. Деньги за текущий оплаченный период не возвращаются.';
+    text.innerHTML = '<strong>Отвязать</strong> — освободить слот, тариф не меняется, ключ можно выдать заново.<br><strong>Убрать из тарифа</strong> — слот пропадает совсем, следующий платёж меньше. За текущий месяц деньги не возвращаются.';
     panel.appendChild(text);
     const resets = result.resets || [];
     (data.devices || []).forEach(function(device) {
@@ -83,10 +86,13 @@ async function openAccountDevices() {
       const location = document.createElement('p'); location.textContent = device.host || 'Конфиг ещё не создан'; item.appendChild(location);
       const pending = resets.some(r => r.deviceId === device.deviceId);
       if (pending) {
-        const status = document.createElement('p'); status.textContent = 'Удаление выполняется. Ожидается подтверждение сервера.'; item.appendChild(status);
+        const status = document.createElement('p'); status.style.cssText='font-weight:600;color:var(--accent2)';
+        status.textContent = '⏳ Отвязка выполняется — обычно до пары минут. Сейчас обновится само.'; item.appendChild(status);
       } else {
         const change = async function(op) {
-          const warning = op === 'remove' ? 'Отменить это устройство? Возврата за текущий период не будет. Следующий платёж станет меньше.' : 'Сбросить привязку этого устройства? Его старый конфиг будет отозван на серверах.';
+          const warning = op === 'remove'
+            ? 'Убрать устройство из тарифа? Слот пропадёт совсем, следующий платёж станет меньше. За текущий месяц деньги не вернутся.'
+            : 'Отвязать устройство? Старый ключ перестанет работать — можно будет сразу создать новый.';
           if (!confirm(warning)) return;
           const reply = await accountCall_(op, { deviceId: device.deviceId });
           toast(reply.message);
@@ -94,8 +100,8 @@ async function openAccountDevices() {
           _lsSet('wk_vpn_' + normalizePhone(gasPhone), '');
           await openAccountDevices();
         };
-        accountButton_(item, 'Сбросить эту привязку', () => change('reset'), true);
-        if (data.deviceLimit > 1) accountButton_(item, 'Отменить устройство в тарифе', () => change('remove'), true);
+        accountButton_(item, 'Отвязать устройство', () => change('reset'), true);
+        if (data.deviceLimit > 1) accountButton_(item, 'Убрать из тарифа', () => change('remove'), true);
       }
       panel.appendChild(item);
     });
@@ -113,8 +119,8 @@ async function openAccountDevices() {
       for (const kind of ['device', 'wifi']) {
         const used = (data.devices || []).filter(d => (d.kind || 'device') === kind).length;
         if (used >= (kind === 'wifi' ? tariffs.wifiCount : tariffs.deviceCount)) continue;
-        accountButton_(panel, 'Отменить свободный слот · ' + (kind === 'wifi' ? 'Wi-Fi' : 'устройство'), async function() {
-          if (confirm('Уменьшить тариф на этот незанятый слот? Возврата за текущий период нет.')) { await accountCall_('removeUnused', {deviceKind:kind}); await openAccountDevices(); }
+        accountButton_(panel, 'Убрать пустой слот · ' + (kind === 'wifi' ? 'Wi-Fi' : 'устройство'), async function() {
+          if (confirm('Убрать незанятый слот из тарифа? Он не занят устройством. Возврата за текущий месяц нет.')) { await accountCall_('removeUnused', {deviceKind:kind}); await openAccountDevices(); }
         }, true);
       }
     }
@@ -134,8 +140,14 @@ async function openAccountDevices() {
       });
     }
     accountButton_(panel, 'Обновить статус', openAccountDevices);
-    accountButton_(panel, 'Закрыть', async () => { panel.remove(); gasRefresh(); });
-    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    accountButton_(panel, 'Закрыть', async () => {
+      if (accountDevicesPollTimer_) { clearTimeout(accountDevicesPollTimer_); accountDevicesPollTimer_ = null; }
+      panel.remove(); gasRefresh();
+    });
+    if (!opt.silent) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (resets.length) {
+      accountDevicesPollTimer_ = setTimeout(() => openAccountDevices({ silent: true }), 5000);
+    }
   } catch (err) { toast(err.message || 'Не удалось загрузить устройства'); }
 }
 function downloadWifiConfig(id) {

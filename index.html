@@ -1075,14 +1075,14 @@ async function createWebKey(slotId, recreate){
   const rec=document.getElementById('wk-rec-'+slot.id);
   const ta=document.getElementById('wk-ta-'+slot.id);
   webKeyBusy_=true;
-  if(cr) cr.disabled=true;
-  if(rec) rec.disabled=true;
-  if(msg){ msg.className='msg'; msg.textContent='Задание серверу… обычно 10–20 сек.'; }
+  if(cr){ cr.disabled=true; cr.dataset.origText=cr.textContent; cr.textContent='Создаём ключ…'; }
+  if(rec){ rec.disabled=true; rec.dataset.origText=rec.textContent; rec.textContent='Пересоздаём ключ…'; }
+  if(msg){ msg.className='msg'; msg.style.cssText='font-weight:700;color:var(--accent2)'; msg.textContent='⏳ Задание серверу… обычно 10–20 сек.'; }
   try{
     const prefer=(document.getElementById('home-key-server')||{}).value||'';
     const j=await gasApi({ action:'createWebKey', phone:gasPhone, deviceId:slot.id, label:label, preferHost:prefer, deviceKind:slot.kind||'device' }, 45000);
     if(!j || j.status==='error' || (j.status!=='ok' && j.status!=='pending')){
-      if(msg){ msg.className='msg err'; msg.textContent=(j&&j.message)||'Не удалось создать'; }
+      if(msg){ msg.style.cssText=''; msg.className='msg err'; msg.textContent=(j&&j.message)||'Не удалось создать'; }
       toast((j&&j.message)||'Ошибка');
       return;
     }
@@ -1102,21 +1102,21 @@ async function createWebKey(slotId, recreate){
         if(!p) continue;
         if(p.status==='ok' && (p.vpn||p.conf)){ done=p; break; }
         if(p.status==='error'){
-          if(msg){ msg.className='msg err'; msg.textContent=p.message||'Не удалось создать'; }
+          if(msg){ msg.style.cssText=''; msg.className='msg err'; msg.textContent=p.message||'Не удалось создать'; }
           toast(p.message||'Ошибка');
           return;
         }
         const sec=Math.round((Date.now()-t0)/1000);
-        if(msg) msg.textContent='Сервер создаёт ключ… '+sec+' сек';
+        if(msg) msg.textContent='⏳ Сервер создаёт ключ… '+sec+' сек';
       }
       if(!done){
-        if(msg){ msg.className='msg err'; msg.textContent='Сервер не успел ответить за 2 минуты. Нажмите ещё раз — задание уже в очереди.'; }
+        if(msg){ msg.style.cssText=''; msg.className='msg err'; msg.textContent='Сервер не успел ответить за 2 минуты. Нажмите ещё раз — задание уже в очереди.'; }
         return;
       }
     }
     const vpn=done.vpn||done.conf||'';
     if(!vpn){
-      if(msg){ msg.className='msg err'; msg.textContent='Сервер не вернул ключ'; }
+      if(msg){ msg.style.cssText=''; msg.className='msg err'; msg.textContent='Сервер не вернул ключ'; }
       return;
     }
     list=loadWebKeys();
@@ -1128,7 +1128,7 @@ async function createWebKey(slotId, recreate){
     if(!slot.label) slot.label=label || ('Ключ '+(list.indexOf(slot)+1));
     saveWebKeys(list);
     _lsSet('wk_vpn_'+normalizePhone(gasPhone||''), vpn);
-    if(msg){ msg.className='msg ok'; msg.textContent='Готово: '+(done.name||done.host||j.host||'сервер')+'. Скопируйте ключ и вставьте в приложение.'; }
+    if(msg){ msg.style.cssText=''; msg.className='msg ok'; msg.textContent='Готово: '+(done.name||done.host||j.host||'сервер')+'. Скопируйте ключ и вставьте в приложение.'; }
     toast('Ключ готов');
     if(!gasUserData) gasUserData={};
     if(!Array.isArray(gasUserData.devices)) gasUserData.devices=[];
@@ -1148,11 +1148,11 @@ async function createWebKey(slotId, recreate){
     const ta2=document.getElementById('wk-ta-'+slot.id);
     if(ta2) ta2.value=vpn;
   }catch(e){
-    if(msg){ msg.className='msg err'; msg.textContent=gasErrText_(e); }
+    if(msg){ msg.style.cssText=''; msg.className='msg err'; msg.textContent=gasErrText_(e); }
   }finally{
     webKeyBusy_=false;
-    if(cr) cr.disabled=false;
-    if(rec) rec.disabled=false;
+    if(cr){ cr.disabled=false; if(cr.dataset.origText) cr.textContent=cr.dataset.origText; }
+    if(rec){ rec.disabled=false; if(rec.dataset.origText) rec.textContent=rec.dataset.origText; }
   }
 }
 
