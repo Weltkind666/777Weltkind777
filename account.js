@@ -114,11 +114,16 @@ async function openAccountDevices(opt) {
     text.innerHTML = '<strong>Отвязать</strong> — освободить слот, тариф не меняется, ключ можно выдать заново.<br><strong>Убрать из тарифа</strong> — слот пропадает совсем, следующий платёж меньше. За текущий месяц деньги не возвращаются.';
     panel.appendChild(text);
     const resets = result.resets || [];
+    if(result.quota){const q=result.quota,note=document.createElement('p');note.textContent='Привязано: '+q.bound+'. Создаётся: '+q.pending+'. Свободно: '+q.free+'. Обычных мест: '+q.deviceLimit+', Wi-Fi: '+q.wifiLimit+'.';panel.appendChild(note);}
+    (result.reservations || []).forEach(function(r){
+      const item=document.createElement('div');item.className='card';const label=document.createElement('p');label.textContent='Создание '+(r.kind==='wifi'?'Wi-Fi':'ключа')+': '+r.label+'. Бронь ещё '+Math.max(1,Math.ceil((r.expiresAt-Date.now())/60000))+' мин.';item.appendChild(label);
+      accountButton_(item,'Отменить незавершённый запрос',async function(){await accountCall_('cancelReservation',{deviceId:r.deviceId});await openAccountDevices();},true);panel.appendChild(item);
+    });
     (data.devices || []).forEach(function(device) {
       const item = document.createElement('div'); item.className = 'card';
       const name = document.createElement('strong'); name.textContent = (device.kind === 'wifi' ? 'Wi-Fi · ' : '') + (device.label || device.configName || device.deviceTail); item.appendChild(name);
       const location = document.createElement('p'); location.textContent = device.host || 'Конфиг ещё не создан'; item.appendChild(location);
-      const pending = resets.some(r => r.deviceId === device.deviceId);
+      const pending = resets.some(r => r.deviceId === device.deviceId && !r.detached);
       if (pending) {
         const status = document.createElement('p'); status.style.cssText='font-weight:600;color:var(--accent2)';
         status.textContent = '⏳ Отвязка выполняется — обычно до пары минут. Сейчас обновится само.'; item.appendChild(status);
@@ -126,7 +131,7 @@ async function openAccountDevices(opt) {
         const change = async function(op) {
           const warning = op === 'remove'
             ? 'Убрать устройство из тарифа? Слот пропадёт совсем, следующий платёж станет меньше. За текущий месяц деньги не вернутся.'
-            : 'Отвязать устройство? Старый ключ перестанет работать — можно будет сразу создать новый.';
+            : 'Отвязать устройство? Место освободится сразу. Старый ключ будет удалён в фоне; недоступный сервер обработает отзыв при восстановлении связи.';
           if (!confirm(warning)) return;
           const reply = await accountCall_(op, { deviceId: device.deviceId });
           toast(reply.message);
@@ -140,7 +145,7 @@ async function openAccountDevices(opt) {
       panel.appendChild(item);
     });
     if (!(data.devices || []).length) { const empty = document.createElement('p'); empty.textContent = 'Привязанных устройств пока нет.'; panel.appendChild(empty); }
-    const revokedPending = (result.revokedDevices || []).filter(d => !resets.some(r => r.deviceId === d.deviceId));
+    const revokedPending = (result.revokedDevices || []).filter(d => !resets.some(r => r.deviceId === d.deviceId && !r.detached));
     if (revokedPending.length) {
       accountButton_(panel, 'Отвязанные устройства (' + revokedPending.length + ')', async function() {
         accountRevokedModal_(revokedPending, async function(device) {
@@ -160,9 +165,11 @@ async function openAccountDevices(opt) {
         }, true);
       }
     }
+    if(resets.length){const note=document.createElement('p');note.textContent='Отвязано. Фоновое удаление старых ключей: '+resets.length+'. Можно пользоваться свободными местами; завершения очистки ждать не нужно.';panel.appendChild(note);}
     if (result.change) {
       const pending = document.createElement('p'); const c = result.change;
-      pending.textContent = 'Заявка: ' + c.oldCount + ' → ' + c.count + ' устройств. Доплата ' + c.total.toFixed(2) + ' ₽. Реквизиты: ' + c.paymentMethod + ', ' + c.bank + '. После перевода ожидайте подтверждения администратора.';
+      pending.style.whiteSpace = 'pre-line';
+      pending.textContent = '1. Переведите только рассчитанную доплату по реквизитам ниже.\n2. Укажите номер своего аккаунта в комментарии к переводу.\n3. Дождитесь подтверждения администратора — после него появится дополнительное место. Не переводите сумму повторно.\nДата окончания подписки остаётся прежней; со следующей оплаты учитывается новый состав устройств.\n\nЗаявка: ' + c.oldCount + ' → ' + c.count + ' устройств. Доплата ' + c.total.toFixed(2) + ' ₽. Реквизиты: ' + c.paymentMethod + ', ' + c.bank + '. После перевода ожидайте подтверждения администратора.';
       panel.appendChild(pending);
       accountButton_(panel, 'Отменить заявку на доплату', async () => { if (confirm('Отменить заявку? Если деньги уже переведены, сначала свяжитесь с поддержкой.')) { await accountCall_('cancelChange'); await openAccountDevices(); } });
     } else if (data.deviceLimit < 5) {

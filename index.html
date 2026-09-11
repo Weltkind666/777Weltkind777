@@ -960,7 +960,7 @@ function renderWebKeySlots_(list, opt){
   }
   box.innerHTML=list.map(function(s,i){
     const label=s.label || ('Ключ '+(i+1));
-    const has=!!s.vpn;
+    const has=!!s.vpn && s.confirmed!==false;
     const wifi=s.kind==='wifi';
     const id=s.id;
     const taId='wk-ta-'+id;
@@ -1122,11 +1122,20 @@ async function createWebKey(slotId, recreate){
     list=loadWebKeys();
     slot=list.find(function(s){ return s.id===slotId; })||slot;
     if(list.indexOf(slot)<0) list.push(slot);
+    slot.confirmed=!done.needsAck;
     slot.vpn=vpn;
     slot.conf=done.conf || "";
     slot.clientName=done.clientName || "";
     if(!slot.label) slot.label=label || ('Ключ '+(list.indexOf(slot)+1));
     saveWebKeys(list);
+    // Read back durable storage before acknowledging delivery to Google.
+    if(!loadWebKeys().some(function(s){return s.id===slot.id && s.vpn===vpn;})) throw new Error('Не удалось сохранить ключ на устройстве. Освободите место и повторите.');
+    if(done.needsAck){
+      const ack=await gasApi({action:'webKeyAck',phone:gasPhone,jobId:done.jobId||j.jobId},20000);
+      if(!ack || ack.status!=='ok') throw new Error(ack&&ack.message||'Не удалось подтвердить привязку. Повторите получение ключа.');
+      done.deviceUsed=ack.deviceUsed;
+      slot.confirmed=true; saveWebKeys(list);
+    }
     _lsSet('wk_vpn_'+normalizePhone(gasPhone||''), vpn);
     if(msg){ msg.style.cssText=''; msg.className='msg ok'; msg.textContent='Готово: '+(done.name||done.host||j.host||'сервер')+'. Скопируйте ключ и вставьте в приложение.'; }
     toast('Ключ готов');
@@ -1477,7 +1486,7 @@ function openFullSite(){
 
 let swReg=null, waitingWorker=null;
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js?v=44', { updateViaCache:'none' }).then(reg=>{
+  navigator.serviceWorker.register('sw.js?v=45', { updateViaCache:'none' }).then(reg=>{
     swReg=reg;
     if('periodicSync' in reg){ reg.periodicSync.register('check-subscription', { minInterval:12*3600000 }).catch(()=>{}); }
     if(reg.waiting){ waitingWorker=reg.waiting; showUpdateBar(); }
