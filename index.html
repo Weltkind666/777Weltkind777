@@ -194,7 +194,9 @@
     @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
     #confetti-canvas{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none}
     #np-status{display:none}
-  </style>
+  @keyframes wkSpin{to{transform:rotate(360deg)}}
+.wk-spinner{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:wkSpin .7s linear infinite;vertical-align:middle;margin-right:8px}
+</style>
 </head>
 <body>
 <div id="splash">
@@ -258,7 +260,7 @@
           <button class="btn" id="home-pay-btn" onclick="haptic();showTab('pay')">Продлить подписку</button>
           <div id="home-key-card" class="gas-hidden" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
             <button type="button" class="btn sec" id="home-wifi-toggle" onclick="addWifiKeySlot()">Wi-Fi · полный конфиг TXT</button>
-            <button type="button" class="btn ghost" id="home-key-toggle" onclick="haptic();toggleIosKeyPanel()" style="margin-bottom:0">Ключи для iPhone / Mac</button>
+            <button type="button" class="btn ghost" id="home-key-toggle" onclick="haptic();openWebKeys_()" style="margin-bottom:0">Ключи для iPhone / Mac</button>
             <div id="home-key-body" class="gas-hidden" style="margin-top:12px">
             <div class="dev-meter" id="home-dev-meter">
               <div>
@@ -595,6 +597,39 @@ async function gasApiOnce_(params, timeoutMs){
   if(!res.ok) throw new Error('HTTP '+res.status);
   return parseGasJson_(await res.text());
 }
+let webKeyActionBusy_=false,webRestorePromise_=null;
+async function restoreWebKeys_(authenticate){
+  if(webRestorePromise_) return webRestorePromise_;
+  webRestorePromise_=(async()=>{
+    if(authenticate && !await ensureAccountAuth_()) return;
+    if(!accountToken_()) return;
+    const phone=gasPhone;
+    const reply=await gasApi({action:'restoreWebKeys',phone:phone},20000);
+    if(!reply || reply.status!=='ok' || !Array.isArray(reply.keys)) throw new Error(reply&&reply.message || 'Не удалось восстановить ключи');
+    if(phone!==gasPhone || webKeyBusy_) return;
+    const old=loadWebKeys(), ids=new Set(reply.keys.map(k=>k.id));
+    const merged=reply.keys.map(k=>{const prev=old.find(s=>s.id===k.id && (!s.clientName || s.clientName===k.clientName));return Object.assign({},prev || {},k,{vpn:k.vpn || prev&&prev.vpn || '',conf:k.conf || prev&&prev.conf || ''});});
+    old.filter(k=>!k.vpn && !ids.has(k.id)).forEach(k=>merged.push(k));
+    saveWebKeys(merged);gasRenderKeyCard(gasUserData || {},{skipSync:true});
+  })();
+  try{return await webRestorePromise_;}finally{webRestorePromise_=null;}
+}
+async function keyAction_(button,action){
+  if(webKeyActionBusy_) return;webKeyActionBusy_=true;
+  const label=button&&button.innerHTML;
+  if(button){button.disabled=true;button.setAttribute('aria-busy','true');button.innerHTML='<span class="wk-spinner"></span>Подождите…';}
+  try{await action();}catch(e){toast(e.message || 'Ошибка запроса');}
+  finally{webKeyActionBusy_=false;if(button&&button.isConnected){button.disabled=false;button.removeAttribute('aria-busy');button.innerHTML=label;}}
+}
+async function openWebKeys_(){
+  const body=document.getElementById('home-key-body');
+  if(body&&!body.classList.contains('gas-hidden')){toggleIosKeyPanel(false);return;}
+  await keyAction_(document.getElementById('home-key-toggle'),async()=>{toggleIosKeyPanel(true);await restoreWebKeys_(true);});
+  toggleIosKeyPanel(true);
+}
+async function createWebKey(slotId,recreate){
+  return keyAction_(document.getElementById((recreate?'wk-rec-':'wk-cr-')+slotId),()=>createWebKeyInner_(slotId,recreate));
+}
 function newWebDeviceId(){
   return ('web'+Math.random().toString(36).slice(2)+Date.now().toString(36)).replace(/[^A-Za-z0-9]/g,'').slice(0,24);
 }
@@ -636,7 +671,7 @@ function migrateWebKeys_(){
 /** Админ сбросил привязки — в Google слотов нет, локальный vpn:// больше не действует. */
 function syncWebKeysWithServer_(d){
   let list=migrateWebKeys_();
-  if(!d || !Array.isArray(d.devices)) return list;
+  if(!d || !d.webKeysVerified || !Array.isArray(d.devices)) return list;
   const live={};
   d.devices.forEach(function(x){
     if(x && x.deviceId) live[String(x.deviceId)]=true;
@@ -870,6 +905,7 @@ function gasRenderMain(d){
   gasRenderMax(d);
   gasRenderHomeNotif(d);
   gasRenderKeyCard(d);
+  if(typeof accountToken_==='function' && accountToken_()) restoreWebKeys_(false).catch(()=>{});
   if (location.hash === '#devices' && !window.wkDevicesOpened) {
     window.wkDevicesOpened = true; setTimeout(openAccountDevices, 0);
   }
@@ -1049,7 +1085,7 @@ function isPaymentUiActive_(d){
   }catch(e){ return false; }
 }
 
-async function createWebKey(slotId, recreate){
+async function createWebKeyInner_(slotId, recreate){
   try { if (!await ensureAccountAuth_()) return; } catch (err) { toast(err.message); return; }
   if(!gasPhone){ toast('Сначала войдите'); return; }
   if(webKeyBusy_) return;
@@ -1088,7 +1124,7 @@ async function createWebKey(slotId, recreate){
   if(msg){ msg.className='msg'; msg.style.cssText='font-weight:700;color:var(--accent2)'; msg.textContent='⏳ Получаем готовый персональный ключ…'; }
   try{
     const prefer=(document.getElementById('home-key-server')||{}).value||'';
-    const j=await gasApi({ action:'createWebKey', phone:gasPhone, deviceId:slot.id, label:label, preferHost:prefer, deviceKind:slot.kind||'device' }, 45000);
+    const j=await gasApi({ action:'createWebKey', phone:gasPhone, deviceId:slot.id, label:label, preferHost:prefer, deviceKind:slot.kind||'device', recreate:recreate?'1':'0' }, 45000);
     if(!j || j.status==='error' || (j.status!=='ok' && j.status!=='pending')){
       if(msg){ msg.style.cssText=''; msg.className='msg err'; msg.textContent=(j&&j.message)||'Не удалось создать'; }
       toast((j&&j.message)||'Ошибка');

@@ -18,9 +18,9 @@ function accountCodeModal_(message) {
     document.getElementById('account-code-modal')?.remove();
     const overlay = document.createElement('div');
     overlay.id = 'account-code-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:900;display:flex;align-items:flex-end;justify-content:center;background:rgba(28,36,48,.28)';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(28,36,48,.28)';
     overlay.innerHTML =
-      '<div style="width:100%;max-width:440px;margin:0 auto;background:#fff;border-radius:22px 22px 0 0;padding:20px 20px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 32px rgba(28,36,48,.08)">' +
+      '<div style="width:100%;max-width:320px;margin:auto;background:#fff;border-radius:18px;padding:18px;box-shadow:0 8px 32px rgba(28,36,48,.14)">' +
         '<div style="font-size:.92rem;color:#44515C;margin-bottom:14px;white-space:pre-wrap;line-height:1.5">' + accountEscapeHtml_(message) + '</div>' +
         '<input id="account-code-input" class="inp" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Код из мессенджера" autocomplete="one-time-code" style="text-align:center;letter-spacing:.3em;font-size:1.2rem">' +
         '<button type="button" class="btn" id="account-code-ok">Подтвердить</button>' +
@@ -28,7 +28,8 @@ function accountCodeModal_(message) {
       '</div>';
     document.body.appendChild(overlay);
     const input = overlay.querySelector('#account-code-input');
-    const finish = function(value) { overlay.remove(); resolve(value); };
+    const finish = function(value) { if(value!==null && !/^\d{6}$/.test(value)){input.setCustomValidity('Введите 6 цифр');input.reportValidity();return;} overlay.remove(); resolve(value); };
+    input.addEventListener('input',()=>input.setCustomValidity(''));
     overlay.querySelector('#account-code-ok').onclick = function() { finish((input.value || '').trim()); };
     overlay.querySelector('#account-code-cancel').onclick = function() { finish(null); };
     input.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); finish((input.value || '').trim()); } });
