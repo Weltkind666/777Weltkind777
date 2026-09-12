@@ -169,7 +169,7 @@ async function openAccountDevices(opt) {
     if (result.change) {
       const pending = document.createElement('p'); const c = result.change;
       pending.style.whiteSpace = 'pre-line';
-      pending.textContent = '1. Переведите только рассчитанную доплату по реквизитам ниже.\n2. Укажите номер своего аккаунта в комментарии к переводу.\n3. Дождитесь подтверждения администратора — после него появится дополнительное место. Не переводите сумму повторно.\nДата окончания подписки остаётся прежней; со следующей оплаты учитывается новый состав устройств.\n\nЗаявка: ' + c.oldCount + ' → ' + c.count + ' устройств. Доплата ' + c.total.toFixed(2) + ' ₽. Реквизиты: ' + c.paymentMethod + ', ' + c.bank + '. После перевода ожидайте подтверждения администратора.';
+      pending.textContent = '1. Переведите только рассчитанную доплату по реквизитам ниже.\n2. После перевода сообщите номер аккаунта в чате поддержки, чтобы администратор сопоставил оплату.\n3. Дождитесь подтверждения администратора — после него появится дополнительное место. Не переводите сумму повторно.\nДата окончания подписки остаётся прежней; со следующей оплаты учитывается новый состав устройств.\n\nЗаявка: ' + c.oldCount + ' → ' + c.count + ' устройств. Доплата ' + c.total.toFixed(2) + ' ₽. Реквизиты: ' + c.paymentMethod + ', ' + c.bank + '. После перевода ожидайте подтверждения администратора.';
       panel.appendChild(pending);
       accountButton_(panel, 'Отменить заявку на доплату', async () => { if (confirm('Отменить заявку? Если деньги уже переведены, сначала свяжитесь с поддержкой.')) { await accountCall_('cancelChange'); await openAccountDevices(); } });
     } else if (data.deviceLimit < 5) {
@@ -195,6 +195,7 @@ async function openAccountDevices(opt) {
 }
 function downloadWifiConfig(id) {
   const slot = loadWebKeys().find(s => s.id === id);
+  if (slot && slot.confirmed===false) { toast('Сначала завершите подтверждение выдачи ключа'); return; }
   if (!slot || slot.kind !== 'wifi') { toast('Wi-Fi оформляется отдельно по тарифу Wi-Fi'); return; }
   if (!slot || !slot.conf || !/^\s*\[Interface\]/m.test(slot.conf) || !/^\s*\[Peer\]/m.test(slot.conf)) {
     toast('Для старого ключа полный конфиг не сохранён. Пересоздайте этот ключ, затем скачайте Wi-Fi TXT.'); return;
