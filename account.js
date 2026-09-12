@@ -48,6 +48,57 @@ async function ensureAccountAuth_() {
   saveAccountToken_(gasPhone, verified.accountToken);
   return true;
 }
+function accountMoney_(value) {
+  return Number(value).toLocaleString('ru-RU', {style:'currency', currency:'RUB', minimumFractionDigits:2});
+}
+function accountQuoteModal_(quote) {
+  return new Promise(function(resolve) {
+    const previousFocus = document.activeElement;
+    const dialog = document.createElement('dialog');
+    dialog.className = 'account-quote';
+    dialog.setAttribute('aria-labelledby', 'account-quote-title');
+    const esc = accountEscapeHtml_;
+    const money = value => esc(accountMoney_(value));
+    const paid = Number(quote.total) > 0;
+    dialog.innerHTML =
+      '<div class="account-quote-content">' +
+      '<p class="account-step">ДОБАВЛЕНИЕ В ТАРИФ</p>' +
+      '<h2 id="account-quote-title">' + (quote.kind === 'wifi' ? 'Подключить роутер Wi-Fi' : 'Добавить устройство') + '</h2>' +
+      '<p>Сейчас мест: <strong>' + esc(quote.oldCount) + '</strong>. После подключения: <strong>' + esc(quote.count) + '</strong>.</p>' +
+      '<div class="account-price"><span>' + (paid ? 'Доплатить сейчас' : 'Сейчас платить не нужно') + '</span><strong>' + money(quote.total) + '</strong>' +
+      '<p>' + (paid ? 'За дополнительное место до ' + esc(quote.expiry) + '. Все надбавки уже включены.' : 'Место заработает после оплаты подписки.') + '</p></div>' +
+      '<p class="account-next">При следующем продлении<br><strong>' + money(quote.nextMonthly) + ' за месяц</strong><br>За все ' + esc(quote.count) + ' мест вместе.</p>' +
+      '<p>' + (paid ? 'Подписка останется до <strong>' + esc(quote.expiry) + '</strong>. Доплата не продлевает её.' : 'Сумма продления учитывает дополнительное место.') + '</p>' +
+      '<details><summary>Как рассчитана сумма</summary><p>Оставшийся срок: ' + esc(quote.days) + ' дн.<br>Стоимость за этот срок: ' + money(quote.base) + '.<br>Надбавка ' + esc(quote.rate) + '%: ' + money(Number(quote.total) - Number(quote.base)) + '.</p></details>' +
+      '<p class="account-help">' + (paid ? 'Далее покажем реквизиты. Деньги автоматически не спишутся. Место появится после подтверждения оплаты.' : 'Далее сохраним новое количество мест в тарифе.') + '</p>' +
+      '<button type="button" class="btn" data-quote-accept>' + (paid ? 'Перейти к оплате' : 'Добавить место') + '</button>' +
+      '<button type="button" class="btn ghost" data-quote-cancel>Не сейчас</button></div>';
+    dialog.addEventListener('close', function() {
+      const accepted = dialog.returnValue === 'accept';
+      dialog.remove();
+      if (previousFocus && previousFocus.isConnected) previousFocus.focus();
+      resolve(accepted);
+    }, {once:true});
+    dialog.querySelector('[data-quote-accept]').onclick = () => dialog.close('accept');
+    dialog.querySelector('[data-quote-cancel]').onclick = () => dialog.close('cancel');
+    document.body.appendChild(dialog);
+    dialog.showModal();
+  });
+}
+function accountPaymentCard_(change) {
+  const card = document.createElement('div');
+  card.className = 'account-payment';
+  const esc = accountEscapeHtml_;
+  card.innerHTML = '<h3>Оплата дополнительного места</h3>' +
+    '<div class="account-price"><span>Сумма перевода</span><strong>' + esc(accountMoney_(change.total)) + '</strong></div>' +
+    '<ol><li><strong>Переведите указанную сумму.</strong><p class="account-recipient">Реквизиты: ' + esc(change.paymentMethod) + '<br>Банк: ' + esc(change.bank) + '</p></li>' +
+    '<li><strong>Сообщите об оплате в поддержку.</strong><p>Укажите номер аккаунта: ' + esc(gasPhone) + '.</p></li>' +
+    '<li><strong>Дождитесь подтверждения.</strong><p>После него можно подключить дополнительное устройство.</p></li></ol>' +
+    '<p>Если уже перевели деньги, повторно платить не нужно.</p>' +
+    '<p class="account-help">Подписка до ' + esc(change.expiry) + '. Дата не меняется. При следующем продлении: ' + esc(accountMoney_(change.nextMonthly)) + ' за месяц за все ' + esc(change.count) + ' мест.</p>';
+  accountButton_(card, 'Написать в поддержку', async function() { chatOpen(); });
+  return card;
+}
 function accountPanel_() {
   let panel = document.getElementById('account-panel');
   if (!panel) {
@@ -168,18 +219,14 @@ async function openAccountDevices(opt) {
     }
     if(resets.length){const note=document.createElement('p');note.textContent='Отвязано. Фоновое удаление старых ключей: '+resets.length+'. Можно пользоваться свободными местами; завершения очистки ждать не нужно.';panel.appendChild(note);}
     if (result.change) {
-      const pending = document.createElement('p'); const c = result.change;
-      pending.style.whiteSpace = 'pre-line';
-      pending.textContent = '1. Переведите только рассчитанную доплату по реквизитам ниже.\n2. После перевода сообщите номер аккаунта в чате поддержки, чтобы администратор сопоставил оплату.\n3. Дождитесь подтверждения администратора — после него появится дополнительное место. Не переводите сумму повторно.\nДата окончания подписки остаётся прежней; со следующей оплаты учитывается новый состав устройств.\n\nЗаявка: ' + c.oldCount + ' → ' + c.count + ' устройств. Доплата ' + c.total.toFixed(2) + ' ₽. Реквизиты: ' + c.paymentMethod + ', ' + c.bank + '. После перевода ожидайте подтверждения администратора.';
-      panel.appendChild(pending);
+      panel.appendChild(accountPaymentCard_(result.change));
       accountButton_(panel, 'Отменить заявку на доплату', async () => { if (confirm('Отменить заявку? Если деньги уже переведены, сначала свяжитесь с поддержкой.')) { await accountCall_('cancelChange'); await openAccountDevices(); } });
     } else if (data.deviceLimit < 5) {
       for (const kind of ['device', 'wifi']) accountButton_(panel, kind === 'wifi' ? 'Добавить Wi-Fi в тариф' : 'Добавить устройство в тариф', async function() {
         const count = data.deviceLimit + 1;
         const result = await accountCall_('quote', { count, clientType: gasClientType, deviceKind: kind });
         const q = result.quote;
-        const details = 'Устройств: ' + q.oldCount + ' → ' + q.count + '\nОсталось дней: ' + q.days + '\nДоплата: ' + q.total.toFixed(2) + ' ₽ (база ' + q.base.toFixed(2) + ' ₽ + надбавка ' + q.rate + '%).\nСледующий месяц: ' + q.nextMonthly.toFixed(2) + ' ₽.\nДата окончания подписки не изменится.\nСоздать заявку?';
-        if (!confirm(details)) return;
+        if (!await accountQuoteModal_(q)) return;
         await accountCall_('add', { quoteId: q.id }); await openAccountDevices();
       });
     }

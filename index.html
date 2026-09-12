@@ -196,6 +196,24 @@
     #np-status{display:none}
   @keyframes wkSpin{to{transform:rotate(360deg)}}
 .wk-spinner{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:wkSpin .7s linear infinite;vertical-align:middle;margin-right:8px}
+.account-quote{box-sizing:border-box;width:calc(100% - 24px);max-width:440px;max-height:90vh;max-height:90dvh;margin:auto;padding:0;border:0;border-radius:24px;background:#fff;color:#263445;overflow:auto;box-shadow:0 20px 80px #15253840}
+.account-quote::backdrop{background:rgba(20,32,48,.5)}
+.account-quote-content{padding:24px;font-size:17px;line-height:1.5}
+.account-quote h2{font-size:25px;line-height:1.2;margin:8px 0 16px}
+.account-quote p,.account-payment p{margin:12px 0}
+.account-quote .account-step{font-size:12px;font-weight:700;letter-spacing:.08em;color:#526475;margin:0}
+.account-price{padding:18px;border-radius:18px;background:#eef8f5;margin:18px 0;overflow-wrap:anywhere}
+.account-price>span{display:block;font-size:16px;color:#36574b}
+.account-price>strong{display:block;font-size:clamp(26px,8vw,36px);line-height:1.25;color:#123e31;margin:8px 0}
+.account-price p{font-size:16px;margin:8px 0 0}
+.account-next strong{font-size:21px}
+.account-help{font-size:15px;color:#526475}
+.account-quote summary{cursor:pointer;padding:12px 0;font-size:16px;text-decoration:underline;text-underline-offset:3px}
+.account-quote .btn{min-height:50px;font-size:17px}
+.account-quote :focus-visible{outline:3px solid #176d58;outline-offset:3px}
+.account-payment{font-size:17px;line-height:1.5;overflow-wrap:anywhere}
+.account-payment ol{padding-left:24px}.account-payment li{padding:8px 0 8px 4px}
+.account-recipient{padding:12px;background:#f2f5f8;border-radius:12px}
 </style>
 </head>
 <body>
@@ -472,7 +490,7 @@
   </div>
 </div>
 
-<script src="account.js?v=47" defer></script>
+<script src="account.js?v=49" defer></script>
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
 const PWA_URL = 'https://weltkind666.github.io/777Weltkind777/';
