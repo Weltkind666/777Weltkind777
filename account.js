@@ -37,15 +37,19 @@ function accountCodeModal_(message) {
   });
 }
 async function ensureAccountAuth_() {
+  const phone = gasPhone;
   if (accountToken_()) {
-    try { await accountCall_('status'); return true; }
+    try { const status = await accountCall_('status'); return phone === gasPhone ? status : false; }
     catch (e) { if (!/Подтвердите вход/.test(e.message)) throw e; sessionStorage.removeItem('wkAccount_' + gasPhone); }
   }
   const sent = await accountCall_('requestCode');
+  if (phone !== gasPhone) return false;
   const code = await accountCodeModal_(sent.message + '\nВведите шестизначный код:');
-  if (!code) return false;
+  if (!code || phone !== gasPhone) return false;
   const verified = await accountCall_('verifyCode', { code: code.trim() });
-  saveAccountToken_(gasPhone, verified.accountToken);
+  if (phone !== gasPhone) return false;
+  saveAccountToken_(phone, verified.accountToken);
+  if (_lsGet(keyRequestStorage_())) scheduleKeyResume_();
   return true;
 }
 function accountMoney_(value) {
@@ -220,7 +224,7 @@ async function openAccountDevices(opt) {
     if(resets.length){const note=document.createElement('p');note.textContent='Отвязано. Фоновое удаление старых ключей: '+resets.length+'. Можно пользоваться свободными местами; завершения очистки ждать не нужно.';panel.appendChild(note);}
     if (result.change) {
       panel.appendChild(accountPaymentCard_(result.change));
-      accountButton_(panel, 'Отменить заявку на доплату', async () => { if (confirm('Отменить заявку? Если деньги уже переведены, сначала свяжитесь с поддержкой.')) { await accountCall_('cancelChange'); await openAccountDevices(); } });
+      accountButton_(panel, 'Отменить заявку на доплату', async () => { if (confirm('Отменить заявку? Если деньги уже переведены, сначала свяжитесь с поддержкой.')) { await accountCall_('cancelChange'); _lsSet(keyRequestStorage_(), ''); clearTimeout(keyFlowTimer_); keyFlowTimer_ = null; await openAccountDevices(); } });
     } else if (data.deviceLimit < 5) {
       for (const kind of ['device', 'wifi']) accountButton_(panel, kind === 'wifi' ? 'Добавить Wi-Fi в тариф' : 'Добавить устройство в тариф', async function() {
         const count = data.deviceLimit + 1;
@@ -254,25 +258,103 @@ function downloadWifiConfig(id) {
   document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
 
-async function addWifiKeySlot() {
-  try {
-    if (!await ensureAccountAuth_()) return;
-    const result = await accountCall_('status');
-    gasUserData = result.data;
-    const t = result.data.deviceTariffs || {};
-    const used = (result.data.devices || []).filter(d => d.kind === 'wifi').length;
-    const list = loadWebKeys();
-    const existing = list.find(s => s.kind === 'wifi' && !s.vpn);
-    if (!existing && used >= (t.wifiCount || 0)) {
-      toast('Сначала добавьте Wi-Fi в тариф и дождитесь подтверждения доплаты');
-      await openAccountDevices(); return;
-    }
-    if (!existing) {
-      list.push({id:newWebDeviceId(), kind:'wifi', vpn:'', label:'Wi-Fi'});
-      saveWebKeys(list);
-    }
-    toggleIosKeyPanel(true);
-    gasRenderKeyCard(gasUserData, {skipSync:true});
-    document.getElementById('home-key-body').scrollIntoView({behavior:'smooth', block:'start'});
-  } catch (err) { toast(err.message || 'Не удалось открыть Wi-Fi'); }
+function keyRequestStorage_() { return 'wk_key_request_' + normalizePhone(gasPhone); }
+let keyFlowTimer_ = null, keyResumeAttempt_ = '';
+function showKeyFlowMessage_(message) {
+  toggleIosKeyPanel(true);
+  const box = document.getElementById('home-key-flow');
+  if (box) { box.textContent = message; box.classList.remove('gas-hidden'); }
 }
+function scheduleKeyResume_() {
+  clearTimeout(keyFlowTimer_);
+  const phone = gasPhone;
+  keyFlowTimer_ = setTimeout(async () => {
+    keyFlowTimer_ = null;
+    if (phone !== gasPhone || !accountToken_() || !_lsGet(keyRequestStorage_())) return;
+    if (document.visibilityState === 'visible' && !webKeyActionBusy_) {
+      try {
+        const request = JSON.parse(_lsGet(keyRequestStorage_()));
+        await startKeyFlow_(request.kind, true, true);
+      } catch (error) { showKeyFlowMessage_(error.message || 'Не удалось проверить оплату. Нажмите кнопку ключа ещё раз.'); }
+    }
+    const pending = _lsGet(keyRequestStorage_());
+    if (pending && JSON.parse(pending).id !== keyResumeAttempt_) scheduleKeyResume_();
+  }, 15000);
+}
+async function startKeyFlow_(kind, another = false, resume = false) {
+  return keyAction_(document.getElementById(kind === 'wifi' ? 'home-wifi-toggle' : 'home-key-toggle'), async () => {
+    if (!gasPhone) { toast('Сначала войдите по номеру'); return; }
+    if (resume && !accountToken_()) return;
+    const authenticated = await ensureAccountAuth_();
+    if (!authenticated) return;
+    const phone = gasPhone;
+    const status = authenticated.data ? authenticated : await accountCall_('status');
+    if (phone !== gasPhone) return;
+    gasUserData = status.data;
+    await restoreWebKeys_(false);
+    if (phone !== gasPhone) return;
+    let list = loadWebKeys();
+    const storedRequest = _lsGet(keyRequestStorage_());
+    const request = storedRequest ? JSON.parse(storedRequest) : null;
+    const sameKind = slot => (slot.kind || 'device') === kind;
+    const saved = list.find(slot => sameKind(slot) && slot.vpn && slot.confirmed !== false);
+    if (saved && !another) {
+      toggleIosKeyPanel(true);
+      document.getElementById('wk-ta-' + saved.id)?.scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
+    if (resume && (!request || request.kind !== kind || keyResumeAttempt_ === request.id)) return;
+    if (status.change) {
+      if (!resume) await openAccountDevices();
+      showKeyFlowMessage_('Ожидаем подтверждения доплаты. После него создадим ключ автоматически, пока кабинет открыт. Если закрыли — нажмите кнопку ключа после входа.');
+      if (request) scheduleKeyResume_();
+      return;
+    }
+    const draft = list.find(slot => sameKind(slot) && (!slot.vpn || slot.confirmed === false));
+    const id = draft?.id || (request?.kind === kind ? request.id : newWebDeviceId());
+    const tariffs = gasUserData.deviceTariffs || {deviceCount:gasUserData.deviceLimit,wifiCount:0};
+    const occupied = (gasUserData.devices || []).concat((status.reservations || []).filter(reservation => !(gasUserData.devices || []).some(device => device.deviceId === reservation.deviceId)));
+    const capacity = Number(kind === 'wifi' ? tariffs.wifiCount : tariffs.deviceCount) || 0;
+    const ownPlace = occupied.some(slot => slot.deviceId === id && sameKind(slot));
+    const free = ownPlace || (occupied.length < gasUserData.deviceLimit && occupied.filter(sameKind).length < capacity);
+    if (!free) {
+      if (resume) return;
+      if (Number(gasUserData.deviceLimit) === 0) { showKeyFlowMessage_('Выдача ключей отключена. Напишите в поддержку.'); return; }
+      if (Number(gasUserData.deviceLimit) >= 5 || (status.reservations || []).some(sameKind)) {
+        showKeyFlowMessage_('Все места заняты или уже создаются. В разделе «Устройства» можно освободить ненужное место.');
+        await openAccountDevices(); return;
+      }
+      const result = await accountCall_('quote', {count:Number(gasUserData.deviceLimit)+1,clientType:gasClientType,deviceKind:kind});
+      if (!await accountQuoteModal_(result.quote) || phone !== gasPhone) return;
+      _lsSet(keyRequestStorage_(), JSON.stringify({kind,id}));
+      const added = await accountCall_('add', {quoteId:result.quote.id});
+      scheduleKeyResume_();
+      if (added.status === 'pending') {
+        await openAccountDevices();
+        showKeyFlowMessage_('Запрос сохранён. После оплаты и подтверждения создадим ваш ключ.');
+      } else {
+        await gasLogin(true);
+        showKeyFlowMessage_('Место добавлено. Оплатите подписку — затем создадим ваш ключ.');
+        showTab('pay');
+      }
+      return;
+    }
+    if (!isPaymentUiActive_(gasUserData)) {
+      if (!resume) { showKeyFlowMessage_('Сначала продлите подписку. Сохранённые ключи останутся в кабинете.'); showTab('pay'); }
+      return;
+    }
+    if (resume) keyResumeAttempt_ = id;
+    if (!draft) { list.push({id,kind,vpn:'',label:kind === 'wifi' ? 'Мой роутер' : 'Мой iPhone / Mac'}); saveWebKeys(list); }
+    gasRenderKeyCard(gasUserData, {skipSync:true});
+    toggleIosKeyPanel(true);
+    await createWebKeyInner_(id, false, true);
+    if (phone !== gasPhone) return;
+    const ready = loadWebKeys().find(slot => slot.id === id && slot.vpn && slot.confirmed !== false);
+    if (ready) {
+      if (request?.id === id) { _lsSet(keyRequestStorage_(), ''); clearTimeout(keyFlowTimer_); keyFlowTimer_ = null; document.getElementById('account-panel')?.remove(); }
+      showKeyFlowMessage_(kind === 'wifi' ? 'Конфиг готов. Нажмите «Скачать Wi-Fi TXT» и импортируйте файл в роутер.' : 'Ключ готов. Скопируйте его и вставьте в приложение на iPhone / Mac.');
+      document.getElementById('wk-ta-' + id)?.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+  });
+}
+async function addWifiKeySlot() { return startKeyFlow_('wifi'); }
