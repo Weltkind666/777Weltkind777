@@ -298,8 +298,11 @@
         <button class="btn" style="width:auto;margin:0;padding:10px 14px" id="install-btn" onclick="haptic('medium');promptInstall()">Установить</button>
       </div>
 
+    </div>
+    <div id="page-apps" class="tab-page">
       <div class="card">
-        <div class="lbl">Приложения</div>
+        <div class="lbl">Приложение</div>
+        <div class="sub">Выберите своё устройство и скачайте приложение для подключения.</div>
         <div class="dl">
           <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#1C2430">iPhone</a>
           <button type="button" class="gas-apk-btn gas-hidden gas-dl-btn" style="background:var(--accent);color:#fff" onclick="haptic('medium');gasDownloadApk('vpn')">Android</button>
@@ -366,6 +369,7 @@
   <button type="button" class="nav-btn on" data-tab="home" onclick="showTab('home')"><span>🏠</span>Главная</button>
   <button type="button" class="nav-btn" data-tab="pay" onclick="showTab('pay')"><span>💳</span>Оплата</button>
   <button type="button" class="nav-btn" data-tab="chat" onclick="showTab('chat')"><span>💬</span>Чат<div id="chat-fab-badge" class="nav-dot"></div></button>
+  <button type="button" class="nav-btn" data-tab="apps" onclick="showTab('apps')"><span>📲</span>Приложение</button>
   <button type="button" class="nav-btn" data-tab="more" onclick="showTab('more')"><span>⚙️</span>Ещё</button>
 </nav>
 
@@ -1560,7 +1564,7 @@ function openFullSite(){
 
 let swReg=null, waitingWorker=null;
 if(!window.wkGoogleCabinet && 'serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js?v=52', { updateViaCache:'none' }).then(reg=>{
+  navigator.serviceWorker.register('sw.js?v=53', { updateViaCache:'none' }).then(reg=>{
     swReg=reg;
     if('periodicSync' in reg){ reg.periodicSync.register('check-subscription', { minInterval:12*3600000 }).catch(()=>{}); }
     if(reg.waiting){ waitingWorker=reg.waiting; showUpdateBar(); }
