@@ -265,7 +265,7 @@
       </div>
 
       <div id="gas-home-view" class="gas-hidden">
-        <button type="button" class="btn sec" onclick="openAccountDevices()">Устройства · сбросить привязки</button>
+        <button type="button" class="btn sec" onclick="openGoogleDevices()">Устройства</button>
         <div class="card hero" id="home-hero">
           <div class="badge" id="gas-st-status">—</div>
           <div class="hero-days" id="home-days">—</div>
@@ -276,29 +276,6 @@
           <div class="bar"><i id="sub-fill"></i></div>
           <div id="gas-st-warn" class="msg warn gas-hidden"></div>
           <button class="btn" id="home-pay-btn" onclick="haptic();showTab('pay')">Продлить подписку</button>
-          <div id="home-key-card" class="gas-hidden" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-            <button type="button" class="btn sec" id="home-wifi-toggle" onclick="addWifiKeySlot()">Wi-Fi · полный конфиг TXT</button>
-            <button type="button" class="btn ghost" id="home-key-toggle" onclick="haptic();openWebKeys_()" style="margin-bottom:0">Ключи для iPhone / Mac</button>
-            <div id="home-key-body" class="gas-hidden" style="margin-top:12px">
-            <p id="home-key-flow" class="msg gas-hidden" role="status"></p>
-            <div class="dev-meter" id="home-dev-meter">
-              <div>
-                <div class="sub">Подвязано устройств</div>
-                <b id="home-dev-count">—</b>
-              </div>
-              <div class="sub" id="home-dev-this" style="text-align:right;max-width:58%">слоты тарифа</div>
-            </div>
-            <div class="sub" id="home-key-hint" style="margin-bottom:10px">Нажмите кнопку нужного устройства — кабинет сам проверит тариф и подготовит ключ.</div>
-            <details><summary>Выбрать сервер вручную</summary><div class="lbl">Сервер для нового ключа</div>
-            <select id="home-key-server" class="inp" style="margin-bottom:10px">
-              <option value="">Авто — самый свободный</option>
-            </select></details>
-            <div id="home-key-slots"></div>
-            <button type="button" class="btn sec gas-hidden" id="home-key-add" onclick="haptic('medium');addWebKeySlot()">Добавить ещё ключ</button>
-            <button type="button" class="btn sec" onclick="startKeyFlow_('wifi',true)">Подключить ещё один роутер</button>
-            <div class="msg" id="home-key-msg"></div>
-            </div>
-          </div>
           <div id="home-notif-box" class="home-notif gas-hidden">
             <div class="home-notif-title">Подключите уведомления</div>
             <div class="home-notif-sub">Напомним за 3, 2 и 1 день до окончания подписки</div>
@@ -492,7 +469,7 @@
   </div>
 </div>
 
-<script src="account.js?v=50" defer></script>
+
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
 const PWA_URL = 'https://weltkind666.github.io/777Weltkind777/';
@@ -641,11 +618,21 @@ async function keyAction_(button,action){
   if(webKeyActionBusy_) return;webKeyActionBusy_=true;
   const label=button&&button.innerHTML;
   if(button){button.disabled=true;button.setAttribute('aria-busy','true');button.innerHTML='<span class="wk-spinner"></span>Подождите…';}
-  try{await action();}catch(e){toast(e.message || 'Ошибка запроса');}
+  try{await action();}catch(e){showKeyFlowMessage_(e.message || 'Ошибка запроса. Повторите нажатие.',true);}
   finally{webKeyActionBusy_=false;if(button&&button.isConnected){button.disabled=false;button.removeAttribute('aria-busy');button.innerHTML=label;}}
 }
+function openGoogleDevices(){
+  if(!gasPhone){toast('Сначала войдите по номеру телефона');return;}
+  const url=new URL(GAS_URL);url.searchParams.set('cabinet','1');url.searchParams.set('phone',normalizePhone(gasPhone));
+  window.location.assign(url.toString());
+}
 async function openWebKeys_(){
-  return startKeyFlow_('device');
+  return keyAction_(document.getElementById('home-key-toggle'),async()=>{
+    if(!await ensureAccountAuth_()) return;
+    await restoreWebKeys_(false);
+    toggleIosKeyPanel(true);
+    showKeyFlowMessage_(loadWebKeys().length ? 'Ваши сохранённые ключи и конфиги — ниже.' : 'Ключей пока нет. Нажмите «Добавить устройство» или «Добавить Wi-Fi роутер».');
+  });
 }
 async function createWebKey(slotId,recreate){
   return keyAction_(document.getElementById((recreate?'wk-rec-':'wk-cr-')+slotId),()=>createWebKeyInner_(slotId,recreate));
@@ -926,9 +913,13 @@ function gasRenderMain(d){
   gasRenderMax(d);
   gasRenderHomeNotif(d);
   gasRenderKeyCard(d);
+  if (window.wkCabinetEntry && typeof addAccountDevice_ === 'function') {
+    const entry=window.wkCabinetEntry; window.wkCabinetEntry='';
+    setTimeout(()=>{ if(entry==='device') addAccountDevice_(); else if(entry==='wifi') startKeyFlow_('wifi',true); else if(entry==='manage') openAccountDevices(); else openWebKeys_(); },0);
+  }
   if(typeof accountToken_==='function' && accountToken_()) restoreWebKeys_(false).catch(()=>{});
   if (location.hash === '#devices' && !window.wkDevicesOpened) {
-    window.wkDevicesOpened = true; setTimeout(openAccountDevices, 0);
+    window.wkDevicesOpened = true; setTimeout(openGoogleDevices, 0);
   }
   const refSub=document.getElementById('gas-ref-sub');
   if(refSub){
@@ -952,7 +943,6 @@ function toggleIosKeyPanel(forceOpen){
   if(!body) return;
   const open = forceOpen===true ? true : forceOpen===false ? false : body.classList.contains('gas-hidden');
   body.classList.toggle('gas-hidden', !open);
-  if(tog) tog.textContent = open ? 'Скрыть ключи iPhone / Mac' : 'Ключи для iPhone / Mac';
 }
 
 function gasRenderKeyCard(d, opt){
@@ -1570,7 +1560,7 @@ function openFullSite(){
 
 let swReg=null, waitingWorker=null;
 if(!window.wkGoogleCabinet && 'serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js?v=50', { updateViaCache:'none' }).then(reg=>{
+  navigator.serviceWorker.register('sw.js?v=52', { updateViaCache:'none' }).then(reg=>{
     swReg=reg;
     if('periodicSync' in reg){ reg.periodicSync.register('check-subscription', { minInterval:12*3600000 }).catch(()=>{}); }
     if(reg.waiting){ waitingWorker=reg.waiting; showUpdateBar(); }
