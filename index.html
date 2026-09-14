@@ -478,7 +478,7 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
 const PWA_URL = 'https://weltkind666.github.io/777Weltkind777/';
 const MAX_BOT_USERNAME = 'se13549304_bot';
-const PWA_CACHE = 'Weltkind-v42';
+const PWA_CACHE = 'Weltkind-user-data';
 const PWA_SUB_KEY = 'weltkind-sub-data';
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isAndroid = /Android/i.test(navigator.userAgent);
@@ -701,13 +701,26 @@ function syncWebKeysWithServer_(d){
   return next;
 }
 
+const gasReadFlights_=new Map();
+function gasReadOnly_(p){
+  if(String(p.notify || '')==='1')return false;
+  return ['getUser','selfServiceStatus','getMessages','checkTelegram','checkMax','appVersion','tvVersion','exeVersion','restoreWebKeys'].includes(p.action)
+    || (p.action==='account' && ['status','servers'].includes(p.op));
+}
 async function gasApi(params, timeoutMs){
-  let lastErr;
-  for(let i=0;i<3;i++){
-    try{ return await gasApiOnce_(params, timeoutMs); }
-    catch(e){ lastErr=e; if(i<2) await new Promise(r=>setTimeout(r,700)); }
-  }
-  throw lastErr;
+  const read=gasReadOnly_(params);
+  const key=JSON.stringify(Object.keys(params).sort().map(k=>[k,params[k]]))+':'+String(timeoutMs || '');
+  if(read && gasReadFlights_.has(key))return gasReadFlights_.get(key);
+  const work=(async()=>{
+    let lastErr;
+    for(let i=0;i<(read?2:1);i++){
+      try{return await gasApiOnce_(params,timeoutMs);}
+      catch(e){lastErr=e;if(read && i===0)await new Promise(r=>setTimeout(r,700));}
+    }
+    throw lastErr;
+  })();
+  if(read)gasReadFlights_.set(key,work);
+  try{return await work;}finally{if(read && gasReadFlights_.get(key)===work)gasReadFlights_.delete(key);}
 }
 
 let gasUserData=null, gasPhone='', gasClientType='individual', gasAppReady=false, gasPickingTariff=false;
@@ -812,7 +825,13 @@ function gasSetTax(type){
   gasUpdateTariffLock();
 }
 
+let gasLoginFlight_=null;
 async function gasLogin(silent){
+  if(gasLoginFlight_)return gasLoginFlight_;
+  gasLoginFlight_=gasLoginInner_(silent);
+  try{return await gasLoginFlight_;}finally{gasLoginFlight_=null;}
+}
+async function gasLoginInner_(silent){
   const inp=document.getElementById('gas-phone-inp');
   const phone = phoneFromInput(inp) || normalizePhone(_lsGet('gas_phone'));
   if(!phone || phone.length<10){
@@ -824,6 +843,7 @@ async function gasLogin(silent){
   try{
     const ref=_lsGet('wk_ref')||'';
     const json = await gasApi({ action:'getUser', phone, notify: silent?'0':'1', source:'pwa', ref: ref });
+    if(phone !== (phoneFromInput(inp) || normalizePhone(_lsGet('gas_phone'))))return;
     if(json.status==='ok' && json.data){
       gasPhone=phone; gasUserData=json.data;
       if(ref && ref!==phone){ gasApi({ action:'applyRef', phone, ref }).catch(()=>{}); }
@@ -1562,9 +1582,9 @@ function openFullSite(){
   window.open(getGasFallbackUrl(extra), '_blank', 'noopener');
 }
 
-let swReg=null, waitingWorker=null;
+let swReg=null, waitingWorker=null, swUpdateRequested=false;
 if(!window.wkGoogleCabinet && 'serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js?v=53', { updateViaCache:'none' }).then(reg=>{
+  navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).then(reg=>{
     swReg=reg;
     if('periodicSync' in reg){ reg.periodicSync.register('check-subscription', { minInterval:12*3600000 }).catch(()=>{}); }
     if(reg.waiting){ waitingWorker=reg.waiting; showUpdateBar(); }
@@ -1575,14 +1595,18 @@ if(!window.wkGoogleCabinet && 'serviceWorker' in navigator){
         if(nw.state==='installed' && navigator.serviceWorker.controller){ waitingWorker=nw; showUpdateBar(); }
       });
     });
-    setInterval(()=>reg.update().catch(()=>{}), 30*60000);
+    setInterval(()=>reg.update().catch(()=>{}), 10*60000);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)reg.update().catch(()=>{});});
+    reg.update().catch(()=>{});
   }).catch(()=>{});
   navigator.serviceWorker.addEventListener('message', e=>{
     if(e.data?.type==='open_renew'){ showTab('pay'); }
   });
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange', ()=>{
-    if(refreshing) return; refreshing=true; location.reload();
+    if(refreshing) return;
+    if(!swUpdateRequested){showUpdateBar();return;}
+    refreshing=true; location.reload();
   });
 }
 function showUpdateBar(){
@@ -1590,6 +1614,7 @@ function showUpdateBar(){
   document.body.classList.add('has-update');
 }
 function applySwUpdate(){
+  swUpdateRequested=true;
   if(waitingWorker) waitingWorker.postMessage({ type:'SKIP_WAITING' });
   else if(swReg && swReg.waiting) swReg.waiting.postMessage({ type:'SKIP_WAITING' });
   else location.reload();

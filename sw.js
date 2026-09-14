@@ -1,7 +1,8 @@
-/* Weltkind PWA Service Worker — v53 */
-const SW_VER = 53;
-const CACHE = 'Weltkind-v53';
+/* Weltkind PWA Service Worker — v54 */
+const SW_VER = 54;
+const CACHE = 'Weltkind-v54';
 const SUB_KEY = 'weltkind-sub-data';
+const SUB_CACHE = 'Weltkind-user-data';
 const ASSETS = [
   './',
   './index.html',
@@ -18,19 +19,30 @@ function isBypass(url) {
   return /script\.google\.com|googleusercontent\.com|googleapis\.com|fonts\.googleapis\.com|fonts\.gstatic\.com|allorigins\.win/i.test(url);
 }
 
+async function navigationFetch(req) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4500);
+  try { return await fetch(req, { cache:'no-cache', signal:controller.signal }); }
+  finally { clearTimeout(timer); }
+}
+
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE).then((c) =>
-      Promise.all(ASSETS.map((u) => c.add(u).catch(() => {})))
+      c.addAll(ASSETS.map((u) => new Request(u, { cache: 'reload' })))
     )
   );
-  self.skipWaiting();
+  // Updates wait for the user; first installation activates normally.
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+    (async () => {
+      const target = await caches.open(SUB_CACHE);
+      const saved = await target.match(SUB_KEY) || await caches.match(SUB_KEY);
+      if (saved) await (await caches.open(SUB_CACHE)).put(SUB_KEY,saved);
+    })().then(() => caches.keys()).then((keys) =>
+      Promise.all(keys.filter((k) => /^Weltkind-v\d+$/.test(k) && k !== CACHE).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim()).then(() =>
       self.clients.matchAll({ type: 'window' }).then((list) => {
         list.forEach((c) => {
@@ -64,8 +76,9 @@ self.addEventListener('fetch', (e) => {
 
   if (isHtml) {
     e.respondWith(
-      fetch(req)
+      navigationFetch(req)
         .then((res) => {
+          if (!res || !res.ok) throw new Error('Navigation unavailable');
           if (res && res.ok) {
             const htmlCopy = res.clone();
             caches.open(CACHE).then((c) => c.put('./index.html', htmlCopy)).catch(() => {});
@@ -73,7 +86,7 @@ self.addEventListener('fetch', (e) => {
           return res;
         })
         .catch(() =>
-          caches.match('./index.html').then((r) => r || caches.match('./'))
+          caches.open(CACHE).then(c => c.match('./index.html')).then((r) => r || caches.open(CACHE).then(c => c.match('./')))
         )
     );
     return;
@@ -235,7 +248,7 @@ async function checkSubBackground() {
     sub.lastNotifAt = Date.now();
     sub.lastNotifMilestone = content.milestone;
 
-    const cache = await caches.open(CACHE);
+    const cache = await caches.open(SUB_CACHE);
     await cache.put(SUB_KEY, new Response(JSON.stringify(sub)));
   } catch (e) {}
 }
