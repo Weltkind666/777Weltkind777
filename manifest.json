@@ -1,66 +1,19 @@
 {
   "name": "Оплата подписки Weltkind",
   "short_name": "Оплата",
-  "description": "Оплата и продление подписки Weltkind",
+  "description": "Кабинет оплаты Weltkind",
   "start_url": "./?source=pwa",
   "scope": "./",
   "id": "https://weltkind666.github.io/777Weltkind777/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
-  "background_color": "#F4F7FB",
-  "theme_color": "#F4F7FB",
+  "background_color": "#1A237E",
+  "theme_color": "#1A237E",
   "orientation": "any",
   "lang": "ru",
-  "dir": "ltr",
-  "categories": ["utilities", "finance"],
-  "prefer_related_applications": false,
   "icons": [
-    {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon-maskable-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "icons/icon-maskable-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Продлить подписку",
-      "short_name": "Продлить",
-      "description": "Выбрать тариф и оплатить",
-      "url": "./?source=pwa#renew",
-      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Поддержка",
-      "short_name": "Чат",
-      "description": "Написать в поддержку",
-      "url": "./?source=pwa#support",
-      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Устройства",
-      "short_name": "Ключи",
-      "description": "Ключи, смена страны и места тарифа",
-      "url": "./?source=pwa#devices",
-      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
-    }
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
