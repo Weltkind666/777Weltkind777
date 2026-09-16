@@ -18,10 +18,11 @@
     .logo{width:88px;height:88px;border-radius:22px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,.28)}
     .logo img{width:100%;height:100%;display:block}
     .brand{font-size:1.5rem;font-weight:700;letter-spacing:.12em}
-    .sub{font-size:.82rem;opacity:.75}
+    .sub{font-size:.82rem;opacity:.75;text-align:center;padding:0 24px;line-height:1.4}
     .spin{width:28px;height:28px;border:3px solid rgba(255,255,255,.25);border-top-color:#00C4B4;border-radius:50%;animation:s .8s linear infinite;margin-top:8px}
     @keyframes s{to{transform:rotate(360deg)}}
     #go{margin-top:14px;border:0;border-radius:14px;padding:12px 20px;background:#00C4B4;color:#07332f;font-weight:700}
+    #openTab{margin-top:8px;border:0;background:transparent;color:#A7F3E8;text-decoration:underline;font-size:.85rem}
     iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#1A237E;z-index:1}
   </style>
 </head>
@@ -29,9 +30,10 @@
   <div id="splash">
     <div class="logo"><img src="icons/icon-192.png" alt=""/></div>
     <div class="brand">WELTKIND</div>
-    <div class="sub">Открываем кабинет оплаты</div>
-    <div class="spin"></div>
+    <div class="sub" id="sub">Открываем кабинет оплаты</div>
+    <div class="spin" id="spin"></div>
     <button type="button" id="go">Открыть кабинет</button>
+    <button type="button" id="openTab">Открыть в новой вкладке</button>
   </div>
   <iframe id="gas-frame" title="Кабинет оплаты" allow="clipboard-write"></iframe>
 <script>
@@ -48,9 +50,47 @@ function gasTarget(){
   if (h === 'register') u.searchParams.set('register','1');
   if (h === 'renew') u.searchParams.set('message','Продлите подписку ниже');
   u.searchParams.set('from','pwa');
+  u.searchParams.set('r', String(Date.now()));
   return u.toString();
 }
+let gasReady=false, watchdog=null, frame=document.getElementById('gas-frame');
 function hideSplash(){ document.getElementById('splash').classList.add('out'); }
+function showSplash(msg){
+  const splash=document.getElementById('splash');
+  splash.classList.remove('out');
+  document.getElementById('sub').textContent=msg||'Открываем кабинет оплаты';
+}
+function markReady(){
+  gasReady=true;
+  if(watchdog){ clearTimeout(watchdog); watchdog=null; }
+  hideSplash();
+}
+function armWatchdog(){
+  if(watchdog) clearTimeout(watchdog);
+  watchdog=setTimeout(function(){
+    if(gasReady) return;
+    showSplash('Кабинет не открылся. Нажмите «Открыть снова».');
+    document.getElementById('go').textContent='Открыть снова';
+  }, 9000);
+}
+function bindFrame(el){
+  frame=el;
+  el.addEventListener('load', function(){ if(!gasReady) armWatchdog(); });
+}
+function loadGas(){
+  gasReady=false;
+  showSplash('Открываем кабинет оплаты');
+  document.getElementById('go').textContent='Открыть кабинет';
+  const old=document.getElementById('gas-frame');
+  const next=document.createElement('iframe');
+  next.id='gas-frame';
+  next.title='Кабинет оплаты';
+  next.setAttribute('allow','clipboard-write');
+  old.replaceWith(next);
+  bindFrame(next);
+  next.src=gasTarget();
+  armWatchdog();
+}
 function toISO(str){
   if(!str || str==='Не определено' || str==='Не оплачено') return null;
   const p=String(str).split(/[./-]/);
@@ -99,7 +139,9 @@ async function pollChat(){
 }
 window.addEventListener('message', function(e){
   const d=e.data;
-  if(!d || d.type!=='weltkind_sub') return;
+  if(!d) return;
+  if(d.type==='weltkind_ready' || d.type==='weltkind_sub') markReady();
+  if(d.type!=='weltkind_sub') return;
   const iso=toISO(d.expiryDate);
   saveSub({
     phone:String(d.phone||'').replace(/\D/g,''),
@@ -109,11 +151,13 @@ window.addEventListener('message', function(e){
   });
   askNotif();
 });
-const frame=document.getElementById('gas-frame');
-frame.src=gasTarget();
-frame.addEventListener('load', function(){ setTimeout(hideSplash, 400); });
-setTimeout(hideSplash, 3500);
-document.getElementById('go').onclick=function(){ frame.src=gasTarget(); hideSplash(); };
+bindFrame(frame);
+loadGas();
+document.getElementById('go').onclick=function(){ loadGas(); };
+document.getElementById('openTab').onclick=function(){ window.open(GAS_URL, '_blank', 'noopener'); };
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden && !gasReady) loadGas();
+});
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).then(function(reg){
     if(reg.waiting) reg.waiting.postMessage({ type:'SKIP_WAITING' });

@@ -1,6 +1,6 @@
 /* Weltkind PWA Service Worker — v63 · оболочка + уведомления */
-const SW_VER = 63;
-const CACHE = 'Weltkind-v63';
+const SW_VER = 64;
+const CACHE = 'Weltkind-v64';
 const SUB_KEY = 'weltkind-sub-data';
 const SUB_CACHE = 'Weltkind-user-data';
 const ASSETS = [
