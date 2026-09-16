@@ -78,6 +78,21 @@
     .btn.sec{background:#EAF3FF;color:var(--accent2)}
     .btn.ghost{background:#F4F7FB;color:var(--text)}
     .btn.danger{background:#FDECEC;color:var(--danger)}
+    .btn.busy,.btn.busy:disabled{opacity:1;cursor:progress}
+    .btn.busy::after{content:'';display:inline-block;width:13px;height:13px;margin-left:8px;vertical-align:-2px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:btn-spin .7s linear infinite}
+    .btn-tap{animation:btn-pop .28s ease}
+    @keyframes btn-spin{to{transform:rotate(360deg)}}
+    @keyframes btn-pop{0%{transform:scale(1)}40%{transform:scale(.93)}100%{transform:scale(1)}}
+    .dev-busy{box-shadow:0 0 0 2px rgba(47,128,237,.35)}
+    .dev-leaving{animation:dev-out .4s ease forwards;pointer-events:none}
+    @keyframes dev-out{to{opacity:0;transform:translateY(-6px) scale(.98)}}
+    .reg-actions{display:flex;gap:8px;margin-bottom:8px}
+    .reg-actions .btn{flex:1;margin:0}
+    .reg-choice{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 12px}
+    .reg-choice button{padding:12px 8px;border:1px solid var(--border);border-radius:14px;background:#F7FAFC;color:var(--text);font-size:.85rem;font-weight:650;cursor:pointer}
+    .reg-choice button.on{border-color:var(--accent);background:#E8F8F5;color:#0B8F82}
+    .reg-steps{margin:0 0 14px;padding-left:18px;color:var(--muted);font-size:.82rem;line-height:1.55}
+    .reg-steps li{margin-bottom:6px}
     .btn.tar{background:#F7FAFC;color:var(--text);display:flex;justify-content:space-between;align-items:center;text-align:left;font-size:.95rem;font-weight:600}
     .btn.tar strong{color:var(--accent);font-weight:700}
     .btn.tar:disabled,.btn.tar.tariff-locked{opacity:.42;cursor:not-allowed;filter:grayscale(.25);pointer-events:none}
@@ -132,6 +147,17 @@
     #ios-sheet.show{display:flex}
     .ios-box{width:100%;max-width:440px;margin:0 auto;background:#fff;border-radius:22px 22px 0 0;padding:20px 20px calc(18px + var(--safe-bot));box-shadow:0 -8px 32px rgba(28,36,48,.08)}
     .ios-box ol{margin:10px 0 14px;padding-left:18px;font-size:.92rem;line-height:1.65;color:var(--text)}
+    .iphone-help{margin:10px 0 12px;padding:12px;border:1px solid var(--border);border-radius:16px;background:#F7FAFC;text-align:left}
+    .iphone-help .sub{margin-bottom:8px}
+    .iphone-help ol{margin:0 0 10px;padding-left:18px;font-size:.82rem;line-height:1.55;color:var(--muted)}
+    .iphone-help ol strong{color:var(--text)}
+    .iphone-help-shot{display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in;margin:0 0 10px}
+    .iphone-help-shot img{display:block;width:100%;border-radius:12px}
+    .iphone-help .btn{margin-bottom:0;display:block;text-align:center;text-decoration:none}
+    .iphone-help-flash{box-shadow:0 0 0 3px rgba(0,179,164,.35)}
+    #iphone-help-zoom{position:fixed;inset:0;z-index:800;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(28,36,48,.88)}
+    #iphone-help-zoom.show{display:flex}
+    #iphone-help-zoom img{max-width:100%;max-height:100%;border-radius:12px}
 
     #apk-dl-panel{position:fixed;inset:0;z-index:490;background:rgba(244,247,251,.92);display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
     #apk-dl-panel.show{display:flex}
@@ -244,25 +270,48 @@
   <div class="wrap">
     <div id="page-home" class="tab-page active">
       <div id="gas-login-view" class="card">
-        <div class="title">Оплата подписки</div>
-        <div class="sub">Кабинет Weltkind — продлить подписку. Номер как в договоре</div>
+        <div class="title">Weltkind</div>
+        <div class="sub">Войдите по номеру. Новый клиент — регистрация, потом приложение и тот же номер.</div>
         <input type="tel" id="gas-phone-inp" class="inp" placeholder="+7 916 123-45-67" inputmode="tel" autocomplete="tel"/>
         <div id="gas-login-err" class="msg err gas-hidden"></div>
-        <button type="button" class="btn" id="gas-login-btn" onclick="haptic('medium');gasLogin()">Войти</button>
+        <div class="reg-actions">
+          <button type="button" class="btn" id="gas-login-btn" onclick="haptic('medium');gasLogin()">Войти</button>
+          <button type="button" class="btn sec gas-hidden" id="gas-register-open-btn" onclick="haptic();openRegistration_('button')">Регистрация</button>
+        </div>
         <div id="gas-login-loader" class="msg gas-hidden">Проверяем номер…</div>
-        <button class="btn sec" onclick="haptic();chatOpen()">Написать в поддержку</button>
+        <button class="btn ghost" onclick="haptic();chatOpen()">Написать в поддержку</button>
         <div id="gas-registration" style="margin-top:14px">
           <p id="gas-registration-status" class="sub" role="status">Проверяем возможность регистрации…</p>
-          <div id="gas-notfound" class="gas-hidden">
-            <label for="gas-register-name">Ваше имя</label>
-            <input id="gas-register-name" class="inp" maxlength="40" autocomplete="given-name" placeholder="Как к вам обращаться">
-            <label for="gas-register-kind">Первое устройство</label>
-            <select id="gas-register-kind" class="inp" onchange="renderRegistrationPrice_()">
-              <option value="device">Телефон / iPhone / компьютер</option>
-              <option value="wifi" id="gas-register-wifi">Роутер Wi-Fi · полный конфиг TXT</option>
-            </select>
-            <p id="gas-register-price" class="sub"></p>
-            <button type="button" class="btn sec" id="gas-register-btn" onclick="haptic();gasRegister()">Зарегистрироваться</button>
+          <div id="gas-reg-panel" class="gas-hidden">
+            <div id="gas-reg-choose" class="gas-hidden">
+              <div class="lbl">Как подключаетесь?</div>
+              <div class="reg-choice">
+                <button type="button" id="gas-reg-pick-android" onclick="haptic();showRegistrationPath_('android')">Android</button>
+                <button type="button" id="gas-reg-pick-ios" onclick="haptic();showRegistrationPath_('ios')">iPhone</button>
+                <button type="button" id="gas-reg-pick-win" onclick="haptic();showRegistrationPath_('windows')">Windows</button>
+                <button type="button" id="gas-reg-pick-wifi" onclick="haptic();showRegistrationPath_('wifi')">Роутер Wi-Fi</button>
+              </div>
+            </div>
+            <div id="gas-reg-app" class="gas-hidden">
+              <p class="sub" id="gas-reg-app-lead"></p>
+              <ol class="reg-steps" id="gas-reg-app-steps"></ol>
+              <button type="button" class="btn" id="gas-reg-app-dl" onclick="haptic('medium');registrationDownload_()">Скачать приложение</button>
+              <button type="button" class="btn ghost" id="gas-reg-app-web" onclick="haptic();showRegistrationPath_('web')">Сначала создать аккаунт здесь</button>
+              <button type="button" class="btn ghost" onclick="haptic();showRegistrationPath_('choose')">Другое устройство</button>
+            </div>
+            <div id="gas-notfound" class="gas-hidden">
+              <label for="gas-register-name">Ваше имя</label>
+              <input id="gas-register-name" class="inp" maxlength="40" autocomplete="given-name" placeholder="Как к вам обращаться">
+              <label for="gas-register-kind">Первое устройство</label>
+              <select id="gas-register-kind" class="inp" onchange="renderRegistrationPrice_()">
+                <option value="device">Телефон / iPhone / компьютер</option>
+                <option value="wifi" id="gas-register-wifi">Роутер Wi-Fi · полный конфиг TXT</option>
+              </select>
+              <p id="gas-register-price" class="sub"></p>
+              <button type="button" class="btn" id="gas-register-btn" onclick="haptic();gasRegister()">Создать аккаунт</button>
+              <div id="gas-reg-iphone-help" class="gas-hidden" data-iphone-help></div>
+              <button type="button" class="btn ghost" onclick="haptic();showRegistrationPath_('choose')">Назад</button>
+            </div>
           </div>
         </div>
       </div>
@@ -291,6 +340,7 @@
                 <div class="sub" id="home-dev-this" style="text-align:right;max-width:58%">слоты тарифа</div>
               </div>
               <div class="sub" id="home-key-hint" style="margin-bottom:10px">Сколько устройств в тарифе — столько ключей. Сначала имя (мама, ребёнок), потом создать. Каждый ключ — на своё устройство.</div>
+              <div data-iphone-help></div>
               <div class="lbl">Сервер для нового ключа</div>
               <select id="home-key-server" class="inp" style="margin-bottom:10px">
                 <option value="">Авто — самый свободный</option>
@@ -335,6 +385,7 @@
           <a href="#" class="gas-desktop-btn gas-hidden gas-dl-btn" style="background:#29B6F6;color:#000">Windows</a>
           <button type="button" class="gas-tv-btn gas-hidden gas-dl-btn" style="background:#7C4DFF;color:#fff" onclick="haptic('medium');gasDownloadApk('tv')">Android TV</button>
         </div>
+        <div data-iphone-help style="margin-top:12px"></div>
       </div>
     </div>
 
@@ -399,6 +450,23 @@
   <button type="button" class="nav-btn" data-tab="more" onclick="showTab('more')"><span>⚙️</span>Ещё</button>
 </nav>
 
+<template id="iphone-key-help-tpl">
+  <div class="iphone-help">
+    <div class="lbl">iPhone · DefaultVPN</div>
+    <p class="sub">Скачайте DefaultVPN. Ключ из кабинета начинается с vpn:// и вставляется так:</p>
+    <ol>
+      <li>Откройте DefaultVPN. Справа от «Подключение к» нажмите <strong>+</strong>.</li>
+      <li>Нажмите <strong>Вставить</strong> — ключ попадёт в поле.</li>
+      <li>Нажмите синюю <strong>Добавить</strong>.</li>
+      <li>Большая кнопка <strong>Подключиться</strong>.</li>
+    </ol>
+    <button type="button" class="iphone-help-shot" onclick="openIphoneHelpShot_(event)">
+      <img src="icons/iphone-add-key.jpg" width="900" height="520" alt="DefaultVPN: плюс, Вставить, Добавить, Подключиться">
+    </button>
+    <a class="btn sec" href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener">Скачать DefaultVPN</a>
+  </div>
+</template>
+<div id="iphone-help-zoom" onclick="this.classList.remove('show')"><img src="icons/iphone-add-key.jpg" alt="Как добавить ключ в DefaultVPN"></div>
 <div id="ios-sheet" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="ios-box">
     <div class="title">Установка на iPhone</div>
@@ -891,8 +959,9 @@ async function gasLoginInner_(silent){
       chatStartBgPoll();
     } else if(json.status==='not_found'){
       if(!silent){
-        gasShowErr('Аккаунт не найден. Если регистрация доступна, заполните форму ниже.');
+        gasShowErr('Аккаунт не найден. Проверьте номер или нажмите «Регистрация».');
         await loadRegistrationSettings_();
+        if(registrationSettings_ && registrationSettings_.enabled) openRegistration_('not_found');
       }
     } else if(!silent){
       gasShowErr('Не удалось войти. Попробуйте ещё раз или напишите в чат.');
@@ -1278,8 +1347,9 @@ async function createWebKeyInner_(slotId, recreate, confirmedCreation = false){
       slot.confirmed=true; saveWebKeys(list);
     }
     _lsSet('wk_vpn_'+normalizePhone(gasPhone||''), vpn);
-    if(msg){ msg.style.cssText=''; msg.className='msg ok'; msg.textContent='Готово: '+(done.name||done.host||j.host||'сервер')+(slot.kind==='wifi'?'. Скачайте TXT и импортируйте полный конфиг на роутере.':'. Скопируйте ключ и вставьте в приложение на iPhone / Mac.'); }
-    toast('Ключ готов');
+    if(msg){ msg.style.cssText=''; msg.className='msg ok'; msg.textContent='Готово: '+(done.name||done.host||j.host||'сервер')+(slot.kind==='wifi'?'. Скачайте TXT и импортируйте полный конфиг на роутере.':'. Скопируйте ключ. В DefaultVPN: + → Вставить → Добавить → Подключиться.'); }
+    toast(slot.kind==='wifi'?'Ключ готов':'Ключ готов — вставьте в DefaultVPN');
+    if(slot.kind!=='wifi') showIphoneHelpNearKey_();
     if(!gasUserData) gasUserData={};
     if(!Array.isArray(gasUserData.devices)) gasUserData.devices=[];
     var haveDev=false;
@@ -1315,10 +1385,35 @@ async function copyWebKey(slotId){
   if(!text){ toast('Сначала создайте ключ'); return; }
   try{
     await navigator.clipboard.writeText(text);
-    toast('Скопировано — вставьте в приложение');
+    toast(slot && slot.kind==='wifi'?'Скопирован конфиг TXT':'Скопировано. DefaultVPN: + → Вставить → Добавить → Подключиться');
+    if(!(slot && slot.kind==='wifi')) showIphoneHelpNearKey_();
   }catch(e){
-    if(ta){ ta.focus(); ta.select(); document.execCommand('copy'); toast('Скопировано'); }
+    if(ta){ ta.focus(); ta.select(); document.execCommand('copy'); toast('Скопировано'); if(!(slot && slot.kind==='wifi')) showIphoneHelpNearKey_(); }
   }
+}
+function iphoneHelpHtml_(){
+  const tpl=document.getElementById('iphone-key-help-tpl');
+  return tpl ? tpl.innerHTML : '';
+}
+function fillIphoneHelp_(){
+  const html=iphoneHelpHtml_();
+  if(!html) return;
+  document.querySelectorAll('[data-iphone-help]').forEach(el=>{
+    if(el.dataset.filled==='1') return;
+    el.innerHTML=html;
+    el.dataset.filled='1';
+  });
+}
+function openIphoneHelpShot_(ev){
+  if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+  document.getElementById('iphone-help-zoom')?.classList.add('show');
+}
+function showIphoneHelpNearKey_(){
+  const el=document.querySelector('#home-key-body [data-iphone-help] .iphone-help') || document.querySelector('#home-key-body [data-iphone-help]');
+  if(!el) return;
+  el.classList.add('iphone-help-flash');
+  try{ el.scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){}
+  setTimeout(()=>el.classList.remove('iphone-help-flash'), 1800);
 }
 function gasRenderTariffs(d){
   const t1=gasCalcTax(Number(d.amount1Month||0));
@@ -1509,26 +1604,117 @@ function gasLogout(){
 }
 function gasRefresh(){ if(gasPhone) gasLogin(true); else initGasApp(); }
 
-let registrationSettings_=null,registrationBusy_=false;
+let registrationSettings_=null,registrationBusy_=false,registrationPath_='';
+function registrationPlatform_(){
+  const ua=navigator.userAgent||'';
+  if(/Android/i.test(ua) && !/Android TV|GoogleTV|\bTV\b/i.test(ua)) return 'android';
+  if(/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+  if(/Windows NT/i.test(ua) && !/Mobile/i.test(ua)) return 'windows';
+  return 'other';
+}
+function setRegistrationOpenVisible_(on){
+  document.getElementById('gas-register-open-btn')?.classList.toggle('gas-hidden', !on);
+}
 async function loadRegistrationSettings_(){
   try{
     const r=await gasApi({action:'selfServiceStatus'});
     if(r.status!=='ok' || typeof r.enabled!=='boolean') throw new Error('Обновите сервер регистрации');
     registrationSettings_=r;
-    document.getElementById('gas-notfound').classList.toggle('gas-hidden',!r.enabled);
-    document.getElementById('gas-registration-status').textContent=r.enabled?'Нет аккаунта? Зарегистрируйтесь. Номер телефона указан выше.':'Самостоятельная регистрация сейчас отключена. Напишите в поддержку.';
+    setRegistrationOpenVisible_(!!r.enabled);
     document.getElementById('gas-register-wifi').disabled=!r.wifiEnabled;
-    if(!r.wifiEnabled) document.getElementById('gas-register-kind').value='device';
+    document.getElementById('gas-reg-pick-wifi')?.classList.toggle('gas-hidden', !r.wifiEnabled);
+    if(!r.wifiEnabled && document.getElementById('gas-register-kind').value==='wifi') document.getElementById('gas-register-kind').value='device';
+    const panelOpen=!document.getElementById('gas-reg-panel')?.classList.contains('gas-hidden');
+    document.getElementById('gas-registration-status').textContent=r.enabled
+      ?(panelOpen?'':'Новый клиент — нажмите «Регистрация». Скачаете приложение и введёте номер там.')
+      :'Самостоятельная регистрация сейчас отключена. Напишите в поддержку.';
     renderRegistrationPrice_();
   }catch(e){
+    setRegistrationOpenVisible_(false);
     document.getElementById('gas-registration-status').textContent='Не удалось проверить регистрацию. Проверьте связь и обновите страницу.';
   }
 }
+async function openRegistration_(from){
+  if(registrationBusy_) return;
+  if(!registrationSettings_ || typeof registrationSettings_.enabled!=='boolean') await loadRegistrationSettings_();
+  const s=registrationSettings_;
+  if(!s || !s.enabled){
+    document.getElementById('gas-registration-status').textContent='Самостоятельная регистрация сейчас отключена. Напишите в поддержку.';
+    setRegistrationOpenVisible_(false);
+    return;
+  }
+  document.getElementById('gas-reg-panel')?.classList.remove('gas-hidden');
+  document.getElementById('gas-registration-status').textContent='';
+  const platform=registrationPlatform_();
+  if(from==='not_found') showRegistrationPath_('web');
+  else if(from==='wifi') showRegistrationPath_('wifi');
+  else if(platform==='android') showRegistrationPath_('android');
+  else if(platform==='windows') showRegistrationPath_('windows');
+  else if(platform==='ios') showRegistrationPath_('ios');
+  else showRegistrationPath_('choose');
+  gasLoadAppLinks();
+  try{ document.getElementById('gas-reg-panel')?.scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){}
+}
+function showRegistrationPath_(kind){
+  registrationPath_=kind;
+  const choose=document.getElementById('gas-reg-choose');
+  const app=document.getElementById('gas-reg-app');
+  const form=document.getElementById('gas-notfound');
+  const wifiOn=!!(registrationSettings_ && registrationSettings_.wifiEnabled);
+  ['android','ios','win','wifi'].forEach(id=>{
+    document.getElementById('gas-reg-pick-'+id)?.classList.toggle('on', (id==='win'?'windows':id)===kind);
+  });
+  if(kind==='choose'){
+    choose.classList.remove('gas-hidden');
+    app.classList.add('gas-hidden');
+    form.classList.add('gas-hidden');
+    document.getElementById('gas-reg-iphone-help')?.classList.add('gas-hidden');
+    document.getElementById('gas-registration-status').textContent='Выберите устройство — подскажем, что делать дальше.';
+    return;
+  }
+  choose.classList.add('gas-hidden');
+  if(kind==='android' || kind==='windows'){
+    app.classList.remove('gas-hidden');
+    form.classList.add('gas-hidden');
+    document.getElementById('gas-reg-iphone-help')?.classList.add('gas-hidden');
+    const android=kind==='android';
+    document.getElementById('gas-reg-app-lead').textContent=android
+      ?'Скачайте приложение на этот телефон. Регистрация и вход — уже в нём, тем же номером.'
+      :'Скачайте программу для Windows. После установки введите номер телефона.';
+    document.getElementById('gas-reg-app-steps').innerHTML=android
+      ?'<li>Нажмите «Скачать приложение» и установите APK. Разрешите установку из неизвестных источников.</li><li>Откройте Weltkind — оно само попросит номер телефона.</li><li>Если номера ещё нет в базе, в приложении нажмите «Зарегистрироваться» и укажите имя.</li><li>Затем оплатите подписку. Ключ выдаётся после подтверждения оплаты.</li>'
+      :'<li>Скачайте EXE и установите Weltkind.</li><li>Программа попросит номер телефона.</li><li>Нет аккаунта — «Зарегистрироваться», имя, затем вход тем же номером.</li><li>Оплатите подписку. Доступ появится после подтверждения.</li>';
+    document.getElementById('gas-reg-app-dl').textContent=android?'Скачать приложение Android':'Скачать программу Windows';
+    document.getElementById('gas-registration-status').textContent='';
+    return;
+  }
+  app.classList.add('gas-hidden');
+  form.classList.remove('gas-hidden');
+  const wifi=kind==='wifi';
+  document.getElementById('gas-register-kind').value=(wifi && wifiOn)?'wifi':'device';
+  const iosHelp=kind==='ios' || (kind==='web' && registrationPlatform_()==='ios');
+  document.getElementById('gas-reg-iphone-help')?.classList.toggle('gas-hidden', !iosHelp);
+  document.getElementById('gas-registration-status').textContent=kind==='ios'
+    ?'iPhone: аккаунт здесь, после оплаты ключ в кабинете. Ниже — как вставить его в DefaultVPN.'
+    :(wifi?'Роутер: аккаунт создаётся здесь, полный конфиг TXT — после оплаты.':'Номер выше, имя ниже. Потом можно скачать приложение и войти тем же номером.');
+  renderRegistrationPrice_();
+}
+function registrationDownload_(){
+  if(registrationPath_==='windows'){
+    const a=document.querySelector('.gas-desktop-btn');
+    if(a && a.href && a.getAttribute('href')!=='#'){ openUrl(a.href); return; }
+    toast('Ссылка Windows ещё загружается. Откройте вкладку «Приложение».');
+    showTab('apps');
+    return;
+  }
+  gasDownloadApk('vpn');
+}
 function renderRegistrationPrice_(){
   const s=registrationSettings_;if(!s) return;
+  const el=document.getElementById('gas-register-price'); if(!el) return;
   const wifi=document.getElementById('gas-register-kind').value==='wifi';
   const base=Number(wifi?s.wifiMonthly:s.monthly);
-  document.getElementById('gas-register-price').textContent=(wifi?'Один роутер':'Одно обычное устройство')+': '+base.toFixed(2)+' ₽/мес. без надбавки. Для физлица: '+(Math.round(base*104)/100).toFixed(2)+' ₽, для организации: '+(Math.round(base*106)/100).toFixed(2)+' ₽. Доступ появится после подтверждения оплаты. Другие устройства можно добавить в кабинете.';
+  el.textContent=(wifi?'Один роутер':'Одно обычное устройство')+': '+base.toFixed(2)+' ₽/мес. без надбавки. Для физлица: '+(Math.round(base*104)/100).toFixed(2)+' ₽, для организации: '+(Math.round(base*106)/100).toFixed(2)+' ₽. Доступ появится после подтверждения оплаты. Другие устройства можно добавить в кабинете.';
 }
 async function gasRegister(){
   if(registrationBusy_) return;
@@ -1544,7 +1730,7 @@ async function gasRegister(){
     if(j.status==='ok'){
       saveAccountToken_(phone,j.accountToken);
       await gasLogin();
-      toast('Аккаунт создан. Подключите Telegram или MAX для кодов входа, затем выберите срок и оплатите.');
+      toast('Аккаунт создан. Подключите Telegram или MAX, оплатите — затем в приложении войдите тем же номером.');
     }else if(j.status==='exists'){toast(j.message);await gasLogin();}
     else {gasShowErr(j.message||'Регистрация не выполнена');await loadRegistrationSettings_();}
   }catch(e){gasShowErr('Ответ не получен. Попробуйте войти с этим номером: аккаунт мог уже создаться. Повторной оплаты не требуется.');}
@@ -2182,6 +2368,7 @@ function handleAppHash(){
     window.wkCabinetEntry = window.wkCabinetEntry || 'manage';
     if(gasPhone) setTimeout(openGoogleDevices, 200);
   }
+  else if(h==='register') setTimeout(()=>openRegistration_('button'), 200);
 }
 
 function gasInitModalBackdrops(){
@@ -2203,8 +2390,14 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   bindPhoneInput(document.getElementById('gas-phone-inp'));
   bindPhoneInput(document.getElementById('chat-phone-inp'));
   initGasApp();
+  fillIphoneHelp_();
   if (typeof scheduleKeyResume_ === 'function' && gasPhone && _lsGet(keyRequestStorage_())) scheduleKeyResume_();
-  loadRegistrationSettings_();
+  loadRegistrationSettings_().then(()=>{
+    try{
+      const qs=new URLSearchParams(location.search);
+      if(qs.get('register')==='1') openRegistration_('button');
+    }catch(e){}
+  });
   refreshInstallUi();
   try{
     const vj=window.wkCabinetVersion || await (await fetch('version.json?t='+Date.now(), { cache:'no-store' })).json();
@@ -2239,6 +2432,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
 });
 </script>
-<script src="account.js?v=99"></script>
+<script src="account.js?v=100"></script>
 </body>
 </html>

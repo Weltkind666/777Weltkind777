@@ -1,6 +1,6 @@
-/* Weltkind PWA Service Worker — v56 */
-const SW_VER = 56;
-const CACHE = 'Weltkind-v56';
+/* Weltkind PWA Service Worker — v59 */
+const SW_VER = 59;
+const CACHE = 'Weltkind-v59';
 const SUB_KEY = 'weltkind-sub-data';
 const SUB_CACHE = 'Weltkind-user-data';
 const ASSETS = [
@@ -13,7 +13,8 @@ const ASSETS = [
   './icons/icon-512.png',
   './icons/icon-180.png',
   './icons/icon-maskable-192.png',
-  './icons/icon-maskable-512.png'
+  './icons/icon-maskable-512.png',
+  './icons/iphone-add-key.jpg'
 ];
 
 function isBypass(url) {

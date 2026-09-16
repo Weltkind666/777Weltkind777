@@ -9,6 +9,49 @@ async function accountCall_(op, extra) {
 function accountEscapeHtml_(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+function accountBusyLabel_(text) {
+  const t = String(text || '');
+  if (/убрать/i.test(t)) return 'Убираем…';
+  if (/отвяз/i.test(t)) return 'Отвязываем…';
+  if (/сохран/i.test(t)) return 'Сохраняем…';
+  if (/добав/i.test(t)) return 'Добавляем…';
+  if (/обнов/i.test(t)) return 'Обновляем…';
+  if (/закрыть|отмена|не сейчас/i.test(t)) return t;
+  return 'Секунду…';
+}
+function accountPress_(btn) {
+  if (!btn || !btn.classList) return;
+  try { if (typeof haptic === 'function') haptic('medium'); } catch (e) {}
+  btn.classList.remove('btn-tap');
+  void btn.offsetWidth;
+  btn.classList.add('btn-tap');
+}
+function accountSetBusy_(btn, on, label) {
+  if (!btn) return;
+  if (on) {
+    if (!btn.dataset.origText) btn.dataset.origText = btn.textContent || '';
+    btn.disabled = true;
+    btn.classList.add('busy');
+    btn.setAttribute('aria-busy', 'true');
+    if (label) btn.textContent = label;
+  } else {
+    btn.disabled = false;
+    btn.classList.remove('busy');
+    btn.removeAttribute('aria-busy');
+    if (btn.dataset.origText) btn.textContent = btn.dataset.origText;
+  }
+}
+function accountMarkCard_(btn, state) {
+  const card = btn && btn.closest && btn.closest('.card');
+  if (!card) return;
+  card.classList.toggle('dev-busy', state === 'busy');
+  card.classList.toggle('dev-leaving', state === 'done');
+}
+function accountEventButton_(btn) {
+  if (btn && btn.tagName) return btn;
+  try { if (typeof event !== 'undefined' && event && event.currentTarget) return event.currentTarget; } catch (e) {}
+  return null;
+}
 // Custom in-page modal instead of window.prompt(): many mobile browsers/PWA
 // webviews auto-dismiss native prompt()/confirm()/alert() dialogs when the
 // tab loses visibility (e.g. user switches to Telegram/MAX to read the code).
@@ -137,9 +180,10 @@ function accountPanel_() {
 function accountButton_(parent, text, action, danger) {
   const button = document.createElement('button'); button.type = 'button'; button.className = danger ? 'btn danger' : 'btn sec'; button.textContent = text;
   button.onclick = async function() {
-    button.disabled = true;
-    try { await action(); } catch (err) { toast(err.message || 'Ошибка'); }
-    finally { button.disabled = false; }
+    accountPress_(button);
+    accountSetBusy_(button, true, accountBusyLabel_(text));
+    try { await action(button); } catch (err) { toast(err.message || 'Ошибка'); }
+    finally { accountSetBusy_(button, false); }
   };
   parent.appendChild(button); return button;
 }
@@ -183,26 +227,62 @@ async function forgetLocalDevice_(deviceId) {
   saveWebKeys(keys);
   _lsSet('wk_vpn_' + normalizePhone(gasPhone), '');
 }
-async function resetAccountDevice_(deviceId) {
-  if (!await ensureAccountAuth_()) return;
-  if (!await accountConfirm_('Отвязать это устройство? Старый ключ отключится, оплаченное место освободится. Цена не изменится.')) return;
-  const reply = await accountCall_('reset', { deviceId: deviceId });
-  toast(reply.message || 'Устройство отвязано. Место можно использовать снова.');
-  forgetLocalDevice_(deviceId);
-  await gasLogin(true);
-  if (document.getElementById('account-panel')) await openAccountDevices({ silent: true });
+async function resetAccountDevice_(deviceId, btn) {
+  btn = accountEventButton_(btn);
+  if (btn && !btn.classList.contains('busy')) accountPress_(btn);
+  accountSetBusy_(btn, true, 'Проверяем…');
+  accountMarkCard_(btn, 'busy');
+  try {
+    if (!await ensureAccountAuth_()) return;
+    accountSetBusy_(btn, false);
+    if (!await accountConfirm_('Отвязать это устройство? Старый ключ отключится, оплаченное место освободится. Цена не изменится.')) return;
+    accountSetBusy_(btn, true, 'Отвязываем…');
+    const reply = await accountCall_('reset', { deviceId: deviceId });
+    accountMarkCard_(btn, 'done');
+    try { if (typeof haptic === 'function') haptic('success'); } catch (e) {}
+    toast(reply.message || 'Устройство отвязано. Место можно использовать снова.');
+    await new Promise(function(r){ setTimeout(r, 280); });
+    forgetLocalDevice_(deviceId);
+    await gasLogin(true);
+    if (document.getElementById('account-panel')) await openAccountDevices({ silent: true });
+  } catch (err) {
+    accountMarkCard_(btn, '');
+    toast(err.message || 'Не удалось отвязать');
+  } finally {
+    accountSetBusy_(btn, false);
+    const card = btn && btn.closest && btn.closest('.card');
+    if (card && !card.classList.contains('dev-leaving')) accountMarkCard_(btn, '');
+  }
 }
-async function removeAccountDevice_(deviceId) {
-  if (!await ensureAccountAuth_()) return;
-  const quoted = await accountCall_('removeQuote', { deviceId: deviceId, clientType: gasClientType });
-  const q = quoted.quote || {};
-  const next = q.nextMonthly != null ? accountMoney_(q.nextMonthly) : '';
-  if (!await accountConfirm_('Удалить устройство и его место в тарифе?\nМест: ' + (q.oldCount || '?') + ' → ' + (q.count || '?') + (next ? ('. Следующий платёж за месяц: ' + next) : '') + '.\nУстройство с этим ключом потеряет доступ. Деньги за оставшийся период не возвращаются.')) return;
-  const reply = await accountCall_('remove', { deviceId: deviceId, quoteId: q.id });
-  toast(reply.message || 'Устройство удалено, тариф уменьшен.');
-  forgetLocalDevice_(deviceId);
-  await gasLogin(true);
-  if (document.getElementById('account-panel')) await openAccountDevices({ silent: true });
+async function removeAccountDevice_(deviceId, btn) {
+  btn = accountEventButton_(btn);
+  if (btn && !btn.classList.contains('busy')) accountPress_(btn);
+  accountSetBusy_(btn, true, 'Проверяем…');
+  accountMarkCard_(btn, 'busy');
+  try {
+    if (!await ensureAccountAuth_()) return;
+    const quoted = await accountCall_('removeQuote', { deviceId: deviceId, clientType: gasClientType });
+    const q = quoted.quote || {};
+    const next = q.nextMonthly != null ? accountMoney_(q.nextMonthly) : '';
+    accountSetBusy_(btn, false);
+    if (!await accountConfirm_('Удалить устройство и его место в тарифе?\nМест: ' + (q.oldCount || '?') + ' → ' + (q.count || '?') + (next ? ('. Следующий платёж за месяц: ' + next) : '') + '.\nУстройство с этим ключом потеряет доступ. Деньги за оставшийся период не возвращаются.')) return;
+    accountSetBusy_(btn, true, 'Убираем…');
+    const reply = await accountCall_('remove', { deviceId: deviceId, quoteId: q.id });
+    accountMarkCard_(btn, 'done');
+    try { if (typeof haptic === 'function') haptic('success'); } catch (e) {}
+    toast(reply.message || 'Устройство удалено, тариф уменьшен.');
+    await new Promise(function(r){ setTimeout(r, 280); });
+    forgetLocalDevice_(deviceId);
+    await gasLogin(true);
+    if (document.getElementById('account-panel')) await openAccountDevices({ silent: true });
+  } catch (err) {
+    accountMarkCard_(btn, '');
+    toast(err.message || 'Не удалось убрать');
+  } finally {
+    accountSetBusy_(btn, false);
+    const card = btn && btn.closest && btn.closest('.card');
+    if (card && !card.classList.contains('dev-leaving')) accountMarkCard_(btn, '');
+  }
 }
 function renderAccountDeviceActions_(d) {
   const box = document.getElementById('home-dev-actions');
@@ -219,8 +299,8 @@ function renderAccountDeviceActions_(d) {
       return '<div class="card" style="margin:8px 0;padding:12px">' +
         '<strong>' + accountEscapeHtml_(name) + '</strong>' +
         '<p class="sub" style="margin:6px 0 8px">' + (web ? 'Ключ iPhone / Mac / Wi-Fi' : 'Ключ в приложении') + ' · ' + accountEscapeHtml_(String(where)) + '</p>' +
-        '<button type="button" class="btn danger" onclick="resetAccountDevice_(\'' + id.replace(/[^A-Za-z0-9_-]/g, '') + '\')">Отвязать</button>' +
-        (canRemove ? '<button type="button" class="btn danger" onclick="removeAccountDevice_(\'' + id.replace(/[^A-Za-z0-9_-]/g, '') + '\')">Убрать из тарифа</button>' : '') +
+        '<button type="button" class="btn danger" onclick="resetAccountDevice_(\'' + id.replace(/[^A-Za-z0-9_-]/g, '') + '\', this)">Отвязать</button>' +
+        (canRemove ? '<button type="button" class="btn danger" onclick="removeAccountDevice_(\'' + id.replace(/[^A-Za-z0-9_-]/g, '') + '\', this)">Убрать из тарифа</button>' : '') +
         '</div>';
     }).join('');
 }
@@ -267,8 +347,8 @@ async function openAccountDevices(opt) {
           toast('Имя сохранено.');
           await openAccountDevices();
         });
-        accountButton_(item, 'Отвязать устройство', () => resetAccountDevice_(device.deviceId), true);
-        if (data.deviceLimit > 1) accountButton_(item, 'Убрать из тарифа', () => removeAccountDevice_(device.deviceId), true);
+        accountButton_(item, 'Отвязать устройство', (btn) => resetAccountDevice_(device.deviceId, btn), true);
+        if (data.deviceLimit > 1) accountButton_(item, 'Убрать из тарифа', (btn) => removeAccountDevice_(device.deviceId, btn), true);
       }
       panel.appendChild(item);
     });
