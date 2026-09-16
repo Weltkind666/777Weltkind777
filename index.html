@@ -276,12 +276,12 @@
         <div id="gas-login-err" class="msg err gas-hidden"></div>
         <div class="reg-actions">
           <button type="button" class="btn" id="gas-login-btn" onclick="haptic('medium');gasLogin()">Войти</button>
-          <button type="button" class="btn sec gas-hidden" id="gas-register-open-btn" onclick="haptic();openRegistration_('button')">Регистрация</button>
+          <button type="button" class="btn sec" id="gas-register-open-btn" onclick="haptic();openRegistration_('button')">Регистрация</button>
         </div>
         <div id="gas-login-loader" class="msg gas-hidden">Проверяем номер…</div>
         <button class="btn ghost" onclick="haptic();chatOpen()">Написать в поддержку</button>
         <div id="gas-registration" style="margin-top:14px">
-          <p id="gas-registration-status" class="sub" role="status">Проверяем возможность регистрации…</p>
+          <p id="gas-registration-status" class="sub" role="status">Новый клиент — нажмите «Регистрация».</p>
           <div id="gas-reg-panel" class="gas-hidden">
             <div id="gas-reg-choose" class="gas-hidden">
               <div class="lbl">Как подключаетесь?</div>
@@ -960,8 +960,7 @@ async function gasLoginInner_(silent){
     } else if(json.status==='not_found'){
       if(!silent){
         gasShowErr('Аккаунт не найден. Проверьте номер или нажмите «Регистрация».');
-        await loadRegistrationSettings_();
-        if(registrationSettings_ && registrationSettings_.enabled) openRegistration_('not_found');
+        openRegistration_('not_found');
       }
     } else if(!silent){
       gasShowErr('Не удалось войти. Попробуйте ещё раз или напишите в чат.');
@@ -1604,7 +1603,7 @@ function gasLogout(){
 }
 function gasRefresh(){ if(gasPhone) gasLogin(true); else initGasApp(); }
 
-let registrationSettings_=null,registrationBusy_=false,registrationPath_='';
+let registrationSettings_={enabled:true,wifiEnabled:true,monthly:0,wifiMonthly:0},registrationBusy_=false,registrationPath_='',registrationPricesTried_=false;
 function registrationPlatform_(){
   const ua=navigator.userAgent||'';
   if(/Android/i.test(ua) && !/Android TV|GoogleTV|\bTV\b/i.test(ua)) return 'android';
@@ -1612,37 +1611,28 @@ function registrationPlatform_(){
   if(/Windows NT/i.test(ua) && !/Mobile/i.test(ua)) return 'windows';
   return 'other';
 }
-function setRegistrationOpenVisible_(on){
-  document.getElementById('gas-register-open-btn')?.classList.toggle('gas-hidden', !on);
+function applyRegistrationPrices_(r){
+  if(!r || r.status!=='ok') return;
+  registrationSettings_=Object.assign({enabled:true,wifiEnabled:true,monthly:0,wifiMonthly:0}, r, {enabled:true});
+  const wifiOn=!!r.wifiEnabled;
+  const wifiOpt=document.getElementById('gas-register-wifi');
+  if(wifiOpt) wifiOpt.disabled=!wifiOn;
+  document.getElementById('gas-reg-pick-wifi')?.classList.toggle('gas-hidden', !wifiOn);
+  if(!wifiOn && document.getElementById('gas-register-kind')?.value==='wifi') document.getElementById('gas-register-kind').value='device';
+  renderRegistrationPrice_();
 }
 async function loadRegistrationSettings_(){
+  if(registrationPricesTried_ && Number(registrationSettings_.monthly)>0) return registrationSettings_;
+  registrationPricesTried_=true;
   try{
     const r=await gasApi({action:'selfServiceStatus'});
-    if(r.status!=='ok' || typeof r.enabled!=='boolean') throw new Error('Обновите сервер регистрации');
-    registrationSettings_=r;
-    setRegistrationOpenVisible_(!!r.enabled);
-    document.getElementById('gas-register-wifi').disabled=!r.wifiEnabled;
-    document.getElementById('gas-reg-pick-wifi')?.classList.toggle('gas-hidden', !r.wifiEnabled);
-    if(!r.wifiEnabled && document.getElementById('gas-register-kind').value==='wifi') document.getElementById('gas-register-kind').value='device';
-    const panelOpen=!document.getElementById('gas-reg-panel')?.classList.contains('gas-hidden');
-    document.getElementById('gas-registration-status').textContent=r.enabled
-      ?(panelOpen?'':'Новый клиент — нажмите «Регистрация». Скачаете приложение и введёте номер там.')
-      :'Самостоятельная регистрация сейчас отключена. Напишите в поддержку.';
-    renderRegistrationPrice_();
-  }catch(e){
-    setRegistrationOpenVisible_(false);
-    document.getElementById('gas-registration-status').textContent='Не удалось проверить регистрацию. Проверьте связь и обновите страницу.';
-  }
+    applyRegistrationPrices_(r);
+  }catch(e){}
+  return registrationSettings_;
 }
 async function openRegistration_(from){
   if(registrationBusy_) return;
-  if(!registrationSettings_ || typeof registrationSettings_.enabled!=='boolean') await loadRegistrationSettings_();
-  const s=registrationSettings_;
-  if(!s || !s.enabled){
-    document.getElementById('gas-registration-status').textContent='Самостоятельная регистрация сейчас отключена. Напишите в поддержку.';
-    setRegistrationOpenVisible_(false);
-    return;
-  }
+  document.getElementById('gas-register-open-btn')?.classList.remove('gas-hidden');
   document.getElementById('gas-reg-panel')?.classList.remove('gas-hidden');
   document.getElementById('gas-registration-status').textContent='';
   const platform=registrationPlatform_();
@@ -1698,6 +1688,7 @@ function showRegistrationPath_(kind){
     ?'iPhone: аккаунт здесь, после оплаты ключ в кабинете. Ниже — как вставить его в DefaultVPN.'
     :(wifi?'Роутер: аккаунт создаётся здесь, полный конфиг TXT — после оплаты.':'Номер выше, имя ниже. Потом можно скачать приложение и войти тем же номером.');
   renderRegistrationPrice_();
+  loadRegistrationSettings_().then(renderRegistrationPrice_);
 }
 function registrationDownload_(){
   if(registrationPath_==='windows'){
@@ -1710,10 +1701,14 @@ function registrationDownload_(){
   gasDownloadApk('vpn');
 }
 function renderRegistrationPrice_(){
-  const s=registrationSettings_;if(!s) return;
+  const s=registrationSettings_||{};
   const el=document.getElementById('gas-register-price'); if(!el) return;
-  const wifi=document.getElementById('gas-register-kind').value==='wifi';
+  const wifi=document.getElementById('gas-register-kind')?.value==='wifi';
   const base=Number(wifi?s.wifiMonthly:s.monthly);
+  if(!(base>0)){
+    el.textContent='Цена будет на экране оплаты. Доступ появится после подтверждения оплаты.';
+    return;
+  }
   el.textContent=(wifi?'Один роутер':'Одно обычное устройство')+': '+base.toFixed(2)+' ₽/мес. без надбавки. Для физлица: '+(Math.round(base*104)/100).toFixed(2)+' ₽, для организации: '+(Math.round(base*106)/100).toFixed(2)+' ₽. Доступ появится после подтверждения оплаты. Другие устройства можно добавить в кабинете.';
 }
 async function gasRegister(){
@@ -1732,7 +1727,7 @@ async function gasRegister(){
       await gasLogin();
       toast('Аккаунт создан. Подключите Telegram или MAX, оплатите — затем в приложении войдите тем же номером.');
     }else if(j.status==='exists'){toast(j.message);await gasLogin();}
-    else {gasShowErr(j.message||'Регистрация не выполнена');await loadRegistrationSettings_();}
+    else {gasShowErr(j.message||'Регистрация не выполнена');}
   }catch(e){gasShowErr('Ответ не получен. Попробуйте войти с этим номером: аккаунт мог уже создаться. Повторной оплаты не требуется.');}
   finally{registrationBusy_=false;document.getElementById('gas-register-btn').disabled=false;setGasLoading(false);}
 }
@@ -2392,12 +2387,10 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   initGasApp();
   fillIphoneHelp_();
   if (typeof scheduleKeyResume_ === 'function' && gasPhone && _lsGet(keyRequestStorage_())) scheduleKeyResume_();
-  loadRegistrationSettings_().then(()=>{
-    try{
-      const qs=new URLSearchParams(location.search);
-      if(qs.get('register')==='1') openRegistration_('button');
-    }catch(e){}
-  });
+  try{
+    const qs=new URLSearchParams(location.search);
+    if(qs.get('register')==='1') openRegistration_('button');
+  }catch(e){}
   refreshInstallUi();
   try{
     const vj=window.wkCabinetVersion || await (await fetch('version.json?t='+Date.now(), { cache:'no-store' })).json();
