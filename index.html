@@ -281,7 +281,7 @@
           <button class="btn" id="home-pay-btn" onclick="haptic();showTab('pay')">Продлить подписку</button>
           <div id="home-key-card" class="gas-hidden" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
             <button type="button" class="btn sec" id="home-wifi-toggle" onclick="addWifiKeySlot()">Wi-Fi · полный конфиг TXT</button>
-            <button type="button" class="btn ghost" id="home-key-toggle" onclick="haptic();toggleIosKeyPanel()" style="margin-bottom:0">Ключи для iPhone / Mac</button>
+            <button type="button" class="btn ghost" id="home-key-toggle" onclick="haptic();openWebKeys_()" style="margin-bottom:0">Ключи для iPhone / Mac</button>
             <div id="home-key-body" class="gas-hidden" style="margin-top:12px">
               <div class="dev-meter" id="home-dev-meter">
                 <div>
@@ -1031,7 +1031,13 @@ function gasRenderKeyCard(d, opt){
   }
   if(countEl) countEl.textContent = n + ' из ' + lim;
   if(meter) meter.classList.toggle('full', lim > 0 && n >= lim);
-  if(thisEl) thisEl.textContent = localReady ? ('в кабинете ключей: '+localReady) : 'ключей iPhone/Mac ещё нет';
+  const webBound=(d.devices||[]).filter(isWebDevice_).length;
+  if(thisEl){
+    if(localReady) thisEl.textContent='в кабинете ключей: '+localReady;
+    else if(webBound>0) thisEl.textContent='есть ключи iPhone/Mac — нажмите кнопку выше, придёт код';
+    else if(n>0) thisEl.textContent='ключи в приложениях, не на сайте';
+    else thisEl.textContent='ключей iPhone/Mac ещё нет';
+  }
   if(msg && !webKeyBusy_ && !resetKeys){ msg.textContent=''; msg.className='msg'; }
 
   if(!paid){
@@ -1060,12 +1066,24 @@ function gasRenderKeyCard(d, opt){
   renderWebKeySlots_(list, { paid:true, lim:lim, used:n, canCreate:canAdd || localReady>0, fleet:(d&&d.fleet)||[] });
 }
 
+function isWebDevice_(d){
+  if(!d) return false;
+  if((d.kind||'device')==='wifi') return true;
+  return /^web/i.test(String(d.deviceId||''));
+}
 function renderWebKeySlots_(list, opt){
   const box=document.getElementById('home-key-slots');
   if(!box) return;
   opt=opt||{};
   if(!list.length){
-    box.innerHTML='<div class="sub" style="margin:0">Ключей пока нет.</div>';
+    const devices=(gasUserData&&gasUserData.devices)||[];
+    const web=devices.filter(isWebDevice_).length;
+    const native=Math.max(0, devices.length-web);
+    let html='';
+    if(web>0) html+='<div class="sub" style="margin:0 0 8px">Ключи iPhone / Mac / Wi-Fi есть в аккаунте. Нажмите «Ключи для iPhone / Mac» — придёт код в Telegram или MAX, затем ключ появится здесь.</div>';
+    if(native>0) html+='<div class="sub" style="margin:0 0 8px">Устройства приложения: '+native+'. Их ключ только в Weltkind на том телефоне, компьютере или TV. С сайта его скопировать нельзя.</div>';
+    if(!html) html='<div class="sub" style="margin:0">Ключей пока нет.</div>';
+    box.innerHTML=html;
     return;
   }
   box.innerHTML=list.map(function(s,i){
