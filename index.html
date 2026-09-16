@@ -12,18 +12,17 @@
   <link rel="icon" type="image/png" href="icons/icon-192.png"/>
   <title>Оплата Weltkind</title>
   <style>
-    html,body{height:100%;margin:0;background:#1A237E;color:#fff;font-family:system-ui,-apple-system,sans-serif}
-    #splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#1A237E;z-index:2}
+    html,body{height:100%;margin:0;background:#1A237E;overflow:hidden;font-family:system-ui,-apple-system,sans-serif}
+    #splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#1A237E;z-index:4;color:#fff;transition:opacity .35s}
+    #splash.out{opacity:0;pointer-events:none}
     .logo{width:88px;height:88px;border-radius:22px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,.28)}
     .logo img{width:100%;height:100%;display:block}
     .brand{font-size:1.5rem;font-weight:700;letter-spacing:.12em}
     .sub{font-size:.82rem;opacity:.75}
     .spin{width:28px;height:28px;border:3px solid rgba(255,255,255,.25);border-top-color:#00C4B4;border-radius:50%;animation:s .8s linear infinite;margin-top:8px}
     @keyframes s{to{transform:rotate(360deg)}}
-    #go{display:none;margin-top:18px;border:0;border-radius:14px;padding:14px 22px;background:#00C4B4;color:#07332f;font-weight:700;font-size:1rem}
-    #go.show{display:inline-block}
-    #err{display:none;max-width:320px;text-align:center;font-size:.85rem;line-height:1.45;opacity:.9;margin-top:8px}
-    #err.show{display:block}
+    #go{margin-top:14px;border:0;border-radius:14px;padding:12px 20px;background:#00C4B4;color:#07332f;font-weight:700}
+    iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#1A237E;z-index:1}
   </style>
 </head>
 <body>
@@ -31,12 +30,13 @@
     <div class="logo"><img src="icons/icon-192.png" alt=""/></div>
     <div class="brand">WELTKIND</div>
     <div class="sub">Открываем кабинет оплаты</div>
-    <div class="spin" aria-hidden="true"></div>
-    <p id="err">Если кабинет не открылся, нажмите кнопку.</p>
+    <div class="spin"></div>
     <button type="button" id="go">Открыть кабинет</button>
   </div>
+  <iframe id="gas-frame" title="Кабинет оплаты" allow="clipboard-write"></iframe>
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
+const SUB_KEY = 'weltkind-sub-data';
 function gasTarget(){
   const u = new URL(GAS_URL);
   const here = new URL(location.href);
@@ -50,18 +50,87 @@ function gasTarget(){
   u.searchParams.set('from','pwa');
   return u.toString();
 }
-function openCabinet(){
-  location.replace(gasTarget());
+function hideSplash(){ document.getElementById('splash').classList.add('out'); }
+function toISO(str){
+  if(!str || str==='Не определено' || str==='Не оплачено') return null;
+  const p=String(str).split(/[./-]/);
+  if(p.length===3) return p[2]+'-'+String(p[1]).padStart(2,'0')+'-'+String(p[0]).padStart(2,'0');
+  return null;
 }
-document.getElementById('go').onclick = openCabinet;
-setTimeout(function(){ document.getElementById('go').classList.add('show'); document.getElementById('err').classList.add('show'); }, 2500);
-setTimeout(openCabinet, 900);
-if ('serviceWorker' in navigator) {
+async function saveSub(sub){
+  try{ localStorage.setItem('wk_phone', sub.phone||''); localStorage.setItem('wk_sub', JSON.stringify(sub)); }catch(e){}
+  try{
+    const cache=await caches.open('Weltkind-user-data');
+    await cache.put(SUB_KEY, new Response(JSON.stringify(sub)));
+  }catch(e){}
+  if(navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type:'bg_check' });
+}
+function askNotif(){
+  if(typeof Notification==='undefined' || Notification.permission!=='default') return;
+  Notification.requestPermission().catch(function(){});
+}
+async function pollChat(){
+  const phone=localStorage.getItem('wk_phone')||'';
+  if(phone.length<10 || typeof Notification==='undefined' || Notification.permission!=='granted') return;
+  const since=parseInt(localStorage.getItem('wk_chat_ts')||'0',10)||0;
+  try{
+    const q=new URLSearchParams({ action:'getMessages', phone:phone, since:String(since) });
+    const res=await fetch(GAS_URL+'?'+q.toString(), { cache:'no-store', mode:'cors' });
+    const text=await res.text();
+    const a=text.indexOf('{'), b=text.lastIndexOf('}');
+    const j=JSON.parse(text.slice(a,b+1));
+    if(j.status!=='ok' || !Array.isArray(j.messages) || !j.messages.length) return;
+    let maxTs=since;
+    const admin=j.messages.filter(function(m){ if(m.ts>maxTs) maxTs=m.ts; return m.sender==='admin'; });
+    localStorage.setItem('wk_chat_ts', String(maxTs));
+    if(!admin.length) return;
+    const last=admin[admin.length-1];
+    if(navigator.serviceWorker.controller){
+      navigator.serviceWorker.controller.postMessage({
+        type:'SHOW_NOTIFICATION',
+        title:'Поддержка Weltkind',
+        body:(last.text||'Новое сообщение').slice(0,120),
+        tag:'chat-'+phone,
+        requireInteraction:true,
+        data:{ url:'./?source=pwa', type:'chat' }
+      });
+    }
+  }catch(e){}
+}
+window.addEventListener('message', function(e){
+  const d=e.data;
+  if(!d || d.type!=='weltkind_sub') return;
+  const iso=toISO(d.expiryDate);
+  saveSub({
+    phone:String(d.phone||'').replace(/\D/g,''),
+    date:iso,
+    status:d.status,
+    pwaNotifs:{}
+  });
+  askNotif();
+});
+const frame=document.getElementById('gas-frame');
+frame.src=gasTarget();
+frame.addEventListener('load', function(){ setTimeout(hideSplash, 400); });
+setTimeout(hideSplash, 3500);
+document.getElementById('go').onclick=function(){ frame.src=gasTarget(); hideSplash(); };
+if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).then(function(reg){
-    if (reg.waiting) reg.waiting.postMessage({ type:'SKIP_WAITING' });
+    if(reg.waiting) reg.waiting.postMessage({ type:'SKIP_WAITING' });
+    if('periodicSync' in reg) reg.periodicSync.register('check-subscription', { minInterval:12*3600000 }).catch(function(){});
     reg.update().catch(function(){});
   }).catch(function(){});
 }
+setInterval(pollChat, 45000);
+setInterval(function(){
+  if(navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type:'bg_check' });
+}, 3600000);
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden){
+    pollChat();
+    if(navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type:'bg_check' });
+  }
+});
 </script>
 </body>
 </html>
