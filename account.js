@@ -52,6 +52,29 @@ async function ensureAccountAuth_() {
   if (_lsGet(keyRequestStorage_())) scheduleKeyResume_();
   return true;
 }
+function accountConfirm_(message) {
+  return new Promise(function(resolve) {
+    const previousFocus = document.activeElement;
+    const dialog = document.createElement('dialog');
+    dialog.className = 'account-quote';
+    dialog.setAttribute('aria-label', 'Подтвердите действие');
+    dialog.innerHTML =
+      '<div class="account-quote-content">' +
+      '<p style="white-space:pre-wrap">' + accountEscapeHtml_(message) + '</p>' +
+      '<button type="button" class="btn" data-confirm-ok>Подтвердить</button>' +
+      '<button type="button" class="btn ghost" data-confirm-cancel>Отмена</button></div>';
+    dialog.addEventListener('close', function() {
+      const ok = dialog.returnValue === 'yes';
+      dialog.remove();
+      if (previousFocus && previousFocus.isConnected) previousFocus.focus();
+      resolve(ok);
+    }, {once:true});
+    dialog.querySelector('[data-confirm-ok]').onclick = function() { dialog.close('yes'); };
+    dialog.querySelector('[data-confirm-cancel]').onclick = function() { dialog.close('no'); };
+    document.body.appendChild(dialog);
+    dialog.showModal();
+  });
+}
 function accountMoney_(value) {
   return Number(value).toLocaleString('ru-RU', {style:'currency', currency:'RUB', minimumFractionDigits:2});
 }
@@ -186,11 +209,23 @@ async function openAccountDevices(opt) {
         const status = document.createElement('p'); status.style.cssText='font-weight:600;color:var(--accent2)';
         status.textContent = '⏳ Отвязка выполняется — обычно до пары минут. Сейчас обновится само.'; item.appendChild(status);
       } else {
+        const rename = document.createElement('input');
+        rename.className = 'inp';
+        rename.maxLength = 32;
+        rename.value = device.label || '';
+        rename.placeholder = 'Например: телефон мамы';
+        rename.setAttribute('aria-label', 'Имя устройства');
+        item.appendChild(rename);
+        accountButton_(item, 'Сохранить название', async function() {
+          await accountCall_('rename', { deviceId: device.deviceId, label: rename.value });
+          toast('Имя сохранено.');
+          await openAccountDevices();
+        });
         const change = async function(op) {
           const warning = op === 'remove'
             ? 'Убрать устройство из тарифа? Слот пропадёт совсем, следующий платёж станет меньше. За текущий месяц деньги не вернутся.'
             : 'Отвязать устройство? Место освободится сразу. Старый ключ будет удалён в фоне; недоступный сервер обработает отзыв при восстановлении связи.';
-          if (!confirm(warning)) return;
+          if (!await accountConfirm_(warning)) return;
           const reply = await accountCall_(op, { deviceId: device.deviceId });
           toast(reply.message);
           const keys = loadWebKeys().filter(k => k.id !== device.deviceId); saveWebKeys(keys);
@@ -207,7 +242,7 @@ async function openAccountDevices(opt) {
     if (revokedPending.length) {
       accountButton_(panel, 'Отвязанные устройства (' + revokedPending.length + ')', async function() {
         accountRevokedModal_(revokedPending, async function(device) {
-          if (!confirm('Снова разрешить этому устройству получать ключ? Оно сможет занять свободный слот.')) return;
+          if (!await accountConfirm_('Снова разрешить этому устройству получать ключ? Оно сможет занять свободный слот.')) return;
           const reply = await accountCall_('authorizeDevice', {deviceId:device.deviceId});
           toast(reply.message); await openAccountDevices();
         });
@@ -219,14 +254,33 @@ async function openAccountDevices(opt) {
         const used = (data.devices || []).filter(d => (d.kind || 'device') === kind).length;
         if (used >= (kind === 'wifi' ? tariffs.wifiCount : tariffs.deviceCount)) continue;
         accountButton_(panel, 'Убрать пустой слот · ' + (kind === 'wifi' ? 'Wi-Fi' : 'устройство'), async function() {
-          if (confirm('Убрать незанятый слот из тарифа? Он не занят устройством. Возврата за текущий месяц нет.')) { await accountCall_('removeUnused', {deviceKind:kind}); await openAccountDevices(); }
+          if (!await accountConfirm_('Убрать незанятый слот из тарифа? Он не занят устройством. Возврата за текущий месяц нет.')) return;
+          await accountCall_('removeUnused', {deviceKind:kind});
+          await openAccountDevices();
         }, true);
       }
     }
     if(resets.length){const note=document.createElement('p');note.textContent='Отвязано. Фоновое удаление старых ключей: '+resets.length+'. Можно пользоваться свободными местами; завершения очистки ждать не нужно.';panel.appendChild(note);}
     if (result.change) {
       panel.appendChild(accountPaymentCard_(result.change));
-      accountButton_(panel, 'Отменить заявку на доплату', async () => { if (confirm('Отменить заявку? Если деньги уже переведены, сначала свяжитесь с поддержкой.')) { await accountCall_('cancelChange'); _lsSet(keyRequestStorage_(), ''); clearTimeout(keyFlowTimer_); keyFlowTimer_ = null; await openAccountDevices(); } });
+      accountButton_(panel, 'Отменить заявку на доплату', async () => {
+        if (!await accountConfirm_('Отменить заявку? Если деньги уже переведены, сначала свяжитесь с поддержкой.')) return;
+        await accountCall_('cancelChange');
+        _lsSet(keyRequestStorage_(), '');
+        clearTimeout(keyFlowTimer_);
+        keyFlowTimer_ = null;
+        await openAccountDevices();
+      });
+    }
+    if ((data.devices || []).length) {
+      accountButton_(panel, 'Отвязать все устройства', async function() {
+        if (!await accountConfirm_('Отвязать все устройства? Старые ключи отключатся, оплаченные места сохранятся.')) return;
+        const reply = await accountCall_('resetAll');
+        toast(reply.message);
+        saveWebKeys([]);
+        _lsSet('wk_vpn_' + normalizePhone(gasPhone), '');
+        await openAccountDevices();
+      }, true);
     }
     accountButton_(panel, 'Обновить статус', openAccountDevices);
     accountButton_(panel, 'Закрыть', async () => {
@@ -383,8 +437,11 @@ function showKeyPayment_(change) {
   document.getElementById('key-payment-panel')?.remove();
   const panel=accountPaymentCard_(change);panel.id='key-payment-panel';
   accountButton_(panel,'Отменить заявку',async()=>{
-    if(!confirm('Отменить заявку? Если уже оплатили, сначала свяжитесь с поддержкой.')) return;
+    if(!await accountConfirm_('Отменить заявку? Если уже оплатили, сначала свяжитесь с поддержкой.')) return;
     await accountCall_('cancelChange');_lsSet(keyRequestStorage_(),'');clearTimeout(keyFlowTimer_);keyFlowTimer_=null;panel.remove();showKeyFlowMessage_('Заявка отменена. Можно выбрать другое устройство.');
   });
-  document.getElementById('home-key-flow').after(panel);panel.scrollIntoView({block:'start'});
+  const flow=document.getElementById('home-key-flow');
+  if(flow && flow.parentNode) flow.after(panel);
+  else document.getElementById('home-key-card')?.appendChild(panel);
+  panel.scrollIntoView({block:'start'});
 }

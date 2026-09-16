@@ -1,11 +1,12 @@
-/* Weltkind PWA Service Worker — v54 */
-const SW_VER = 54;
-const CACHE = 'Weltkind-v54';
+/* Weltkind PWA Service Worker — v56 */
+const SW_VER = 56;
+const CACHE = 'Weltkind-v56';
 const SUB_KEY = 'weltkind-sub-data';
 const SUB_CACHE = 'Weltkind-user-data';
 const ASSETS = [
   './',
   './index.html',
+  './account.js',
   './manifest.json',
   './version.json',
   './icons/icon-192.png',
@@ -21,18 +22,33 @@ function isBypass(url) {
 
 async function navigationFetch(req) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 4500);
+  const timer = setTimeout(() => controller.abort(), 8000);
   try { return await fetch(req, { cache:'no-cache', signal:controller.signal }); }
   finally { clearTimeout(timer); }
+}
+
+function notifyHtmlUpdated() {
+  self.clients.matchAll({ type: 'window' }).then((list) => {
+    list.forEach((c) => {
+      try { c.postMessage({ type: 'HTML_UPDATED', version: SW_VER }); } catch (err) {}
+    });
+  });
+}
+
+async function maybeNotifyHtmlChange(cached, fresh) {
+  if (!cached || !fresh) return;
+  try {
+    const [oldText, newText] = await Promise.all([cached.clone().text(), fresh.clone().text()]);
+    if (oldText !== newText) notifyHtmlUpdated();
+  } catch (err) {}
 }
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE).then((c) =>
       c.addAll(ASSETS.map((u) => new Request(u, { cache: 'reload' })))
-    )
+    ).then(() => self.skipWaiting())
   );
-  // Updates wait for the user; first installation activates normally.
 });
 
 self.addEventListener('activate', (e) => {
@@ -75,35 +91,40 @@ self.addEventListener('fetch', (e) => {
     url.pathname.endsWith('index.html');
 
   if (isHtml) {
-    e.respondWith(
-      navigationFetch(req)
-        .then((res) => {
-          if (!res || !res.ok) throw new Error('Navigation unavailable');
-          if (res && res.ok) {
-            const htmlCopy = res.clone();
-            caches.open(CACHE).then((c) => c.put('./index.html', htmlCopy)).catch(() => {});
-          }
-          return res;
-        })
-        .catch(() =>
-          caches.open(CACHE).then(c => c.match('./index.html')).then((r) => r || caches.open(CACHE).then(c => c.match('./')))
-        )
-    );
+    e.respondWith((async () => {
+      const cache = await caches.open(CACHE);
+      const cached = await cache.match('./index.html') || await cache.match('./');
+      const net = navigationFetch(req).then((res) => {
+        if (!res || !res.ok) throw new Error('Navigation unavailable');
+        cache.put('./index.html', res.clone()).catch(() => {});
+        maybeNotifyHtmlChange(cached, res).catch(() => {});
+        return res;
+      });
+      if (cached) {
+        net.catch(() => {});
+        return cached;
+      }
+      return net.catch(async () => {
+        const fallback = await cache.match('./index.html') || await cache.match('./');
+        if (fallback) return fallback;
+        throw new Error('offline');
+      });
+    })());
     return;
   }
 
-  e.respondWith(
-    caches.match(req).then((cached) => {
-      const net = fetch(req).then((res) => {
-        if (res && res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, clone)).catch(() => {});
-        }
-        return res;
-      }).catch(() => cached);
-      return cached || net;
-    })
-  );
+  e.respondWith((async () => {
+    const cached = await caches.match(req);
+    const net = fetch(req).then((res) => {
+      if (res && res.ok) caches.open(CACHE).then((c) => c.put(req, res.clone())).catch(() => {});
+      return res;
+    });
+    if (cached) {
+      net.catch(() => {});
+      return cached;
+    }
+    return net.catch(() => cached);
+  })());
 });
 
 function daysLeftCeil_(iso) {

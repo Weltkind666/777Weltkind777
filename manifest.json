@@ -54,6 +54,13 @@
       "description": "Написать в поддержку",
       "url": "./?source=pwa#support",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Устройства",
+      "short_name": "Ключи",
+      "description": "Ключи, смена страны и места тарифа",
+      "url": "./?source=pwa#devices",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

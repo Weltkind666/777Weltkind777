@@ -214,6 +214,9 @@
 .account-payment{font-size:17px;line-height:1.5;overflow-wrap:anywhere}
 .account-payment ol{padding-left:24px}.account-payment li{padding:8px 0 8px 4px}
 .account-recipient{padding:12px;background:#f2f5f8;border-radius:12px}
+#account-panel{margin-bottom:14px}
+#account-panel h3{margin:0 0 10px}
+#account-panel .card{margin:10px 0;padding:12px}
 </style>
 </head>
 <body>
@@ -276,6 +279,28 @@
           <div class="bar"><i id="sub-fill"></i></div>
           <div id="gas-st-warn" class="msg warn gas-hidden"></div>
           <button class="btn" id="home-pay-btn" onclick="haptic();showTab('pay')">Продлить подписку</button>
+          <div id="home-key-card" class="gas-hidden" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <button type="button" class="btn sec" id="home-wifi-toggle" onclick="addWifiKeySlot()">Wi-Fi · полный конфиг TXT</button>
+            <button type="button" class="btn ghost" id="home-key-toggle" onclick="haptic();toggleIosKeyPanel()" style="margin-bottom:0">Ключи для iPhone / Mac</button>
+            <div id="home-key-body" class="gas-hidden" style="margin-top:12px">
+              <div class="dev-meter" id="home-dev-meter">
+                <div>
+                  <div class="sub">Подвязано устройств</div>
+                  <b id="home-dev-count">—</b>
+                </div>
+                <div class="sub" id="home-dev-this" style="text-align:right;max-width:58%">слоты тарифа</div>
+              </div>
+              <div class="sub" id="home-key-hint" style="margin-bottom:10px">Сколько устройств в тарифе — столько ключей. Сначала имя (мама, ребёнок), потом создать. Каждый ключ — на своё устройство.</div>
+              <div class="lbl">Сервер для нового ключа</div>
+              <select id="home-key-server" class="inp" style="margin-bottom:10px">
+                <option value="">Авто — самый свободный</option>
+              </select>
+              <div id="home-key-slots"></div>
+              <button type="button" class="btn sec gas-hidden" id="home-key-add" onclick="haptic('medium');addWebKeySlot()">Добавить ещё ключ</button>
+              <div class="msg" id="home-key-msg"></div>
+              <div id="home-key-flow" class="msg"></div>
+            </div>
+          </div>
           <div id="home-notif-box" class="home-notif gas-hidden">
             <div class="home-notif-title">Подключите уведомления</div>
             <div class="home-notif-sub">Напомним за 3, 2 и 1 день до окончания подписки</div>
@@ -517,7 +542,7 @@ function toast(msg){
   clearTimeout(toast._t);
   toast._t = setTimeout(()=>t.classList.remove('show'), 2200);
 }
-function showSt(msg){ toast(msg); }
+
 
 function normalizePhone(raw){
   let d = String(raw||'').replace(/\D/g,'');
@@ -627,7 +652,16 @@ async function keyAction_(button,action){
 }
 function openGoogleDevices(){
   if(!gasPhone){toast('Сначала войдите по номеру телефона');return;}
-  const url=new URL(GAS_URL);url.searchParams.set('cabinet','1');url.searchParams.set('phone',normalizePhone(gasPhone));
+  showTab('home');
+  if (typeof openAccountDevices === 'function') {
+    openAccountDevices();
+    return;
+  }
+  // account.js не загрузился — старый Google-кабинет как запасной путь, без петли редиректа.
+  const url=new URL(GAS_URL);
+  url.searchParams.set('cabinet','1');
+  url.searchParams.set('stay','1');
+  url.searchParams.set('phone',normalizePhone(gasPhone));
   window.location.assign(url.toString());
 }
 async function openWebKeys_(){
@@ -641,18 +675,11 @@ async function openWebKeys_(){
 async function createWebKey(slotId,recreate){
   return keyAction_(document.getElementById((recreate?'wk-rec-':'wk-cr-')+slotId),()=>createWebKeyInner_(slotId,recreate));
 }
+function changeIssuedKey(slotId){
+  return createWebKey(slotId,true);
+}
 function newWebDeviceId(){
   return ('web'+Math.random().toString(36).slice(2)+Date.now().toString(36)).replace(/[^A-Za-z0-9]/g,'').slice(0,24);
-}
-function webDeviceId(){
-  const list=loadWebKeys();
-  if(list[0] && list[0].id) return list[0].id;
-  let id=_lsGet('wk_device_id')||'';
-  id=String(id).replace(/[^A-Za-z0-9]/g,'');
-  if(id.length>=8) return id;
-  id=newWebDeviceId();
-  _lsSet('wk_device_id', id);
-  return id;
 }
 function webKeysListKey(){
   return 'wk_vpn_list_'+normalizePhone(gasPhone||'');
@@ -774,6 +801,9 @@ function initGasApp(){
     phoneFromUrl = normalizePhone(window.wkCabinetPhone || qs.get('phone') || '');
     const ref=normalizePhone(qs.get('ref')||'');
     if(ref.length>=10) _lsSet('wk_ref', ref);
+    if (qs.get('from') === 'cabinet' || (location.hash || '').replace('#','').toLowerCase() === 'devices') {
+      window.wkCabinetEntry = window.wkCabinetEntry || 'manage';
+    }
   }catch(e){}
   if(phoneFromUrl.length>=10){
     _lsSet('gas_phone', phoneFromUrl);
@@ -1002,13 +1032,13 @@ function gasRenderKeyCard(d, opt){
   if(!paid){
     if(hint) hint.textContent='Подписка неактивна — VPN недоступен. После оплаты сохранённые ключи возобновят работу. Ключи без подключений 7 дней могут удаляться: в этом случае создайте новый.';
     if(addBtn) addBtn.classList.add('gas-hidden');
-    renderWebKeySlots_(list, { paid:false, lim:lim, used:n, canCreate:false });
+    renderWebKeySlots_(list, { paid:false, lim:lim, used:n, canCreate:false, fleet:(d&&d.fleet)||[] });
     return;
   }
   if(!isNaN(limit) && limit===0){
     if(hint) hint.textContent='Для этого аккаунта ключи отключены (устройств: 0). Напишите в поддержку.';
     if(addBtn) addBtn.classList.add('gas-hidden');
-    renderWebKeySlots_(list, { paid:true, lim:0, used:n, canCreate:false });
+    renderWebKeySlots_(list, { paid:true, lim:0, used:n, canCreate:false, fleet:(d&&d.fleet)||[] });
     return;
   }
   const tariffs = d.deviceTariffs || { deviceCount:lim, wifiCount:0 };
@@ -1022,7 +1052,7 @@ function gasRenderKeyCard(d, opt){
     addBtn.disabled = false;
     addBtn.textContent = 'Подключить ещё один iPhone / Mac';
   }
-  renderWebKeySlots_(list, { paid:true, lim:lim, used:n, canCreate:canAdd || localReady>0 });
+  renderWebKeySlots_(list, { paid:true, lim:lim, used:n, canCreate:canAdd || localReady>0, fleet:(d&&d.fleet)||[] });
 }
 
 function renderWebKeySlots_(list, opt){
@@ -1040,17 +1070,28 @@ function renderWebKeySlots_(list, opt){
     const id=s.id;
     const taId='wk-ta-'+id;
     const createBtn = has
-      ? '<button type="button" class="btn danger" id="wk-rec-'+id+'" onclick="haptic(\'medium\');createWebKey(\''+id+'\',true)">Пересоздать ключ</button>'
+      ? ''
       : '<button type="button" class="btn" id="wk-cr-'+id+'" onclick="haptic(\'medium\');createWebKey(\''+id+'\',false)" '+(opt.paid===false?'disabled':'')+'>Создать ключ</button>';
     const copyDis = has ? '' : 'disabled';
+    const fleet=opt.fleet||[];
+    const cur=String(s.host||'');
+    const serverOpts=['<option value="">Авто — самый свободный</option>'].concat(fleet.filter(function(x){return x&&x.host;}).map(function(x){
+      return '<option value="'+escHtml_(x.host)+'"'+(x.host===cur?' selected':'')+'>'+escHtml_(x.name||x.host)+'</option>';
+    })).join('');
+    const changeBlock = has
+      ? '<label class="lbl" for="wk-srv-'+id+'">'+(wifi?'Новый сервер Wi-Fi':'Новая страна')+'</label>'
+        + '<select class="inp" id="wk-srv-'+id+'">'+serverOpts+'</select>'
+        + '<button type="button" class="btn" id="wk-rec-'+id+'" onclick="haptic(\'medium\');changeIssuedKey(\''+id+'\')">'+(wifi?'Сменить сервер Wi-Fi':'Сменить страну')+'</button>'
+      : '';
     return '<div class="web-key-slot" style="margin:0 0 12px;padding:12px 0 0;border-top:1px solid var(--border)">'
       + '<div class="lbl">'+(wifi?'Wi-Fi · роутер':'Ключ '+(i+1)+' · iPhone / Mac')+'</div>'
       + '<input type="text" class="inp" id="wk-lb-'+id+'" maxlength="32" placeholder="Имя: мама, ребёнок, Mac…" value="'+escHtml_(label==='Ключ '+(i+1)?'':label)+'" onchange="renameWebKeySlot(\''+id+'\',this.value)"/>'
       + '<textarea id="'+taId+'" class="inp mono" readonly rows="6" placeholder="Ключ появится здесь — скопируйте и вставьте в приложение" style="font-size:.78rem;min-height:110px;resize:vertical;word-break:break-all" onclick="this.select()">'+escHtml_((wifi?s.conf:s.vpn)||'')+'</textarea>'
-      + (has ? '' : createBtn)
+      + createBtn
       + (wifi ? '<button type="button" class="btn sec" onclick="downloadWifiConfig(\''+id+'\')" '+copyDis+'>Скачать Wi-Fi TXT</button>' : '')
       + '<button type="button" class="btn sec" id="wk-cp-'+id+'" onclick="haptic();copyWebKey(\''+id+'\')" '+copyDis+'>'+(wifi?'Скопировать полный конфиг':'Скопировать ключ')+'</button>'
-      + (has ? '<details><summary>Если подключение не работает</summary><p class="sub">Пересоздайте ключ, затем замените его в приложении или роутере.</p>'+createBtn+'</details>' : '')
+      + changeBlock
+      + (has ? '<p class="sub">После смены старый ключ отзовут. Новый нужно снова вставить в приложение или роутер.</p>' : '')
       + '</div>';
   }).join('');
 }
@@ -1127,11 +1168,14 @@ async function createWebKeyInner_(slotId, recreate, confirmedCreation = false){
   const had=!!slot.vpn;
   const isRecreate=!!recreate;
   const ask=slot.kind==='wifi'
-    ? (isRecreate?'Пересоздать Wi-Fi? Старый конфиг будет отозван. Новый TXT нужно импортировать в роутер.':'Создать отдельный Wi-Fi-конфиг? Он займёт оплаченный слот Wi-Fi. Скачайте TXT и импортируйте его в совместимый роутер.')
+    ? (isRecreate?'Сменить сервер Wi-Fi? Старый конфиг отзовут. Новый TXT нужно загрузить в роутер.':'Создать отдельный Wi-Fi-конфиг? Он займёт оплаченный слот Wi-Fi. Скачайте TXT и импортируйте его в совместимый роутер.')
     : isRecreate
-    ? 'Пересоздать этот ключ?\n\nСтарый конфиг удалится с сервера, новый нужно снова вставить в приложение на этом устройстве.'
+    ? 'Сменить страну? Старый ключ отзовут. Новый нужно снова вставить в iPhone или Mac.'
     : 'Создать ключ для iPhone / Mac?\n\nПотом скопируйте ключ и вставьте в приложение. Для второго телефона или Mac нажмите «Добавить ещё ключ».';
-  if((isRecreate || !confirmedCreation) && !confirm(ask)) return;
+  if(isRecreate || !confirmedCreation){
+    const ok = typeof accountConfirm_ === 'function' ? await accountConfirm_(ask) : confirm(ask);
+    if(!ok) return;
+  }
   toggleIosKeyPanel(true);
   const msg=document.getElementById('home-key-msg');
   const cr=document.getElementById('wk-cr-'+slot.id);
@@ -1142,7 +1186,8 @@ async function createWebKeyInner_(slotId, recreate, confirmedCreation = false){
   if(rec){ rec.disabled=true; rec.dataset.origText=rec.textContent; rec.textContent='Пересоздаём ключ…'; }
   if(msg){ msg.className='msg'; msg.style.cssText='font-weight:700;color:var(--accent2)'; msg.textContent='⏳ Получаем готовый персональный ключ…'; }
   try{
-    const prefer=(document.getElementById('home-key-server')||{}).value||'';
+    const slotSel=document.getElementById('wk-srv-'+slot.id);
+    const prefer=(slotSel&&slotSel.value)||(document.getElementById('home-key-server')||{}).value||'';
     const j=await gasApi({ action:'createWebKey', phone:gasPhone, deviceId:slot.id, label:label, preferHost:prefer, deviceKind:slot.kind||'device', recreate:recreate?'1':'0' }, 45000);
     if (issuingPhone !== gasPhone) return;
     if(!j || j.status==='error' || (j.status!=='ok' && j.status!=='pending')){
@@ -1414,7 +1459,7 @@ async function gasRefreshTg(){ await gasLogin(true); }
 async function gasTestTg(){ try{ const j=await gasApi({ action:'testTelegram', phone:gasPhone }); toast(j.message||'Отправлено'); }catch(e){ toast('Ошибка связи'); } }
 async function gasClearTg(){ if(!confirm('Отключить Telegram?')) return; try{ const j=await gasApi({ action:'clearTelegram', phone:gasPhone }); toast(j.message||'Готово'); gasLogin(true); }catch(e){ toast('Ошибка связи'); } }
 async function gasRefreshMax(){ await gasLogin(true); }
-async function gasTestMax(){ try{ const j=await gasApi({ action:'testTelegram', phone:gasPhone }); toast(j.message||'Отправлено'); }catch(e){ toast('Ошибка связи'); } }
+async function gasTestMax(){ try{ const j=await gasApi({ action:'testTelegram', phone:gasPhone, messenger:'max' }); toast(j.message||'Отправлено'); }catch(e){ toast('Ошибка связи'); } }
 async function gasClearMax(){ if(!confirm('Отключить MAX?')) return; try{ const j=await gasApi({ action:'clearMax', phone:gasPhone }); toast(j.message||'Готово'); gasLogin(true); }catch(e){ toast('Ошибка связи'); } }
 
 function gasLogout(){
@@ -1582,17 +1627,22 @@ function openFullSite(){
   window.open(getGasFallbackUrl(extra), '_blank', 'noopener');
 }
 
-let swReg=null, waitingWorker=null, swUpdateRequested=false;
+let swReg=null, waitingWorker=null, swUpdateRequested=false, swReloading=false;
+function reloadForSw_(){
+  if(swReloading) return;
+  swReloading=true;
+  location.reload();
+}
 if(!window.wkGoogleCabinet && 'serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).then(reg=>{
     swReg=reg;
     if('periodicSync' in reg){ reg.periodicSync.register('check-subscription', { minInterval:12*3600000 }).catch(()=>{}); }
-    if(reg.waiting){ waitingWorker=reg.waiting; showUpdateBar(); }
+    if(reg.waiting){ waitingWorker=reg.waiting; applySwUpdate(); }
     reg.addEventListener('updatefound', ()=>{
       const nw=reg.installing;
       if(!nw) return;
       nw.addEventListener('statechange', ()=>{
-        if(nw.state==='installed' && navigator.serviceWorker.controller){ waitingWorker=nw; showUpdateBar(); }
+        if(nw.state==='installed' && navigator.serviceWorker.controller){ waitingWorker=nw; applySwUpdate(); }
       });
     });
     setInterval(()=>reg.update().catch(()=>{}), 10*60000);
@@ -1601,12 +1651,12 @@ if(!window.wkGoogleCabinet && 'serviceWorker' in navigator){
   }).catch(()=>{});
   navigator.serviceWorker.addEventListener('message', e=>{
     if(e.data?.type==='open_renew'){ showTab('pay'); }
+    if(e.data?.type==='HTML_UPDATED') reloadForSw_();
   });
-  let refreshing=false;
+  const hadController=!!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', ()=>{
-    if(refreshing) return;
-    if(!swUpdateRequested){showUpdateBar();return;}
-    refreshing=true; location.reload();
+    if(!hadController) return;
+    reloadForSw_();
   });
 }
 function showUpdateBar(){
@@ -1617,7 +1667,7 @@ function applySwUpdate(){
   swUpdateRequested=true;
   if(waitingWorker) waitingWorker.postMessage({ type:'SKIP_WAITING' });
   else if(swReg && swReg.waiting) swReg.waiting.postMessage({ type:'SKIP_WAITING' });
-  else location.reload();
+  else reloadForSw_();
 }
 async function saveSubToSwCache(sub){
   if(!sub||!sub.date||!('caches' in window)) return;
@@ -1767,7 +1817,6 @@ async function autoAskPerm(){
   const st=document.getElementById('notif-state');
   if(st) st.textContent = Notification.permission==='granted' ? 'Push включены' : Notification.permission==='denied' ? 'Заблокированы в настройках браузера' : 'Ещё не разрешены';
 }
-function disableNotif(){ const sub=loadSub(); if(sub){ sub.pwaNotifs={}; saveSub(sub); } }
 async function testNotif(){
   if(typeof Notification==='undefined'){ toast('Уведомления недоступны'); return; }
   let p=Notification.permission; if(p==='default') p=await Notification.requestPermission();
@@ -1841,9 +1890,6 @@ async function gasPollMaxConnection_(attempts){
   }
   if(gasPhone) gasLogin(true);
 }
-function closeTgBanner(){}
-function closeMaxBanner(){}
-
 function buildTelegramOpenTargets_(httpsUrl){
   const m=String(httpsUrl||'').match(/^https:\/\/t\.me\/([^/?#]+)(?:\?start=([^&#]*))?/i);
   if(!m) return [httpsUrl];
@@ -2105,6 +2151,10 @@ function handleAppHash(){
   if(!h) return;
   if(h==='support') setTimeout(()=>chatOpen(), 200);
   else if(h==='renew') setTimeout(()=>showTab('pay'), 200);
+  else if(h==='devices'){
+    window.wkCabinetEntry = window.wkCabinetEntry || 'manage';
+    if(gasPhone) setTimeout(openGoogleDevices, 200);
+  }
 }
 
 function gasInitModalBackdrops(){
@@ -2120,7 +2170,6 @@ function gasInitModalBackdrops(){
 
 document.addEventListener('DOMContentLoaded', async ()=>{
   hideSplashNow();
-  obSkip();
   updateNet();
   startTimer();
   gasInitModalBackdrops();
@@ -2162,7 +2211,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   (function sched(){ const now=new Date(), next=new Date(now); next.setHours(9,0,0,0); if(next<=now) next.setDate(next.getDate()+1); setTimeout(()=>{ checkExpiry(); sched(); }, next-now); })();
   try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
 });
-function obSkip(){ /* onboarding убран */ }
 </script>
+<script src="account.js?v=99"></script>
 </body>
 </html>
