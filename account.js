@@ -178,6 +178,52 @@ function accountRevokedModal_(devices, onAllow) {
   overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
 }
 let accountDevicesPollTimer_ = null;
+async function forgetLocalDevice_(deviceId) {
+  const keys = loadWebKeys().filter(k => k.id !== deviceId);
+  saveWebKeys(keys);
+  _lsSet('wk_vpn_' + normalizePhone(gasPhone), '');
+}
+async function resetAccountDevice_(deviceId) {
+  if (!await ensureAccountAuth_()) return;
+  if (!await accountConfirm_('Отвязать это устройство? Старый ключ отключится, оплаченное место освободится. Цена не изменится.')) return;
+  const reply = await accountCall_('reset', { deviceId: deviceId });
+  toast(reply.message || 'Устройство отвязано. Место можно использовать снова.');
+  forgetLocalDevice_(deviceId);
+  await gasLogin(true);
+  if (document.getElementById('account-panel')) await openAccountDevices({ silent: true });
+}
+async function removeAccountDevice_(deviceId) {
+  if (!await ensureAccountAuth_()) return;
+  const quoted = await accountCall_('removeQuote', { deviceId: deviceId, clientType: gasClientType });
+  const q = quoted.quote || {};
+  const next = q.nextMonthly != null ? accountMoney_(q.nextMonthly) : '';
+  if (!await accountConfirm_('Удалить устройство и его место в тарифе?\nМест: ' + (q.oldCount || '?') + ' → ' + (q.count || '?') + (next ? ('. Следующий платёж за месяц: ' + next) : '') + '.\nУстройство с этим ключом потеряет доступ. Деньги за оставшийся период не возвращаются.')) return;
+  const reply = await accountCall_('remove', { deviceId: deviceId, quoteId: q.id });
+  toast(reply.message || 'Устройство удалено, тариф уменьшен.');
+  forgetLocalDevice_(deviceId);
+  await gasLogin(true);
+  if (document.getElementById('account-panel')) await openAccountDevices({ silent: true });
+}
+function renderAccountDeviceActions_(d) {
+  const box = document.getElementById('home-dev-actions');
+  if (!box) return;
+  const devices = (d && d.devices) || [];
+  if (!devices.length) { box.innerHTML = ''; return; }
+  const canRemove = Number(d.deviceLimit) > 1;
+  box.innerHTML = '<div class="lbl" style="margin-top:12px">Привязанные устройства</div>' +
+    devices.map(function(device) {
+      const id = String(device.deviceId || '');
+      const name = (device.kind === 'wifi' ? 'Wi-Fi · ' : '') + (device.label || device.configName || device.deviceTail || id.slice(-6));
+      const where = device.host || 'приложение';
+      const web = isWebDevice_(device);
+      return '<div class="card" style="margin:8px 0;padding:12px">' +
+        '<strong>' + accountEscapeHtml_(name) + '</strong>' +
+        '<p class="sub" style="margin:6px 0 8px">' + (web ? 'Ключ iPhone / Mac / Wi-Fi' : 'Ключ в приложении') + ' · ' + accountEscapeHtml_(String(where)) + '</p>' +
+        '<button type="button" class="btn danger" onclick="resetAccountDevice_(\'' + id.replace(/[^A-Za-z0-9_-]/g, '') + '\')">Отвязать</button>' +
+        (canRemove ? '<button type="button" class="btn danger" onclick="removeAccountDevice_(\'' + id.replace(/[^A-Za-z0-9_-]/g, '') + '\')">Убрать из тарифа</button>' : '') +
+        '</div>';
+    }).join('');
+}
 async function openAccountDevices(opt) {
   opt = opt || {};
   if (accountDevicesPollTimer_) { clearTimeout(accountDevicesPollTimer_); accountDevicesPollTimer_ = null; }
@@ -192,7 +238,7 @@ async function openAccountDevices(opt) {
     accountButton_(panel, 'Добавить устройство', addAccountDevice_);
     accountButton_(panel, 'Добавить Wi-Fi роутер', () => startKeyFlow_('wifi', true));
     const text = document.createElement('p'); text.className = 'sub';
-    text.innerHTML = '<strong>Отвязать</strong> — освободить слот, тариф не меняется, ключ можно выдать заново.<br><strong>Убрать из тарифа</strong> — слот пропадает совсем, следующий платёж меньше. За текущий месяц деньги не возвращаются.';
+    text.innerHTML = '<strong>Правило:</strong> 1 ключ — 1 устройство, Wi-Fi TXT — 1 роутер. Если один ключ включить сразу на двух устройствах, он заблокируется.<br><strong>Отвязать</strong> — освободить слот, тариф не меняется, ключ можно выдать заново.<br><strong>Убрать из тарифа</strong> — слот пропадает совсем, следующий платёж меньше. За текущий месяц деньги не возвращаются.';
     panel.appendChild(text);
     const resets = result.resets || [];
     if(result.quota){const q=result.quota,note=document.createElement('p');note.textContent='Привязано: '+q.bound+'. Создаётся: '+q.pending+'. Свободно: '+q.free+'. Обычных мест: '+q.deviceLimit+', Wi-Fi: '+q.wifiLimit+'.';panel.appendChild(note);}
@@ -221,19 +267,8 @@ async function openAccountDevices(opt) {
           toast('Имя сохранено.');
           await openAccountDevices();
         });
-        const change = async function(op) {
-          const warning = op === 'remove'
-            ? 'Убрать устройство из тарифа? Слот пропадёт совсем, следующий платёж станет меньше. За текущий месяц деньги не вернутся.'
-            : 'Отвязать устройство? Место освободится сразу. Старый ключ будет удалён в фоне; недоступный сервер обработает отзыв при восстановлении связи.';
-          if (!await accountConfirm_(warning)) return;
-          const reply = await accountCall_(op, { deviceId: device.deviceId });
-          toast(reply.message);
-          const keys = loadWebKeys().filter(k => k.id !== device.deviceId); saveWebKeys(keys);
-          _lsSet('wk_vpn_' + normalizePhone(gasPhone), '');
-          await openAccountDevices();
-        };
-        accountButton_(item, 'Отвязать устройство', () => change('reset'), true);
-        if (data.deviceLimit > 1) accountButton_(item, 'Убрать из тарифа', () => change('remove'), true);
+        accountButton_(item, 'Отвязать устройство', () => resetAccountDevice_(device.deviceId), true);
+        if (data.deviceLimit > 1) accountButton_(item, 'Убрать из тарифа', () => removeAccountDevice_(device.deviceId), true);
       }
       panel.appendChild(item);
     });

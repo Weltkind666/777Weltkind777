@@ -268,7 +268,7 @@
       </div>
 
       <div id="gas-home-view" class="gas-hidden">
-        <button type="button" class="btn sec" onclick="openGoogleDevices()">Устройства</button>
+        <button type="button" class="btn sec" onclick="openGoogleDevices()">Устройства · отвязать / тариф</button>
         <div class="card hero" id="home-hero">
           <div class="badge" id="gas-st-status">—</div>
           <div class="hero-days" id="home-days">—</div>
@@ -296,6 +296,7 @@
                 <option value="">Авто — самый свободный</option>
               </select>
               <div id="home-key-slots"></div>
+              <div id="home-dev-actions"></div>
               <button type="button" class="btn sec gas-hidden" id="home-key-add" onclick="haptic('medium');addWebKeySlot()">Добавить ещё ключ</button>
               <div class="msg" id="home-key-msg"></div>
               <div id="home-key-flow" class="msg"></div>
@@ -1044,19 +1045,21 @@ function gasRenderKeyCard(d, opt){
     if(hint) hint.textContent='Подписка неактивна — VPN недоступен. После оплаты сохранённые ключи возобновят работу. Ключи без подключений 7 дней могут удаляться: в этом случае создайте новый.';
     if(addBtn) addBtn.classList.add('gas-hidden');
     renderWebKeySlots_(list, { paid:false, lim:lim, used:n, canCreate:false, fleet:(d&&d.fleet)||[] });
+    if(typeof renderAccountDeviceActions_==='function') renderAccountDeviceActions_(d);
     return;
   }
   if(!isNaN(limit) && limit===0){
     if(hint) hint.textContent='Для этого аккаунта ключи отключены (устройств: 0). Напишите в поддержку.';
     if(addBtn) addBtn.classList.add('gas-hidden');
     renderWebKeySlots_(list, { paid:true, lim:0, used:n, canCreate:false, fleet:(d&&d.fleet)||[] });
+    if(typeof renderAccountDeviceActions_==='function') renderAccountDeviceActions_(d);
     return;
   }
   const tariffs = d.deviceTariffs || { deviceCount:lim, wifiCount:0 };
   const normalUsed = (d.devices || []).filter(x => (x.kind || 'device') === 'device').length;
   const canAdd = normalUsed < tariffs.deviceCount;
   if(hint){
-    hint.textContent = 'В тарифе: '+tariffs.deviceCount+' обычных устройств и '+tariffs.wifiCount+' роутеров Wi-Fi. Один ключ — одно устройство. Для iPhone / Mac скопируйте ключ; для роутера скачайте TXT через кнопку Wi-Fi. После пересоздания старый конфиг отзывается.';
+    hint.textContent = 'Правило: 1 ключ — 1 устройство. Wi-Fi TXT — 1 роутер. Если тот же ключ включить сразу на двух телефонах, компьютерах или роутерах, он заблокируется. В тарифе: '+tariffs.deviceCount+' обычных и '+tariffs.wifiCount+' Wi-Fi. После пересоздания старый конфиг отзывается.';
   }
   if(addBtn){
     addBtn.classList.remove('gas-hidden');
@@ -1064,6 +1067,7 @@ function gasRenderKeyCard(d, opt){
     addBtn.textContent = 'Подключить ещё один iPhone / Mac';
   }
   renderWebKeySlots_(list, { paid:true, lim:lim, used:n, canCreate:canAdd || localReady>0, fleet:(d&&d.fleet)||[] });
+  if(typeof renderAccountDeviceActions_==='function') renderAccountDeviceActions_(d);
 }
 
 function isWebDevice_(d){
@@ -1191,10 +1195,10 @@ async function createWebKeyInner_(slotId, recreate, confirmedCreation = false){
   const had=!!slot.vpn;
   const isRecreate=!!recreate;
   const ask=slot.kind==='wifi'
-    ? (isRecreate?'Сменить сервер Wi-Fi? Старый конфиг отзовут. Новый TXT нужно загрузить в роутер.':'Создать отдельный Wi-Fi-конфиг? Он займёт оплаченный слот Wi-Fi. Скачайте TXT и импортируйте его в совместимый роутер.')
+    ? (isRecreate?'Сменить сервер Wi-Fi? Старый конфиг отзовут. Новый TXT — только на один роутер. Если залить тот же файл во второй роутер, ключ заблокируется.':'Создать Wi-Fi конфиг? Один TXT — один роутер. Если тот же файл поставить на второй роутер, ключ заблокируется.')
     : isRecreate
-    ? 'Сменить страну? Старый ключ отзовут. Новый нужно снова вставить в iPhone или Mac.'
-    : 'Создать ключ для iPhone / Mac?\n\nПотом скопируйте ключ и вставьте в приложение. Для второго телефона или Mac нажмите «Добавить ещё ключ».';
+    ? 'Сменить страну? Старый ключ отзовут. Новый ключ — только на одно устройство. Если вставить его сразу в два iPhone или Mac, ключ заблокируется.'
+    : 'Создать ключ для iPhone / Mac?\n\nОдин ключ — одно устройство. Скопируйте и вставьте только в одно приложение. Если тем же ключом зайти со второго телефона или Mac, ключ заблокируется.';
   if(isRecreate || !confirmedCreation){
     const ok = typeof accountConfirm_ === 'function' ? await accountConfirm_(ask) : confirm(ask);
     if(!ok) return;
