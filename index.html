@@ -378,13 +378,15 @@
     <div id="page-apps" class="tab-page">
       <div class="card">
         <div class="lbl">Приложение</div>
-        <div class="sub">Выберите своё устройство и скачайте приложение для подключения.</div>
+        <div class="sub">Выберите своё устройство. Если файл не начался — откройте этот сайт в Chrome, не во встроенном браузере Telegram.</div>
+        <p id="apps-webview-hint" class="msg warn gas-hidden">Сейчас открыто внутри другого приложения. Скачивание часто блокируется. Нажмите меню → «Открыть в Chrome» или скопируйте ссылку сайта.</p>
         <div class="dl">
           <a href="https://apps.apple.com/us/app/defaultvpn/id6744725017" target="_blank" rel="noopener" style="background:#1C2430">iPhone</a>
-          <button type="button" class="gas-apk-btn gas-hidden gas-dl-btn" style="background:var(--accent);color:#fff" onclick="haptic('medium');gasDownloadApk('vpn')">Android</button>
-          <a href="#" class="gas-desktop-btn gas-hidden gas-dl-btn" style="background:#29B6F6;color:#000">Windows</a>
-          <button type="button" class="gas-tv-btn gas-hidden gas-dl-btn" style="background:#7C4DFF;color:#fff" onclick="haptic('medium');gasDownloadApk('tv')">Android TV</button>
+          <button type="button" class="gas-apk-btn gas-dl-btn" style="background:var(--accent);color:#fff" onclick="haptic('medium');gasDownloadApk('vpn')">Android</button>
+          <a href="#" class="gas-desktop-btn gas-dl-btn" style="background:#29B6F6;color:#000" onclick="haptic('medium');gasDownloadApk('desktop');return false;">Windows</a>
+          <button type="button" class="gas-tv-btn gas-dl-btn" style="background:#7C4DFF;color:#fff" onclick="haptic('medium');gasDownloadApk('tv')">Android TV</button>
         </div>
+        <p class="sub" id="apps-dl-hint" style="margin:10px 0 0">Android и Windows качаются сюда. iPhone — DefaultVPN из App Store, ключ из кабинета.</p>
         <div data-iphone-help style="margin-top:12px"></div>
       </div>
     </div>
@@ -488,7 +490,10 @@
     <div class="mono" id="apk-dl-pct" style="color:var(--accent)">0%</div>
     <div class="sub" id="apk-dl-bytes"></div>
     <div class="sub" id="apk-dl-status"></div>
-    <button type="button" class="apk-dl-cancel" onclick="apkDlCancel()">Отмена</button>
+    <button type="button" class="btn gas-hidden" id="apk-dl-save" onclick="apkDlSaveAgain()">Сохранить файл</button>
+    <button type="button" class="btn sec gas-hidden" id="apk-dl-direct" onclick="apkDlOpenDirect()">Прямая ссылка</button>
+    <button type="button" class="btn sec gas-hidden" id="apk-dl-retry" onclick="apkDlRetry()">Повторить</button>
+    <button type="button" class="apk-dl-cancel" onclick="apkDlCancel()">Закрыть</button>
   </div>
 </div>
 
@@ -649,6 +654,7 @@ function showTab(name){
   document.querySelectorAll('.tab-page').forEach(p=>p.classList.toggle('active', p.id==='page-'+name));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('on', b.dataset.tab===name));
   if(name==='pay' && gasPhone) document.getElementById('gas-tariff-block')?.scrollIntoView({block:'start'});
+  if(name==='apps'){ refreshAppsDownloadHint_(); gasLoadAppLinks(); }
 }
 
 async function fetchWithTimeout(url, opts, ms){
@@ -800,7 +806,7 @@ function syncWebKeysWithServer_(d){
 const gasReadFlights_=new Map();
 function gasReadOnly_(p){
   if(String(p.notify || '')==='1')return false;
-  return ['getUser','selfServiceStatus','getMessages','checkTelegram','checkMax','appVersion','tvVersion','exeVersion','restoreWebKeys'].includes(p.action)
+  return ['getUser','selfServiceStatus','getMessages','checkTelegram','checkMax','appVersion','tvVersion','desktopVersion','apkMeta','apkChunk','exeVersion','restoreWebKeys'].includes(p.action)
     || (p.action==='account' && ['status','servers'].includes(p.op));
 }
 async function gasApi(params, timeoutMs){
@@ -1734,9 +1740,29 @@ async function gasRegister(){
 
 let gasApkMeta={ version:'', url:'', fileName:'Weltkind.apk' };
 let gasTvMeta={ version:'', url:'', fileName:'WeltkindTV.apk' };
-let apkDlCancelFlag=false;
+let gasDeskMeta={ version:'', url:'', fileName:'Weltkind.exe' };
+let apkDlCancelFlag=false, apkDlBusy_=false, apkDlKind_='vpn', apkDlObjectUrl_='', apkDlFileName_='';
+function inAppBrowser_(){
+  const ua=navigator.userAgent||'';
+  return /Telegram|FBAN|FBAV|Instagram|Line\/|WhatsApp|VKAndroidApp|; wv\)/i.test(ua);
+}
+function refreshAppsDownloadHint_(){
+  const el=document.getElementById('apps-webview-hint');
+  if(el) el.classList.toggle('gas-hidden', !inAppBrowser_());
+}
 function gasFmtBytes(n){ const b=Number(n)||0; if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
 function b64ToUint8(b64){ const bin=atob(b64); const out=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i); return out; }
+function apkDlKindMeta_(kind){
+  if(kind==='tv'||kind==='tvvpn') return gasTvMeta;
+  if(kind==='desktop') return gasDeskMeta;
+  return gasApkMeta;
+}
+function apkDlKindLabel_(kind){
+  if(kind==='tv'||kind==='tvvpn') return 'Weltkind TV';
+  if(kind==='desktop') return 'Windows';
+  return 'Android';
+}
+function apkDlToggle_(id, on){ document.getElementById(id)?.classList.toggle('gas-hidden', !on); }
 function apkDlShow(title, sub){
   const p=document.getElementById('apk-dl-panel'); if(!p) return;
   document.getElementById('apk-dl-title').textContent=title||'Скачивание...';
@@ -1745,9 +1771,17 @@ function apkDlShow(title, sub){
   document.getElementById('apk-dl-pct').textContent='0%';
   document.getElementById('apk-dl-bytes').textContent='';
   document.getElementById('apk-dl-status').textContent='Подключение...';
+  apkDlToggle_('apk-dl-save', false);
+  apkDlToggle_('apk-dl-direct', !!apkDlKindMeta_(apkDlKind_).url);
+  apkDlToggle_('apk-dl-retry', false);
   p.classList.add('show');
 }
-function apkDlHide(){ document.getElementById('apk-dl-panel')?.classList.remove('show'); }
+function apkDlHide(){
+  apkDlCancelFlag=true;
+  apkDlBusy_=false;
+  document.getElementById('apk-dl-panel')?.classList.remove('show');
+  if(apkDlObjectUrl_){ try{ URL.revokeObjectURL(apkDlObjectUrl_); }catch(e){} apkDlObjectUrl_=''; }
+}
 function apkDlUpdate(pct, loaded, total){
   const p=Math.max(0, Math.min(100, pct||0));
   document.getElementById('apk-dl-fill').style.width=p+'%';
@@ -1755,68 +1789,118 @@ function apkDlUpdate(pct, loaded, total){
   if(total) document.getElementById('apk-dl-bytes').textContent=gasFmtBytes(loaded)+' / '+gasFmtBytes(total);
 }
 function apkDlSetStatus(msg){ const el=document.getElementById('apk-dl-status'); if(el) el.textContent=msg||''; }
-function apkDlCancel(){ apkDlCancelFlag=true; apkDlSetStatus('Отмена...'); }
-async function gasOpenApkFile(blob, filename){
-  const file=new File([blob], filename, { type:'application/vnd.android.package-archive' });
-  if(navigator.share && navigator.canShare && navigator.canShare({ files:[file] })){
-    try{ await navigator.share({ files:[file], title:filename }); return; }catch(e){ if(e&&e.name==='AbortError') return; }
-  }
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download=filename; a.style.display='none';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url), 120000);
-  toast(filename+' скачан. Откройте из загрузок.');
+function apkDlCancel(){ if(apkDlBusy_){ apkDlCancelFlag=true; apkDlSetStatus('Отмена...'); } else apkDlHide(); }
+function apkDlRetry(){ const kind=apkDlKind_; apkDlHide(); setTimeout(()=>gasDownloadApk(kind), 50); }
+function apkDlOpenDirect(){
+  const url=apkDlKindMeta_(apkDlKind_).url;
+  if(url) openUrl(url);
+  else toast('Прямая ссылка ещё не загрузилась. Повторите через пару секунд.');
+}
+function apkDlSaveAgain(){
+  if(!apkDlObjectUrl_){ toast('Сначала дождитесь окончания загрузки'); return; }
+  gasTriggerDownload_(apkDlObjectUrl_, apkDlFileName_);
+  toast('Если файл не появился — проверьте папку «Загрузки» или уведомления браузера.');
+}
+function gasTriggerDownload_(url, filename){
+  const a=document.createElement('a');
+  a.href=url;
+  if(filename) a.download=filename;
+  a.rel='noopener';
+  a.style.display='none';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+function gasOpenApkFile(blob, filename){
+  const mime=/\.exe$/i.test(filename)?'application/octet-stream':'application/vnd.android.package-archive';
+  if(apkDlObjectUrl_){ try{ URL.revokeObjectURL(apkDlObjectUrl_); }catch(e){} }
+  apkDlObjectUrl_=URL.createObjectURL(new Blob([blob], { type: mime }));
+  apkDlFileName_=filename;
+  gasTriggerDownload_(apkDlObjectUrl_, filename);
+  apkDlToggle_('apk-dl-save', true);
+  apkDlSetStatus('Файл готов. Если загрузка не началась — нажмите «Сохранить файл». Потом откройте его из папки «Загрузки».');
+  toast(filename+' готов. Откройте «Загрузки».');
 }
 async function gasDownloadApk(kind){
   kind=String(kind||'vpn');
-  const meta=(kind==='tv'||kind==='tvvpn')?gasTvMeta:gasApkMeta;
-  const label=(kind==='tv'||kind==='tvvpn')?'Weltkind TV':'Android';
+  if(kind!=='desktop' && isIOS){
+    toast('На iPhone ставится DefaultVPN из App Store, не этот файл.');
+    showTab('apps');
+    return;
+  }
+  if(apkDlBusy_){ toast('Уже качается. Дождитесь окончания или закройте окно.'); return; }
+  apkDlKind_=kind;
+  const meta=apkDlKindMeta_(kind);
+  const label=apkDlKindLabel_(kind);
   apkDlCancelFlag=false;
-  apkDlShow('Скачивание '+label, meta.version?'Версия '+meta.version:'');
-  const CHUNK=524288; let offset=0, total=0;
-  let fileName=meta.fileName||((kind==='tv'||kind==='tvvpn')?'WeltkindTV.apk':'Weltkind.apk');
+  apkDlBusy_=true;
+  apkDlShow('Скачивание '+label, meta.version?'Версия '+meta.version:'Файл большой, не закрывайте страницу');
+  if(inAppBrowser_()) apkDlSetStatus('Встроенный браузер может блокировать файл. Лучше открыть сайт в Chrome.');
+  apkDlToggle_('apk-dl-direct', !!meta.url);
+  const CHUNK=524288; let offset=0, total=0, empty=0;
+  let fileName=meta.fileName||(kind==='desktop'?'Weltkind.exe':(kind==='tv'||kind==='tvvpn')?'WeltkindTV.apk':'Weltkind.apk');
   const parts=[];
   try{
-    const m=await gasApi({ action:'apkMeta', type:kind });
-    if(m.status!=='ok') throw new Error(m.message||'APK не найден');
+    const m=await gasApi({ action:'apkMeta', type:kind }, 25000);
+    if(!m || m.status!=='ok') throw new Error((m&&m.message)||'Файл не найден');
     total=Number(m.size)||0; fileName=m.fileName||fileName;
+    if(m.apkUrl && !meta.url){ meta.url=m.apkUrl; apkDlToggle_('apk-dl-direct', true); }
+    apkDlSetStatus(total?'Загрузка '+gasFmtBytes(total)+'…':'Загрузка файла…');
     while(!apkDlCancelFlag){
-      apkDlSetStatus('Загрузка файла...');
-      const j=await gasApi({ action:'apkChunk', type:kind, offset:String(offset), size:String(CHUNK) });
+      let j=null, lastErr=null;
+      for(let attempt=0; attempt<3; attempt++){
+        try{
+          apkDlSetStatus(total?'Кусок '+Math.min(Math.floor(offset/CHUNK)+1, Math.ceil(total/CHUNK))+' из '+Math.ceil(total/CHUNK)+(attempt?' · повтор':'')+'…':'Загрузка…');
+          j=await gasApi({ action:'apkChunk', type:kind, offset:String(offset), size:String(CHUNK), version:String(m.version||'') }, 45000);
+          if(j && j.status==='ok') break;
+          lastErr=new Error((j&&j.message)||'Ошибка загрузки');
+        }catch(e){ lastErr=e; }
+        j=null;
+        if(apkDlCancelFlag) break;
+        await new Promise(r=>setTimeout(r, 700*(attempt+1)));
+      }
+      if(apkDlCancelFlag) break;
+      if(!j) throw lastErr||new Error('Нет ответа сервера');
       if(j.status!=='ok') throw new Error(j.message||'Ошибка загрузки');
       if(!total && j.total) total=Number(j.total);
-      if(j.data){ parts.push(b64ToUint8(j.data)); offset=Number(j.end)||offset; }
+      if(j.data){ parts.push(b64ToUint8(j.data)); offset=Number(j.end)||offset; empty=0; }
+      else empty++;
       apkDlUpdate(total?Math.round(offset/total*100):0, offset, total);
       if(j.done || (total && offset>=total)) break;
-      if(!j.data && !j.done) throw new Error('Пустой ответ сервера');
+      if(empty>=2) throw new Error('Пустой ответ сервера');
     }
-    if(apkDlCancelFlag){ apkDlHide(); return; }
-    apkDlSetStatus('Сборка файла...');
-    const blob=new Blob(parts, { type:'application/vnd.android.package-archive' });
-    apkDlHide();
-    await gasOpenApkFile(blob, fileName);
+    if(apkDlCancelFlag){ apkDlBusy_=false; apkDlSetStatus('Отменено. Можно закрыть или повторить.'); apkDlToggle_('apk-dl-retry', true); return; }
+    apkDlSetStatus('Собираем файл…');
+    const blob=new Blob(parts, { type: kind==='desktop'?'application/octet-stream':'application/vnd.android.package-archive' });
+    if(!blob.size) throw new Error('Файл пришёл пустым');
+    apkDlBusy_=false;
+    apkDlToggle_('apk-dl-retry', false);
+    gasOpenApkFile(blob, fileName);
   }catch(e){
-    apkDlSetStatus('Ошибка: '+(e.message||e));
-    if(meta.url) setTimeout(()=>{ apkDlHide(); openUrl(meta.url); }, 1000);
-    else setTimeout(apkDlHide, 2500);
+    apkDlBusy_=false;
+    apkDlToggle_('apk-dl-retry', true);
+    apkDlToggle_('apk-dl-direct', !!apkDlKindMeta_(kind).url);
+    apkDlSetStatus((inAppBrowser_()?'Откройте сайт в Chrome. ':'')+'Не скачалось: '+(gasErrText_(e)||e.message||e)+'. Нажмите «Повторить» или «Прямая ссылка».');
   }
 }
 let gasAppLinksLoadedAt=0;
 async function gasLoadAppLinks(force){
   if(!force && gasAppLinksLoadedAt && (Date.now()-gasAppLinksLoadedAt)<3600000) return;
-  const results=await Promise.allSettled([ gasApi({ action:'appVersion' }), gasApi({ action:'desktopVersion' }), gasApi({ action:'tvVersion' }) ]);
+  refreshAppsDownloadHint_();
+  const results=await Promise.allSettled([ gasApi({ action:'appVersion' }, 20000), gasApi({ action:'desktopVersion' }, 20000), gasApi({ action:'tvVersion' }, 20000) ]);
   const apk=results[0].status==='fulfilled'?results[0].value:null;
   const desk=results[1].status==='fulfilled'?results[1].value:null;
   const tv=results[2].status==='fulfilled'?results[2].value:null;
-  if(apk && apk.apkUrl){
-    gasApkMeta={ version:apk.version||'', url:apk.apkUrl, fileName:'Weltkind'+(apk.version?'_'+apk.version:'')+'.apk' };
+  if(apk && (apk.apkUrl || apk.version)){
+    gasApkMeta={ version:apk.version||'', url:apk.apkUrl||'', fileName:'Weltkind'+(apk.version?'_'+apk.version:'')+'.apk' };
     document.querySelectorAll('.gas-apk-btn').forEach(a=>{ a.textContent='Android'+(apk.version?' v'+apk.version:''); a.classList.remove('gas-hidden'); });
   }
-  if(desk && desk.exeUrl){
-    document.querySelectorAll('.gas-desktop-btn').forEach(a=>{ a.href=desk.exeUrl; a.textContent='Windows'+(desk.version?' v'+desk.version:''); a.classList.remove('gas-hidden'); });
+  if(desk && (desk.exeUrl || desk.version)){
+    gasDeskMeta={ version:desk.version||'', url:desk.exeUrl||'', fileName:'Weltkind'+(desk.version?'_'+desk.version:'')+'.exe' };
+    document.querySelectorAll('.gas-desktop-btn').forEach(a=>{ if(desk.exeUrl) a.href=desk.exeUrl; a.textContent='Windows'+(desk.version?' v'+desk.version:''); a.classList.remove('gas-hidden'); });
   }
-  if(tv && tv.apkUrl){
-    gasTvMeta={ version:tv.version||'', url:tv.apkUrl, fileName:'WeltkindTV'+(tv.version?'_'+tv.version:'')+'.apk' };
+  if(tv && (tv.apkUrl || tv.version)){
+    gasTvMeta={ version:tv.version||'', url:tv.apkUrl||'', fileName:'WeltkindTV'+(tv.version?'_'+tv.version:'')+'.apk' };
     document.querySelectorAll('.gas-tv-btn').forEach(a=>{ a.textContent='Android TV'+(tv.version?' v'+tv.version:''); a.classList.remove('gas-hidden'); });
   }
   gasAppLinksLoadedAt=Date.now();
@@ -2386,6 +2470,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   bindPhoneInput(document.getElementById('chat-phone-inp'));
   initGasApp();
   fillIphoneHelp_();
+  refreshAppsDownloadHint_();
   if (typeof scheduleKeyResume_ === 'function' && gasPhone && _lsGet(keyRequestStorage_())) scheduleKeyResume_();
   try{
     const qs=new URLSearchParams(location.search);
