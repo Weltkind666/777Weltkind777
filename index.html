@@ -12,34 +12,64 @@
   <link rel="icon" type="image/png" href="icons/icon-192.png"/>
   <title>Оплата Weltkind</title>
   <style>
-    html,body{height:100%;margin:0;background:#1A237E;overflow:hidden;font-family:system-ui,-apple-system,sans-serif}
-    #splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#1A237E;z-index:4;color:#fff;transition:opacity .35s}
-    #splash.out{opacity:0;pointer-events:none}
-    .logo{width:88px;height:88px;border-radius:22px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,.28)}
+    html,body{height:100%;margin:0;background:#121A5C;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+    #splash{
+      position:fixed;inset:0;z-index:4;color:#fff;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+      background:radial-gradient(120% 80% at 50% 20%,#283593 0%,#1A237E 48%,#121A5C 100%);
+      transition:opacity .4s ease,visibility .4s;
+    }
+    #splash.out{opacity:0;visibility:hidden;pointer-events:none}
+    .logo{width:92px;height:92px;border-radius:24px;overflow:hidden;box-shadow:0 16px 40px rgba(0,0,0,.35)}
     .logo img{width:100%;height:100%;display:block}
-    .brand{font-size:1.5rem;font-weight:700;letter-spacing:.12em}
-    .sub{font-size:.82rem;opacity:.75;text-align:center;padding:0 24px;line-height:1.4}
-    .spin{width:28px;height:28px;border:3px solid rgba(255,255,255,.25);border-top-color:#00C4B4;border-radius:50%;animation:s .8s linear infinite;margin-top:8px}
-    @keyframes s{to{transform:rotate(360deg)}}
-    #go{margin-top:14px;border:0;border-radius:14px;padding:12px 20px;background:#00C4B4;color:#07332f;font-weight:700}
-    #openTab{margin-top:8px;border:0;background:transparent;color:#A7F3E8;text-decoration:underline;font-size:.85rem}
-    iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#1A237E;z-index:1}
+    .brand{font-size:1.45rem;font-weight:750;letter-spacing:.18em}
+    .sub{font-size:.92rem;opacity:.82;text-align:center;padding:0 28px;line-height:1.45;max-width:280px}
+    .bar{width:120px;height:4px;border-radius:99px;background:rgba(255,255,255,.16);overflow:hidden;margin-top:8px}
+    .bar>i{display:block;height:100%;width:40%;background:#00C4B4;border-radius:99px;animation:load 1.1s ease-in-out infinite}
+    @keyframes load{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+    #retry{
+      display:none;margin-top:18px;border:0;border-radius:14px;padding:12px 22px;
+      background:#00C4B4;color:#052e2b;font-weight:800;font-size:.95rem
+    }
+    #splash.stuck #retry{display:inline-block}
+    #splash.stuck .bar{display:none}
+    #installBar{
+      display:none;position:fixed;left:12px;right:12px;top:10px;z-index:5;
+      background:#fff;color:#1A237E;border-radius:14px;padding:10px 12px;
+      box-shadow:0 8px 24px rgba(0,0,0,.22);align-items:center;gap:10px
+    }
+    #installBar.show{display:flex}
+    #installBar span{flex:1;font-size:.82rem;font-weight:650;line-height:1.3}
+    #installBtn{border:0;border-radius:10px;padding:9px 12px;background:#1A237E;color:#fff;font-weight:800;white-space:nowrap;font-size:.8rem}
+    #installHide{border:0;background:transparent;color:#6B7C8A;font-size:1.15rem;padding:2px 6px}
+    iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#121A5C;z-index:1}
+    @media (display-mode: standalone){ #installBar{display:none!important} }
+    @media (prefers-reduced-motion:reduce){.bar>i{animation:none;width:100%}}
   </style>
 </head>
 <body>
   <div id="splash">
-    <div class="logo"><img src="icons/icon-192.png" alt=""/></div>
+    <div class="logo"><img src="icons/icon-192.png" alt="Weltkind"/></div>
     <div class="brand">WELTKIND</div>
-    <div class="sub" id="sub">Открываем кабинет оплаты</div>
-    <div class="spin" id="spin"></div>
-    <button type="button" id="go">Открыть кабинет</button>
-    <button type="button" id="openTab">Открыть в новой вкладке</button>
+    <div class="sub" id="sub">Открываем оплату</div>
+    <div class="bar" id="bar"><i></i></div>
+    <button type="button" id="retry">Повторить загрузку</button>
   </div>
-  <iframe id="gas-frame" title="Кабинет оплаты" allow="clipboard-write"></iframe>
+  <div id="installBar">
+    <span id="installText">Можно добавить иконку на экран телефона</span>
+    <button type="button" id="installBtn">На экран</button>
+    <button type="button" id="installHide" aria-label="Скрыть">×</button>
+  </div>
+  <iframe id="gas-frame" title="Оплата Weltkind" allow="clipboard-write"></iframe>
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
 const SUB_KEY = 'weltkind-sub-data';
-function gasTarget(){
+let gasReady=false, watchdog=null, optimistic=null, loading=false, deferredInstall=null;
+const splash=document.getElementById('splash');
+const sub=document.getElementById('sub');
+const frame=document.getElementById('gas-frame');
+
+function gasTarget(fresh){
   const u = new URL(GAS_URL);
   const here = new URL(location.href);
   ['phone','ref','register','message'].forEach(function(k){
@@ -50,65 +80,125 @@ function gasTarget(){
   if (h === 'register') u.searchParams.set('register','1');
   if (h === 'renew') u.searchParams.set('message','Продлите подписку ниже');
   u.searchParams.set('from','pwa');
-  u.searchParams.set('r', String(Date.now()));
+  if (fresh) u.searchParams.set('r', String(Date.now()));
   return u.toString();
 }
-let gasReady=false, watchdog=null, frame=document.getElementById('gas-frame');
-function hideSplash(){ document.getElementById('splash').classList.add('out'); }
-function showSplash(msg){
-  const splash=document.getElementById('splash');
-  splash.classList.remove('out');
-  document.getElementById('sub').textContent=msg||'Открываем кабинет оплаты';
+function isPwaInstalled(){
+  if(window.matchMedia('(display-mode: standalone)').matches) return true;
+  if(navigator.standalone===true) return true;
+  try{ return localStorage.getItem('wk_pwa_installed')==='1'; }catch(e){ return false; }
+}
+function isIosSafari(){ return /iPhone|iPad|iPod/i.test(navigator.userAgent||'') && !window.MSStream; }
+function installHidden(){
+  try{ return localStorage.getItem('wk_pwa_install_hide')==='1'; }catch(e){ return false; }
+}
+function showInstall(){
+  if(isPwaInstalled() || installHidden() || !splash.classList.contains('out')) return;
+  const bar=document.getElementById('installBar');
+  if(isIosSafari()){
+    document.getElementById('installText').textContent='iPhone: Поделиться → На экран «Домой»';
+    document.getElementById('installBtn').textContent='Как';
+    bar.classList.add('show');
+    return;
+  }
+  if(deferredInstall) bar.classList.add('show');
+}
+function hideInstall(){ document.getElementById('installBar').classList.remove('show'); }
+function hideSplash(){
+  splash.classList.add('out');
+  splash.classList.remove('stuck');
+  showInstall();
 }
 function markReady(){
   gasReady=true;
+  loading=false;
   if(watchdog){ clearTimeout(watchdog); watchdog=null; }
+  if(optimistic){ clearTimeout(optimistic); optimistic=null; }
   hideSplash();
 }
 function armWatchdog(){
   if(watchdog) clearTimeout(watchdog);
   watchdog=setTimeout(function(){
-    if(gasReady) return;
-    showSplash('Кабинет не открылся. Нажмите «Открыть снова».');
-    document.getElementById('go').textContent='Открыть снова';
-  }, 9000);
+    hideSplash();
+    if(!gasReady){
+      splash.classList.add('stuck');
+      splash.classList.remove('out');
+      sub.textContent='Не открылось. Нажмите «Повторить загрузку» — откроется оплата.';
+    }
+  }, 7000);
 }
-function bindFrame(el){
-  frame=el;
-  el.addEventListener('load', function(){ if(!gasReady) armWatchdog(); });
-}
-function loadGas(){
+function loadGas(fresh){
+  if(loading && !fresh) return;
+  loading=true;
   gasReady=false;
-  showSplash('Открываем кабинет оплаты');
-  document.getElementById('go').textContent='Открыть кабинет';
-  const old=document.getElementById('gas-frame');
-  const next=document.createElement('iframe');
-  next.id='gas-frame';
-  next.title='Кабинет оплаты';
-  next.setAttribute('allow','clipboard-write');
-  old.replaceWith(next);
-  bindFrame(next);
-  next.src=gasTarget();
+  splash.classList.remove('out','stuck');
+  sub.textContent='Открываем оплату';
+  hideInstall();
+  frame.src=gasTarget(!!fresh);
   armWatchdog();
 }
-function toISO(str){
-  if(!str || str==='Не определено' || str==='Не оплачено') return null;
-  const p=String(str).split(/[./-]/);
-  if(p.length===3) return p[2]+'-'+String(p[1]).padStart(2,'0')+'-'+String(p[0]).padStart(2,'0');
-  return null;
-}
-async function saveSub(sub){
-  try{ localStorage.setItem('wk_phone', sub.phone||''); localStorage.setItem('wk_sub', JSON.stringify(sub)); }catch(e){}
-  try{
-    const cache=await caches.open('Weltkind-user-data');
-    await cache.put(SUB_KEY, new Response(JSON.stringify(sub)));
-  }catch(e){}
-  if(navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type:'bg_check' });
-}
-function askNotif(){
-  if(typeof Notification==='undefined' || Notification.permission!=='default') return;
-  Notification.requestPermission().catch(function(){});
-}
+frame.addEventListener('load', function(){
+  if(gasReady) return;
+  if(optimistic) clearTimeout(optimistic);
+  optimistic=setTimeout(function(){ if(!gasReady) hideSplash(); }, 900);
+});
+window.addEventListener('message', function(e){
+  const d=e.data;
+  if(!d) return;
+  if(d.type==='weltkind_ready' || d.type==='weltkind_sub') markReady();
+  if(d.type!=='weltkind_sub') return;
+  const iso=(function(str){
+    if(!str || str==='Не определено' || str==='Не оплачено') return null;
+    const p=String(str).split(/[./-]/);
+    if(p.length===3) return p[2]+'-'+String(p[1]).padStart(2,'0')+'-'+String(p[0]).padStart(2,'0');
+    return null;
+  })(d.expiryDate);
+  (async function saveSub(subData){
+    try{ localStorage.setItem('wk_phone', subData.phone||''); localStorage.setItem('wk_sub', JSON.stringify(subData)); }catch(err){}
+    try{
+      const cache=await caches.open('Weltkind-user-data');
+      await cache.put(SUB_KEY, new Response(JSON.stringify(subData)));
+    }catch(err){}
+    if(navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type:'bg_check' });
+  })({
+    phone:String(d.phone||'').replace(/\D/g,''),
+    date:iso,
+    status:d.status,
+    pwaNotifs:{}
+  });
+  if(typeof Notification!=='undefined' && Notification.permission==='default') Notification.requestPermission().catch(function(){});
+});
+document.getElementById('retry').onclick=function(){ loadGas(true); };
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  deferredInstall=e;
+  showInstall();
+});
+window.addEventListener('appinstalled', function(){
+  try{ localStorage.setItem('wk_pwa_installed','1'); }catch(e){}
+  deferredInstall=null;
+  hideInstall();
+});
+document.getElementById('installBtn').onclick=function(){
+  if(isIosSafari()){
+    sub.textContent='На iPhone: Поделиться → На экран «Домой».';
+    splash.classList.remove('out');
+    splash.classList.add('stuck');
+    return;
+  }
+  if(!deferredInstall) return;
+  deferredInstall.prompt();
+  deferredInstall.userChoice.then(function(c){
+    deferredInstall=null;
+    if(c && c.outcome==='accepted'){ try{ localStorage.setItem('wk_pwa_installed','1'); }catch(e){} }
+    hideInstall();
+  }).catch(function(){});
+};
+document.getElementById('installHide').onclick=function(){
+  try{ localStorage.setItem('wk_pwa_install_hide','1'); }catch(e){}
+  hideInstall();
+};
+
 async function pollChat(){
   const phone=localStorage.getItem('wk_phone')||'';
   if(phone.length<10 || typeof Notification==='undefined' || Notification.permission!=='granted') return;
@@ -137,27 +227,11 @@ async function pollChat(){
     }
   }catch(e){}
 }
-window.addEventListener('message', function(e){
-  const d=e.data;
-  if(!d) return;
-  if(d.type==='weltkind_ready' || d.type==='weltkind_sub') markReady();
-  if(d.type!=='weltkind_sub') return;
-  const iso=toISO(d.expiryDate);
-  saveSub({
-    phone:String(d.phone||'').replace(/\D/g,''),
-    date:iso,
-    status:d.status,
-    pwaNotifs:{}
-  });
-  askNotif();
-});
-bindFrame(frame);
-loadGas();
-document.getElementById('go').onclick=function(){ loadGas(); };
-document.getElementById('openTab').onclick=function(){ window.open(GAS_URL, '_blank', 'noopener'); };
-document.addEventListener('visibilitychange', function(){
-  if(!document.hidden && !gasReady) loadGas();
-});
+
+loadGas(false);
+if(!isPwaInstalled() && isIosSafari() && !installHidden()){
+  /* show after splash hides */
+}
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).then(function(reg){
     if(reg.waiting) reg.waiting.postMessage({ type:'SKIP_WAITING' });
@@ -170,10 +244,9 @@ setInterval(function(){
   if(navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type:'bg_check' });
 }, 3600000);
 document.addEventListener('visibilitychange', function(){
-  if(!document.hidden){
-    pollChat();
-    if(navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type:'bg_check' });
-  }
+  if(document.hidden) return;
+  pollChat();
+  if(navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type:'bg_check' });
 });
 </script>
 </body>
