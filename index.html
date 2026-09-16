@@ -872,7 +872,10 @@ async function gasLoginInner_(silent){
   if(!silent) setGasLoading(true, 'inline');
   try{
     const ref=_lsGet('wk_ref')||'';
-    const json = await gasApi({ action:'getUser', phone, notify: silent?'0':'1', source:'pwa', ref: ref });
+    const ask=function(notify){ return gasApi({ action:'getUser', phone, notify: notify, source:'pwa', ref: ref }, 25000); };
+    let json;
+    try { json = await ask(silent?'0':'1'); }
+    catch(first){ json = await ask('0'); }
     if(phone !== (phoneFromInput(inp) || normalizePhone(_lsGet('gas_phone'))))return;
     if(json.status==='ok' && json.data){
       gasPhone=phone; gasUserData=json.data;
@@ -900,7 +903,9 @@ async function gasLoginInner_(silent){
       showCachedHome(cached);
       toast('Нет связи — показаны сохранённые данные');
     } else if(!silent){
-      gasShowErr('Нет связи с сервером. Проверьте интернет — приложение остаётся здесь, без перехода на Google.');
+      gasShowErr(gasErrText_(e) || 'Google сейчас не ответил. Нажмите «Войти» ещё раз — это не VPN.');
+      const st=document.getElementById('gas-registration-status');
+      if(st && /Проверяем/.test(st.textContent||'')) st.textContent='Связь с Google не установилась. Нажмите «Войти» ещё раз.';
     }
   } finally {
     setGasLoading(false);
