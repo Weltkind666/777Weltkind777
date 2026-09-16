@@ -20,6 +20,17 @@
       transition:opacity .4s ease,visibility .4s;
     }
     #splash.out{opacity:0;visibility:hidden;pointer-events:none}
+    #backup{
+      position:absolute;top:12px;left:12px;right:12px;margin:0 auto;max-width:280px;
+      border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;
+      border-radius:12px;padding:10px 14px;font-weight:750;font-size:.86rem
+    }
+    #backupChip{
+      display:none;position:fixed;top:10px;right:10px;z-index:6;
+      border:0;border-radius:12px;padding:8px 12px;background:#1A237E;color:#A7F3E8;
+      font-weight:750;font-size:.78rem;box-shadow:0 6px 18px rgba(0,0,0,.28)
+    }
+    #splash.out ~ #backupChip{display:inline-block}
     .logo{width:92px;height:92px;border-radius:24px;overflow:hidden;box-shadow:0 16px 40px rgba(0,0,0,.35)}
     .logo img{width:100%;height:100%;display:block}
     .brand{font-size:1.45rem;font-weight:750;letter-spacing:.18em}
@@ -49,12 +60,14 @@
 </head>
 <body>
   <div id="splash">
+    <button type="button" id="backup">Резервный сайт</button>
     <div class="logo"><img src="icons/icon-192.png" alt="Weltkind"/></div>
     <div class="brand">WELTKIND</div>
     <div class="sub" id="sub">Открываем оплату</div>
     <div class="bar" id="bar"><i></i></div>
     <button type="button" id="retry">Повторить загрузку</button>
   </div>
+  <button type="button" id="backupChip">Резервный сайт</button>
   <div id="installBar">
     <span id="installText">Можно добавить иконку на экран телефона</span>
     <button type="button" id="installBtn">На экран</button>
@@ -83,6 +96,16 @@ function gasTarget(fresh){
   if (fresh) u.searchParams.set('r', String(Date.now()));
   return u.toString();
 }
+function backupUrl(){
+  const u = new URL(GAS_URL);
+  const here = new URL(location.href);
+  ['phone','ref','register','message'].forEach(function(k){
+    const v = here.searchParams.get(k);
+    if (v) u.searchParams.set(k, v);
+  });
+  return u.toString();
+}
+function openBackup(){ location.assign(backupUrl()); }
 function isPwaInstalled(){
   if(window.matchMedia('(display-mode: standalone)').matches) return true;
   if(navigator.standalone===true) return true;
@@ -169,6 +192,8 @@ window.addEventListener('message', function(e){
   if(typeof Notification!=='undefined' && Notification.permission==='default') Notification.requestPermission().catch(function(){});
 });
 document.getElementById('retry').onclick=function(){ loadGas(true); };
+document.getElementById('backup').onclick=openBackup;
+document.getElementById('backupChip').onclick=openBackup;
 window.addEventListener('beforeinstallprompt', function(e){
   e.preventDefault();
   deferredInstall=e;
