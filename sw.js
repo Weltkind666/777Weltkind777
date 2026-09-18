@@ -1,6 +1,6 @@
-/* Weltkind PWA Service Worker — v68 · оболочка + Google-stable */
-const SW_VER = 68;
-const CACHE = 'Weltkind-v68';
+/* Weltkind PWA Service Worker — v69 · оболочка + Google-stable */
+const SW_VER = 69;
+const CACHE = 'Weltkind-v69';
 const SUB_KEY = 'weltkind-sub-data';
 const SUB_CACHE = 'Weltkind-user-data';
 const ASSETS = [
