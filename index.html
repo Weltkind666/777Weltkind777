@@ -53,8 +53,13 @@
     }
     #splash.stuck #retry{display:inline-block}
     #splash.stuck .bar{display:none}
+    #splashInstall{
+      display:none;margin-top:14px;border:0;border-radius:14px;padding:12px 18px;
+      background:#FFD700;color:#1A237E;font-weight:800;font-size:.92rem;max-width:280px;width:calc(100% - 48px)
+    }
+    #splash.stuck #splashInstall,#splash:not(.out) #splashInstall.ready{display:inline-block}
     #installBar{
-      display:none;position:fixed;left:12px;right:12px;bottom:max(58px,calc(env(safe-area-inset-bottom) + 52px));z-index:5;
+      display:none;position:fixed;left:12px;right:12px;top:max(10px,env(safe-area-inset-top));z-index:5;
       background:#fff;color:#1A237E;border-radius:14px;padding:10px 12px;
       box-shadow:0 8px 24px rgba(0,0,0,.22);align-items:center;gap:10px
     }
@@ -62,6 +67,18 @@
     #installBar span{flex:1;font-size:.82rem;font-weight:650;line-height:1.3}
     #installBtn{border:0;border-radius:10px;padding:9px 12px;background:#1A237E;color:#fff;font-weight:800;white-space:nowrap;font-size:.8rem}
     #installHide{border:0;background:transparent;color:#6B7C8A;font-size:1.15rem;padding:2px 6px}
+    #installHelp{
+      display:none;position:fixed;inset:0;z-index:8;background:rgba(10,16,48,.72);
+      align-items:center;justify-content:center;padding:20px
+    }
+    #installHelp.show{display:flex}
+    #installHelp .card{
+      background:#fff;color:#1A237E;border-radius:18px;padding:18px 16px;max-width:340px;width:100%;
+      box-shadow:0 16px 40px rgba(0,0,0,.35)
+    }
+    #installHelp h3{margin:0 0 10px;font-size:1.05rem}
+    #installHelp ol{margin:0 0 14px;padding-left:1.2rem;font-size:.9rem;line-height:1.45}
+    #installHelp .ok{border:0;border-radius:12px;padding:11px 14px;width:100%;background:#1A237E;color:#fff;font-weight:800}
     iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#121A5C;z-index:1}
     @media (display-mode: standalone){ #installBar{display:none!important} }
     @media (prefers-reduced-motion:reduce){.bar>i{animation:none;width:100%} #splash,#backupChip{transition:none}}
@@ -74,15 +91,23 @@
     <div class="sub" id="sub">Открываем оплату</div>
     <div class="bar" id="bar"><i></i></div>
     <button type="button" id="retry">Повторить загрузку</button>
+    <button type="button" id="splashInstall">Установить на телефон</button>
     <button type="button" id="backup">Резервный сайт</button>
+  </div>
+  <div id="installHelp" role="dialog" aria-modal="true" aria-labelledby="installHelpTitle">
+    <div class="card">
+      <h3 id="installHelpTitle">Установка оплаты</h3>
+      <ol id="installHelpSteps"></ol>
+      <button type="button" class="ok" id="installHelpOk">Понятно</button>
+    </div>
   </div>
   <div id="backupChip" role="group" aria-label="Резервный сайт">
     <button type="button" id="backupChipGo">Резервный сайт</button>
     <button type="button" class="x" id="backupChipHide" aria-label="Скрыть">×</button>
   </div>
   <div id="installBar">
-    <span id="installText">Можно добавить иконку на экран телефона</span>
-    <button type="button" id="installBtn">На экран</button>
+    <span id="installText">Поставьте оплату иконкой на экран — как приложение</span>
+    <button type="button" id="installBtn">Установить</button>
     <button type="button" id="installHide" aria-label="Скрыть">×</button>
   </div>
   <iframe id="gas-frame" title="Оплата Weltkind" allow="clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
@@ -171,16 +196,58 @@ function showBackupChip(){
   if(chipHideTimer) clearTimeout(chipHideTimer);
   chipHideTimer=setTimeout(hideBackupChip, CHIP_AUTO_HIDE_MS);
 }
-function showInstall(){
-  if(isPwaInstalled() || installHidden() || !splash.classList.contains('out')) return;
-  const bar=document.getElementById('installBar');
+function isAndroidChrome(){
+  const ua=navigator.userAgent||'';
+  return /Android/i.test(ua) && /Chrome|CriOS|EdgA/i.test(ua) && !/OPR|Opera|SamsungBrowser/i.test(ua);
+}
+function isMobileBrowser(){
+  return isIosSafari() || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||'') || (navigator.maxTouchPoints>1 && /Mac/i.test(navigator.platform||''));
+}
+function paintInstallCopy(){
+  const text=document.getElementById('installText');
+  const btn=document.getElementById('installBtn');
   if(isIosSafari()){
-    document.getElementById('installText').textContent='iPhone: Поделиться → На экран «Домой»';
-    document.getElementById('installBtn').textContent='Как';
-    bar.classList.add('show');
+    text.textContent='iPhone: Поделиться → На экран «Домой»';
+    btn.textContent='Как';
+  } else if(deferredInstall){
+    text.textContent='Поставьте оплату иконкой на экран — как приложение';
+    btn.textContent='Установить';
+  } else {
+    text.textContent='Добавьте оплату на экран телефона (меню браузера → Установить / На экран)';
+    btn.textContent='Как';
+  }
+}
+function showInstallHelp(){
+  const ol=document.getElementById('installHelpSteps');
+  ol.innerHTML='';
+  const steps = isIosSafari()
+    ? ['Откройте сайт в Safari','Нажмите «Поделиться» (квадрат со стрелкой)','Выберите «На экран «Домой»»','Подтвердите «Добавить»']
+    : (isAndroidChrome()
+      ? ['Откройте сайт в Chrome','Меню ⋮ справа сверху','«Установить приложение» или «На экран»','Подтвердите установку']
+      : ['Откройте сайт в Chrome / Safari','Меню браузера','«Установить» / «На экран Домой»','Подтвердите']);
+  steps.forEach(function(s){ const li=document.createElement('li'); li.textContent=s; ol.appendChild(li); });
+  document.getElementById('installHelp').classList.add('show');
+}
+function showInstall(){
+  if(isPwaInstalled() || installHidden()) return;
+  const splashBtn=document.getElementById('splashInstall');
+  if(splashBtn && !splash.classList.contains('out')) splashBtn.classList.add('ready');
+  if(!splash.classList.contains('out')) return; // bar only after cabinet visible
+  if(!isMobileBrowser() && !deferredInstall) return;
+  paintInstallCopy();
+  document.getElementById('installBar').classList.add('show');
+}
+function tryNativeInstall(){
+  if(deferredInstall){
+    deferredInstall.prompt();
+    deferredInstall.userChoice.then(function(c){
+      deferredInstall=null;
+      if(c && c.outcome==='accepted'){ try{ localStorage.setItem('wk_pwa_installed','1'); }catch(e){} hideInstall(); }
+      else paintInstallCopy();
+    }).catch(function(){ showInstallHelp(); });
     return;
   }
-  if(deferredInstall) bar.classList.add('show');
+  showInstallHelp();
 }
 function hideInstall(){ document.getElementById('installBar').classList.remove('show'); }
 function hideSplash(){
@@ -326,21 +393,9 @@ window.addEventListener('appinstalled', function(){
   deferredInstall=null;
   hideInstall();
 });
-document.getElementById('installBtn').onclick=function(){
-  if(isIosSafari()){
-    sub.textContent='На iPhone: Поделиться → На экран «Домой».';
-    splash.classList.remove('out');
-    splash.classList.add('stuck');
-    return;
-  }
-  if(!deferredInstall) return;
-  deferredInstall.prompt();
-  deferredInstall.userChoice.then(function(c){
-    deferredInstall=null;
-    if(c && c.outcome==='accepted'){ try{ localStorage.setItem('wk_pwa_installed','1'); }catch(e){} }
-    hideInstall();
-  }).catch(function(){});
-};
+document.getElementById('installBtn').onclick=function(){ tryNativeInstall(); };
+document.getElementById('splashInstall').onclick=function(){ tryNativeInstall(); };
+document.getElementById('installHelpOk').onclick=function(){ document.getElementById('installHelp').classList.remove('show'); };
 document.getElementById('installHide').onclick=function(){
   try{ localStorage.setItem('wk_pwa_install_hide','1'); }catch(e){}
   hideInstall();
@@ -394,6 +449,13 @@ window.addEventListener('pageshow', function(ev){
 
 warmGoogle();
 loadGas(false);
+setTimeout(function(){
+  if(!isPwaInstalled() && !installHidden()){
+    var b=document.getElementById('splashInstall');
+    if(b) b.classList.add('ready');
+  }
+}, 700);
+
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).then(function(reg){
     if(reg.waiting) reg.waiting.postMessage({ type:'SKIP_WAITING' });
