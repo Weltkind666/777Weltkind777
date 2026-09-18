@@ -7,6 +7,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-title" content="Оплата"/>
   <meta name="description" content="Кабинет оплаты Weltkind"/>
+  <link rel="dns-prefetch" href="https://script.google.com"/>
+  <link rel="preconnect" href="https://script.google.com" crossorigin/>
+  <link rel="preconnect" href="https://www.google.com" crossorigin/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-180.png"/>
   <link rel="icon" type="image/png" href="icons/icon-192.png"/>
@@ -17,20 +20,26 @@
       position:fixed;inset:0;z-index:4;color:#fff;
       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
       background:radial-gradient(120% 80% at 50% 20%,#283593 0%,#1A237E 48%,#121A5C 100%);
-      transition:opacity .4s ease,visibility .4s;
+      transition:opacity .28s ease,visibility .28s;
     }
     #splash.out{opacity:0;visibility:hidden;pointer-events:none}
     #backup{
-      position:absolute;top:12px;left:12px;right:12px;margin:0 auto;max-width:280px;
+      position:absolute;bottom:max(18px,env(safe-area-inset-bottom));left:12px;right:12px;margin:0 auto;max-width:280px;
       border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;
       border-radius:12px;padding:10px 14px;font-weight:750;font-size:.86rem
     }
     #backupChip{
-      display:none;position:fixed;top:10px;right:10px;z-index:6;
-      border:0;border-radius:12px;padding:8px 12px;background:#1A237E;color:#A7F3E8;
-      font-weight:750;font-size:.78rem;box-shadow:0 6px 18px rgba(0,0,0,.28)
+      display:none;position:fixed;z-index:3;
+      left:50%;transform:translateX(-50%);
+      bottom:max(14px,env(safe-area-inset-bottom));
+      border-radius:999px;padding:4px 4px 4px 12px;background:rgba(26,35,126,.88);color:#A7F3E8;
+      box-shadow:0 8px 22px rgba(0,0,0,.28);backdrop-filter:blur(8px);
+      opacity:0;pointer-events:none;transition:opacity .35s ease;
+      align-items:center;gap:4px
     }
-    #splash.out ~ #backupChip{display:inline-block}
+    #backupChip.show{display:inline-flex;opacity:1;pointer-events:auto}
+    #backupChipGo{border:0;background:transparent;color:#A7F3E8;font-weight:700;font-size:.72rem;padding:6px 8px;letter-spacing:.02em}
+    #backupChip .x,#backupChipHide{border:0;background:transparent;color:#9BB4C6;font-size:1rem;line-height:1;padding:6px 10px;margin:0}
     .logo{width:92px;height:92px;border-radius:24px;overflow:hidden;box-shadow:0 16px 40px rgba(0,0,0,.35)}
     .logo img{width:100%;height:100%;display:block}
     .brand{font-size:1.45rem;font-weight:750;letter-spacing:.18em}
@@ -45,7 +54,7 @@
     #splash.stuck #retry{display:inline-block}
     #splash.stuck .bar{display:none}
     #installBar{
-      display:none;position:fixed;left:12px;right:12px;top:10px;z-index:5;
+      display:none;position:fixed;left:12px;right:12px;bottom:max(58px,calc(env(safe-area-inset-bottom) + 52px));z-index:5;
       background:#fff;color:#1A237E;border-radius:14px;padding:10px 12px;
       box-shadow:0 8px 24px rgba(0,0,0,.22);align-items:center;gap:10px
     }
@@ -55,19 +64,22 @@
     #installHide{border:0;background:transparent;color:#6B7C8A;font-size:1.15rem;padding:2px 6px}
     iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#121A5C;z-index:1}
     @media (display-mode: standalone){ #installBar{display:none!important} }
-    @media (prefers-reduced-motion:reduce){.bar>i{animation:none;width:100%}}
+    @media (prefers-reduced-motion:reduce){.bar>i{animation:none;width:100%} #splash,#backupChip{transition:none}}
   </style>
 </head>
 <body>
   <div id="splash">
-    <button type="button" id="backup">Резервный сайт</button>
     <div class="logo"><img src="icons/icon-192.png" alt="Weltkind"/></div>
     <div class="brand">WELTKIND</div>
     <div class="sub" id="sub">Открываем оплату</div>
     <div class="bar" id="bar"><i></i></div>
     <button type="button" id="retry">Повторить загрузку</button>
+    <button type="button" id="backup">Резервный сайт</button>
   </div>
-  <button type="button" id="backupChip">Резервный сайт</button>
+  <div id="backupChip" role="group" aria-label="Резервный сайт">
+    <button type="button" id="backupChipGo">Резервный сайт</button>
+    <button type="button" class="x" id="backupChipHide" aria-label="Скрыть">×</button>
+  </div>
   <div id="installBar">
     <span id="installText">Можно добавить иконку на экран телефона</span>
     <button type="button" id="installBtn">На экран</button>
@@ -77,16 +89,18 @@
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfUBsBIMK6qULmIlqfxoOR9bWtjmc4uofYt3jWjGMd0Ql8kL4u32a7I9cgl22N3pJt8g/exec';
 const SUB_KEY = 'weltkind-sub-data';
-const SOFT_MS = 12000;
-const HARD_MS = 22000;
-const FALLBACK_AFTER_LOAD_MS = 4500;
+const SOFT_MS = 8000;
+const HARD_MS = 16000;
+const FALLBACK_AFTER_LOAD_MS = 900;
 const MAX_AUTO_RETRY = 2;
+const CHIP_AUTO_HIDE_MS = 5000;
 
 let gasReady=false, loading=false, loadGen=0, autoRetry=0, deferredInstall=null;
-let watchdogSoft=null, watchdogHard=null, optimistic=null;
+let watchdogSoft=null, watchdogHard=null, optimistic=null, chipHideTimer=null;
 const splash=document.getElementById('splash');
 const sub=document.getElementById('sub');
 const frame=document.getElementById('gas-frame');
+const backupChip=document.getElementById('backupChip');
 
 function clearTimers(){
   if(watchdogSoft){ clearTimeout(watchdogSoft); watchdogSoft=null; }
@@ -114,9 +128,27 @@ function backupUrl(){
     const v = here.searchParams.get(k);
     if (v) u.searchParams.set(k, v);
   });
+  u.searchParams.set('from','pwa_backup');
+  u.searchParams.set('r', String(Date.now()));
   return u.toString();
 }
-function openBackup(){ location.assign(backupUrl()); }
+function openBackup(){
+  const url = backupUrl();
+  // В standalone PWA уход на script.google.com часто ломается — открываем в браузере.
+  let opened = false;
+  try{
+    const w = window.open(url, '_blank', 'noopener,noreferrer');
+    opened = !!w;
+  }catch(e){}
+  if(opened) return;
+  try{
+    const a=document.createElement('a');
+    a.href=url; a.target='_blank'; a.rel='noopener noreferrer';
+    document.body.appendChild(a); a.click(); a.remove();
+    return;
+  }catch(e2){}
+  try{ location.assign(url); }catch(e3){}
+}
 function isPwaInstalled(){
   if(window.matchMedia('(display-mode: standalone)').matches) return true;
   if(navigator.standalone===true) return true;
@@ -125,6 +157,19 @@ function isPwaInstalled(){
 function isIosSafari(){ return /iPhone|iPad|iPod/i.test(navigator.userAgent||'') && !window.MSStream; }
 function installHidden(){
   try{ return localStorage.getItem('wk_pwa_install_hide')==='1'; }catch(e){ return false; }
+}
+function chipDismissed(){
+  try{ return sessionStorage.getItem('wk_backup_chip_hide')==='1'; }catch(e){ return false; }
+}
+function hideBackupChip(){
+  if(chipHideTimer){ clearTimeout(chipHideTimer); chipHideTimer=null; }
+  backupChip.classList.remove('show');
+}
+function showBackupChip(){
+  if(chipDismissed() || !splash.classList.contains('out')) return;
+  backupChip.classList.add('show');
+  if(chipHideTimer) clearTimeout(chipHideTimer);
+  chipHideTimer=setTimeout(hideBackupChip, CHIP_AUTO_HIDE_MS);
 }
 function showInstall(){
   if(isPwaInstalled() || installHidden() || !splash.classList.contains('out')) return;
@@ -142,6 +187,7 @@ function hideSplash(){
   splash.classList.add('out');
   splash.classList.remove('stuck');
   showInstall();
+  showBackupChip();
 }
 function markReady(){
   gasReady=true;
@@ -152,6 +198,7 @@ function markReady(){
 }
 function showStuck(msg){
   loading=false;
+  hideBackupChip();
   splash.classList.add('stuck');
   splash.classList.remove('out');
   sub.textContent=msg || 'Не открылось. Нажмите «Повторить» или «Резервный сайт».';
@@ -173,6 +220,12 @@ function armWatchdogs(gen){
     showStuck('Google не ответил. Повторите или откройте резервный сайт.');
   }, HARD_MS);
 }
+function warmGoogle(){
+  try{
+    // no-cors прогрев DNS/TLS; ответ не читаем
+    fetch(GAS_URL + '?from=pwa_warm&r=' + Date.now(), { mode:'no-cors', cache:'no-store', credentials:'omit' }).catch(function(){});
+  }catch(e){}
+}
 function loadGas(fresh){
   if(loading && !fresh) return;
   loading=true;
@@ -180,6 +233,7 @@ function loadGas(fresh){
   loadGen++;
   const gen=loadGen;
   splash.classList.remove('out','stuck');
+  hideBackupChip();
   sub.textContent= navigator.onLine === false ? 'Нет сети. Ждём интернет…' : 'Открываем оплату';
   hideInstall();
   if(navigator.onLine === false){
@@ -187,18 +241,16 @@ function loadGas(fresh){
     showStuck('Нет интернета. Включите сеть и нажмите «Повторить».');
     return;
   }
-  try{ frame.removeAttribute('src'); }catch(e){}
+  // Не чистим src без нужды — лишний round-trip. Только при повторе.
+  if(fresh){
+    try{ frame.src = 'about:blank'; }catch(e){}
+  }
   frame.src=gasTarget(!!fresh);
   armWatchdogs(gen);
 }
 function isGasMessage(e){
   try{
     const o = String(e.origin||'');
-    if(/\.google\.com$/i.test(o.replace(/^https?:\/\//,'').split('/')[0].replace(/^[^.]+\./,'')) ||
-       /script\.google\.com$/i.test(o) ||
-       /googleusercontent\.com$/i.test(o) ||
-       /\.google\.com$/i.test(o)) return true;
-    // iframe often posts from script.google.com or googleusercontent
     return /google\.com/i.test(o) || /googleusercontent\.com/i.test(o);
   }catch(err){ return false; }
 }
@@ -215,13 +267,15 @@ function openExternal(url){
 
 frame.addEventListener('load', function(){
   if(gasReady) return;
+  try{
+    if((frame.src||'').indexOf('about:blank')===0) return;
+  }catch(e){}
   const gen=loadGen;
   if(optimistic) clearTimeout(optimistic);
-  // iframe load часто срабатывает раньше, чем кабинет готов — не прячем splash сразу
   sub.textContent='Кабинет загружается…';
+  // Раньше прятали splash: iframe load уже значит оболочка Google пришла
   optimistic=setTimeout(function(){
     if(gen!==loadGen || gasReady) return;
-    // мягкий fallback: если postMessage не дошёл, но iframe уже load
     hideSplash();
   }, FALLBACK_AFTER_LOAD_MS);
 });
@@ -229,9 +283,7 @@ frame.addEventListener('load', function(){
 window.addEventListener('message', function(e){
   const d=e.data;
   if(!d || typeof d !== 'object') return;
-  if(!isGasMessage(e) && d.type && String(d.type).indexOf('weltkind_')===0){
-    // всё равно принимаем weltkind_* — Google иногда шлёт с неожиданным origin через цепочку
-  }
+  if(!isGasMessage(e) && !(d.type && String(d.type).indexOf('weltkind_')===0)) return;
   if(d.type==='weltkind_ready' || d.type==='weltkind_sub') markReady();
   if(d.type==='weltkind_open' && d.url){ openExternal(d.url); return; }
   if(d.type!=='weltkind_sub') return;
@@ -259,7 +311,11 @@ window.addEventListener('message', function(e){
 
 document.getElementById('retry').onclick=function(){ autoRetry=0; loadGas(true); };
 document.getElementById('backup').onclick=openBackup;
-document.getElementById('backupChip').onclick=openBackup;
+document.getElementById('backupChipGo').onclick=openBackup;
+document.getElementById('backupChipHide').onclick=function(){
+  try{ sessionStorage.setItem('wk_backup_chip_hide','1'); }catch(e){}
+  hideBackupChip();
+};
 window.addEventListener('beforeinstallprompt', function(e){
   e.preventDefault();
   deferredInstall=e;
@@ -336,15 +392,13 @@ window.addEventListener('pageshow', function(ev){
   if(ev.persisted && !gasReady) loadGas(true);
 });
 
+warmGoogle();
 loadGas(false);
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).then(function(reg){
     if(reg.waiting) reg.waiting.postMessage({ type:'SKIP_WAITING' });
     if('periodicSync' in reg) reg.periodicSync.register('check-subscription', { minInterval:12*3600000 }).catch(function(){});
     reg.update().catch(function(){});
-    navigator.serviceWorker.addEventListener('controllerchange', function(){
-      // новый SW подхватится на следующем открытии; не форсим reload во время оплаты
-    });
   }).catch(function(){});
 }
 setInterval(pollChat, 45000);
