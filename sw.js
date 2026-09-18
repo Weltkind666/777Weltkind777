@@ -1,6 +1,6 @@
-/* Weltkind PWA Service Worker — v63 · оболочка + уведомления */
-const SW_VER = 67;
-const CACHE = 'Weltkind-v67';
+/* Weltkind PWA Service Worker — v68 · оболочка + Google-stable */
+const SW_VER = 68;
+const CACHE = 'Weltkind-v68';
 const SUB_KEY = 'weltkind-sub-data';
 const SUB_CACHE = 'Weltkind-user-data';
 const ASSETS = [
@@ -112,16 +112,42 @@ self.addEventListener('notificationclick', (e) => {
   );
 });
 
+function isShellDoc(url) {
+  const p = url.pathname || '';
+  return p.endsWith('/') || p.endsWith('/index.html') || p.endsWith('/version.json') || p.endsWith('/manifest.json') || p.endsWith('/sw.js');
+}
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+
+  // Никогда не трогаем Google / чужие домены — кабинет всегда из сети
   if (url.origin !== self.location.origin) return;
-  if (/script\.google\.com/.test(url.href)) return;
+  if (/script\.google\.com|googleusercontent\.com|googleapis\.com/i.test(url.href)) return;
+
+  // HTML / version / manifest — сначала сеть, чтобы PWA обновлялась
+  if (req.mode === 'navigate' || isShellDoc(url)) {
+    e.respondWith(
+      fetch(req, { cache: 'no-store' }).then((res) => {
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+        }
+        return res;
+      }).catch(() => caches.match(req).then((c) => c || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Иконки и статика — cache-first
   e.respondWith(
-    caches.match(req).then((cached) => cached || fetch(req).then((res) => {
-      if (res && res.ok) caches.open(CACHE).then((c) => c.put(req, res.clone())).catch(() => {});
-      return res;
-    }))
+    caches.match(req).then((cached) => {
+      if (cached) return cached;
+      return fetch(req).then((res) => {
+        if (res && res.ok) caches.open(CACHE).then((c) => c.put(req, res.clone())).catch(() => {});
+        return res;
+      });
+    })
   );
 });
