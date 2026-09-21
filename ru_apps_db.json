@@ -1,5 +1,5 @@
 {
-  "version": 11,
+  "version": 12,
   "updated": "2026-09-21",
   "packages": [
     "ru.sberbankmobile",
@@ -285,8 +285,6 @@
     "com.android.vending",
     "com.dddev.gallery.album.photo.editor",
     "photo.gallery.photoeditor.photo.album",
-    "com.yandex.searchapp",
-    "ru.yandex.searchplugin",
     "ru.yandex.weatherplugin",
     "com.taxsee.taxsee",
     "com.drivee.taxi.rides",
@@ -673,8 +671,6 @@
     "editor",
     "photo",
     "album",
-    "searchapp",
-    "searchplugin",
     "weatherplugin",
     "taxsee",
     "rides",
@@ -1150,10 +1146,6 @@
     "editor",
     "галерея- фотогалерея и альбом",
     "album",
-    "яндекс — с алисой ai",
-    "searchapp",
-    "яндекс старт",
-    "searchplugin",
     "яндекс погода - карта осадков",
     "weatherplugin",
     "maxim — заказ такси, доставка",
@@ -1418,7 +1410,9 @@
     "com.lemon",
     "com.android",
     "com.yandex.browser",
-    "MobiOffice"
+    "MobiOffice",
+    "com.yandex.searchapp",
+    "ru.yandex.searchplugin"
   ],
   "match_ru_prefix": true
 }
