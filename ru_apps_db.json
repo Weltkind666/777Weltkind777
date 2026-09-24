@@ -1,5 +1,5 @@
 {
-  "version": 16,
+  "version": 17,
   "updated": "2026-09-24",
   "packages": [
     "ru.sberbankmobile",
@@ -564,8 +564,6 @@
     "ru.rtb.studio",
     "gpm.tnt_premier",
     "ru.mts.mtstv",
-    "com.google.android.youtube",
-    "com.google.android.apps.youtube.kids",
     "com.uchi.app",
     "ru.",
     "org.mkk.evraz.marketplace.finance.app",
@@ -1241,7 +1239,6 @@
     "mtstv",
     "mts",
     "kinopoisk",
-    "youtube",
     "kids",
     "uchi",
     "marketplace",
@@ -2019,7 +2016,6 @@
     "кинопоиск－фильмы，сериалы，спорт",
     "kinopoisk",
     "youtube",
-    "youtube детям",
     "kids",
     "твой банк онлайн",
     "банк: карты, кредит онлайн",
@@ -2078,7 +2074,9 @@
     "com.android",
     "MobiOffice",
     "com.google.android.googlequicksearchbox",
-    "org.telegram.messenger"
+    "org.telegram.messenger",
+    "com.google.android.youtube",
+    "com.google.android.apps.youtube.kids"
   ],
   "match_ru_prefix": true
 }
