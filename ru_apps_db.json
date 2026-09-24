@@ -1,5 +1,5 @@
 {
-  "version": 19,
+  "version": 20,
   "updated": "2026-09-24",
   "packages": [
     "ru.sberbankmobile",
@@ -648,7 +648,11 @@
     "com.totalav.android",
     "cleaner.antivirus.cleaner.virus.clean.vpn",
     "com.tafayor.roxapp",
-    "kaspersky"
+    "kaspersky",
+    "nod32",
+    "yota",
+    "ESET",
+    "Antivirus"
   ],
   "markers": [
     "ru.sber",
@@ -1398,7 +1402,10 @@
     "totalav",
     "roxapp",
     "tafayor",
-    "kaspersky"
+    "kaspersky",
+    "nod32",
+    "yota",
+    "eset"
   ],
   "keywords": [
     "сбер",
@@ -2265,7 +2272,11 @@
     "удалить вирус рекламу",
     "roxapp",
     "антиспам: kaspersky who calls",
-    "kaspersky"
+    "kaspersky",
+    "nod32",
+    "yota: мобильная связь",
+    "eset home",
+    "eset"
   ],
   "excludes": [
     "ru.google",
