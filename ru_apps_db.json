@@ -1,6 +1,6 @@
 {
-  "version": 21,
-  "updated": "2026-09-24",
+  "version": 22,
+  "updated": "2026-09-25",
   "packages": [
     "ru.sberbankmobile",
     "ru.sberbank.spasibo",
@@ -664,7 +664,6 @@
     "esbyt.counterreeder",
     "ru.mos.helper",
     "com.AstraOreol.AstraHelper",
-    "com.ant.voice",
     "com.softforpleasure.znatok",
     "ru.reaperoq.asuhelper",
     "com.yandex.aliceapp",
@@ -2346,7 +2345,6 @@
     "helper",
     "астра помощник",
     "astrahelper",
-    "гдз и решения задач - antai",
     "знаток чгк - помощник в игре",
     "znatok",
     "помощник студента агу",
@@ -2378,7 +2376,8 @@
     "com.google.android.googlequicksearchbox",
     "org.telegram.messenger",
     "com.google.android.youtube",
-    "com.google.android.apps.youtube.kids"
+    "com.google.android.apps.youtube.kids",
+    "com.ant.voice"
   ],
   "match_ru_prefix": true
 }
