@@ -1,472 +1,929 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <meta name="theme-color" content="#1A237E"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-title" content="Оплата"/>
-  <meta name="description" content="Кабинет оплаты Weltkind"/>
-  <link rel="dns-prefetch" href="https://script.google.com"/>
-  <link rel="preconnect" href="https://script.google.com" crossorigin/>
-  <link rel="preconnect" href="https://www.google.com" crossorigin/>
-  <link rel="manifest" href="manifest.json"/>
-  <link rel="apple-touch-icon" href="icons/icon-180.png"/>
-  <link rel="icon" type="image/png" href="icons/icon-192.png"/>
-  <title>Оплата Weltkind</title>
-  <style>
-    html,body{height:100%;margin:0;background:#121A5C;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
-    #splash{
-      position:fixed;inset:0;z-index:4;color:#fff;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
-      background:radial-gradient(120% 80% at 50% 20%,#283593 0%,#1A237E 48%,#121A5C 100%);
-      transition:opacity .28s ease,visibility .28s;
-    }
-    #splash.out{opacity:0;visibility:hidden;pointer-events:none}
-    #backup{
-      position:absolute;bottom:max(18px,env(safe-area-inset-bottom));left:12px;right:12px;margin:0 auto;max-width:280px;
-      border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;
-      border-radius:12px;padding:10px 14px;font-weight:750;font-size:.86rem
-    }
-    #backupChip{
-      display:none;position:fixed;z-index:3;
-      left:50%;transform:translateX(-50%);
-      bottom:max(14px,env(safe-area-inset-bottom));
-      border-radius:999px;padding:4px 4px 4px 12px;background:rgba(26,35,126,.88);color:#A7F3E8;
-      box-shadow:0 8px 22px rgba(0,0,0,.28);backdrop-filter:blur(8px);
-      opacity:0;pointer-events:none;transition:opacity .35s ease;
-      align-items:center;gap:4px
-    }
-    #backupChip.show{display:inline-flex;opacity:1;pointer-events:auto}
-    #backupChipGo{border:0;background:transparent;color:#A7F3E8;font-weight:700;font-size:.72rem;padding:6px 8px;letter-spacing:.02em}
-    #backupChip .x,#backupChipHide{border:0;background:transparent;color:#9BB4C6;font-size:1rem;line-height:1;padding:6px 10px;margin:0}
-    .logo{width:92px;height:92px;border-radius:24px;overflow:hidden;box-shadow:0 16px 40px rgba(0,0,0,.35)}
-    .logo img{width:100%;height:100%;display:block}
-    .brand{font-size:1.45rem;font-weight:750;letter-spacing:.18em}
-    .sub{font-size:.92rem;opacity:.82;text-align:center;padding:0 28px;line-height:1.45;max-width:300px}
-    .bar{width:120px;height:4px;border-radius:99px;background:rgba(255,255,255,.16);overflow:hidden;margin-top:8px}
-    .bar>i{display:block;height:100%;width:40%;background:#00C4B4;border-radius:99px;animation:load 1.1s ease-in-out infinite}
-    @keyframes load{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
-    #retry{
-      display:none;margin-top:18px;border:0;border-radius:14px;padding:12px 22px;
-      background:#00C4B4;color:#052e2b;font-weight:800;font-size:.95rem
-    }
-    #splash.stuck #retry{display:inline-block}
-    #splash.stuck .bar{display:none}
-    #splashInstall{
-      display:none;margin-top:14px;border:0;border-radius:14px;padding:12px 18px;
-      background:#FFD700;color:#1A237E;font-weight:800;font-size:.92rem;max-width:280px;width:calc(100% - 48px)
-    }
-    #splash.stuck #splashInstall,#splash:not(.out) #splashInstall.ready{display:inline-block}
-    #installBar{
-      display:none;position:fixed;left:12px;right:12px;top:max(10px,env(safe-area-inset-top));z-index:5;
-      background:#fff;color:#1A237E;border-radius:14px;padding:10px 12px;
-      box-shadow:0 8px 24px rgba(0,0,0,.22);align-items:center;gap:10px
-    }
-    #installBar.show{display:flex}
-    #installBar span{flex:1;font-size:.82rem;font-weight:650;line-height:1.3}
-    #installBtn{border:0;border-radius:10px;padding:9px 12px;background:#1A237E;color:#fff;font-weight:800;white-space:nowrap;font-size:.8rem}
-    #installHide{border:0;background:transparent;color:#6B7C8A;font-size:1.15rem;padding:2px 6px}
-    #installHelp{
-      display:none;position:fixed;inset:0;z-index:8;background:rgba(10,16,48,.72);
-      align-items:center;justify-content:center;padding:20px
-    }
-    #installHelp.show{display:flex}
-    #installHelp .card{
-      background:#fff;color:#1A237E;border-radius:18px;padding:18px 16px;max-width:340px;width:100%;
-      box-shadow:0 16px 40px rgba(0,0,0,.35)
-    }
-    #installHelp h3{margin:0 0 10px;font-size:1.05rem}
-    #installHelp ol{margin:0 0 14px;padding-left:1.2rem;font-size:.9rem;line-height:1.45}
-    #installHelp .ok{border:0;border-radius:12px;padding:11px 14px;width:100%;background:#1A237E;color:#fff;font-weight:800}
-    iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#121A5C;z-index:1}
-    @media (display-mode: standalone){ #installBar{display:none!important} }
-    @media (prefers-reduced-motion:reduce){.bar>i{animation:none;width:100%} #splash,#backupChip{transition:none}}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Планировщик заявок</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Заявки">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .loader {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-family: system-ui, sans-serif;
+        }
+
+        .loader-icon {
+            width: 88px;
+            height: 88px;
+            border-radius: 22px;
+            overflow: hidden;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            animation: pulse 2.4s ease-in-out infinite;
+        }
+
+        .loader-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .loader-text {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
+        }
+
+        .loader-sub {
+            font-size: 14px;
+            opacity: 0.75;
+            margin-bottom: 28px;
+        }
+
+        .loader-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .loader-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            animation: dot-bounce 1.4s ease-in-out infinite;
+        }
+
+        .loader-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .loader-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes dot-bounce {
+            0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+        }
+
+        .loader-offline {
+            margin-top: 20px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .loader-offline p {
+            font-size: 14px;
+            opacity: 0.85;
+            text-align: center;
+        }
+
+        .retry-btn {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .retry-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        /* === AI выдвижная панель === */
+        .ai-drawer {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+            display: none;
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .ai-drawer-toggle {
+            width: 20px;
+            height: 64px;
+            background: linear-gradient(180deg, #4f46e5, #7c3aed);
+            border: none;
+            border-radius: 0 10px 10px 0;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+            flex-shrink: 0;
+            transition: background 0.2s, width 0.2s;
+            user-select: none;
+        }
+
+        .ai-drawer-toggle:hover { background: linear-gradient(180deg, #4338ca, #6d28d9); width: 24px; }
+        .ai-drawer-toggle:active { transform: scaleX(0.9); }
+
+        .ai-toggle-icon {
+            transition: transform 0.3s ease;
+            display: block;
+            line-height: 1;
+        }
+
+        .ai-drawer.open .ai-toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .ai-panel-wrap {
+            overflow: hidden;
+            max-width: 0;
+            opacity: 0;
+            transition: max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                        opacity 0.25s ease;
+        }
+
+        .ai-drawer.open .ai-panel-wrap {
+            max-width: 76px;
+            opacity: 1;
+        }
+
+        .ai-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 8px 6px 8px 6px;
+        }
+
+        .ai-panel button {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+            transition: transform 0.18s, box-shadow 0.18s;
+            font-family: system-ui, sans-serif;
+            letter-spacing: -0.2px;
+        }
+
+        .ai-panel button:hover {
+            transform: scale(1.12);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .ai-panel button:active { transform: scale(0.96); }
+
+        .ai-panel .ai-grok { background: linear-gradient(135deg, #1a1a1a, #3d3d3d); }
+
+
+        .hidden {
+            display: none !important;
+        }
+
+        .notify-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff;
+            color: #4f46e5;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+        }
+
+        .notify-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .email-prompt {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            z-index: 1002;
+            display: none;
+            text-align: center;
+        }
+
+        .email-prompt input {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            width: 250px;
+            margin: 12px 0;
+        }
+
+        .email-prompt button {
+            padding: 12px 24px;
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            display: none;
+        }
+
+        .change-email-btn {
+            position: fixed;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            cursor: pointer;
+            z-index: 1000;
+            display: none;
+            opacity: 0.6;
+        }
+
+        .change-email-btn:hover {
+            opacity: 1;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .clear-cache-btn {
+            position: fixed;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.25);
+            color: #fff;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            cursor: pointer;
+            z-index: 1000;
+            display: none;
+            opacity: 0.5;
+            font-family: system-ui, sans-serif;
+        }
+
+        .clear-cache-btn:hover {
+            opacity: 1;
+            background: rgba(220, 38, 38, 0.7);
+        }
+
+        .bottom-btns {
+            position: fixed;
+            bottom: 12px;
+            left: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 0.35s ease;
+        }
+
+        .bottom-btns.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .apk-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .apk-btn:hover {
+            transform: scale(1.03);
+        }
+
+        .thanks-btn {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            z-index: 1000;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(245, 158, 11, 0.55);
+            color: #fff;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            transition: background 0.2s, transform 0.2s;
+            backdrop-filter: blur(4px);
+        }
+
+        .thanks-btn:hover {
+            background: rgba(245, 158, 11, 0.95);
+            transform: scale(1.1);
+        }
+
+        .thanks-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            padding: 28px;
+            border-radius: 20px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+            z-index: 1003;
+            display: none;
+            text-align: center;
+            max-width: 320px;
+            width: 90%;
+        }
+
+        .thanks-modal h3 {
+            font-size: 20px;
+            margin-bottom: 12px;
+            color: #333;
+        }
+
+        .thanks-modal p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .thanks-modal .timer {
+            font-size: 32px;
+            font-weight: 700;
+            color: #f59e0b;
+            margin-bottom: 16px;
+        }
+
+        .thanks-modal .links {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .thanks-modal .links a {
+            padding: 12px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .thanks-modal .tip-link {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            width: 100%;
+            justify-content: center;
+            font-size: 15px;
+            padding: 14px 20px;
+            border-radius: 12px;
+        }
+
+        .thanks-modal .tip-link:hover {
+            opacity: 0.92;
+            transform: scale(1.02);
+            transition: transform 0.15s;
+        }
+    </style>
 </head>
 <body>
-  <div id="splash">
-    <div class="logo"><img src="icons/icon-192.png" alt="Weltkind"/></div>
-    <div class="brand">WELTKIND</div>
-    <div class="sub" id="sub">Открываем оплату</div>
-    <div class="bar" id="bar"><i></i></div>
-    <button type="button" id="retry">Повторить загрузку</button>
-    <button type="button" id="splashInstall">Установить на телефон</button>
-    <button type="button" id="backup">Резервный сайт</button>
-  </div>
-  <div id="installHelp" role="dialog" aria-modal="true" aria-labelledby="installHelpTitle">
-    <div class="card">
-      <h3 id="installHelpTitle">Установка оплаты</h3>
-      <ol id="installHelpSteps"></ol>
-      <button type="button" class="ok" id="installHelpOk">Понятно</button>
+    <div class="loader" id="loader">
+        <div class="loader-icon">
+            <img src="icon-192.png" alt="Планировщик заявок">
+        </div>
+        <div class="loader-text">Планировщик заявок</div>
+        <div class="loader-sub">Загрузка приложения...</div>
+        <div class="loader-dots">
+            <span></span><span></span><span></span>
+        </div>
+        <div class="loader-offline" id="loaderOffline">
+            <p>⚠️ Нет соединения с сервером.<br>Проверьте интернет и попробуйте снова.</p>
+            <button class="retry-btn" onclick="retryLoad()">🔄 Повторить</button>
+        </div>
     </div>
-  </div>
-  <div id="backupChip" role="group" aria-label="Резервный сайт">
-    <button type="button" id="backupChipGo">Резервный сайт</button>
-    <button type="button" class="x" id="backupChipHide" aria-label="Скрыть">×</button>
-  </div>
-  <div id="installBar">
-    <span id="installText">Поставьте оплату иконкой на экран — как приложение</span>
-    <button type="button" id="installBtn">Установить</button>
-    <button type="button" id="installHide" aria-label="Скрыть">×</button>
-  </div>
-  <iframe id="gas-frame" title="Оплата Weltkind" allow="clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
-<script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwaSt58hVCmBS1luC-1H850kUPnFKCJQWs4vB7tg7re8AUM2eKAjI8MgWmT1mlxymK5Sw/exec';
-const SUB_KEY = 'weltkind-sub-data';
-const SOFT_MS = 8000;
-const HARD_MS = 16000;
-const FALLBACK_AFTER_LOAD_MS = 900;
-const MAX_AUTO_RETRY = 2;
-const CHIP_AUTO_HIDE_MS = 5000;
+    <div class="overlay" id="overlay" onclick="closeEmailPrompt()"></div>
+    <div class="overlay" id="thanksOverlay" onclick="closeThanksModal()" style="display:none"></div>
+    <div class="email-prompt" id="emailPrompt">
+        <div style="font-weight:700;font-size:18px;margin-bottom:4px">📧 Email для уведомлений</div>
+        <div style="font-size:12px;color:#666;margin-bottom:8px">Укажите email из системы</div>
+        <input type="email" id="promptEmail" placeholder="email@example.com"><br>
+        <button onclick="submitEmail()">Сохранить</button>
+    </div>
+    <div class="thanks-modal" id="thanksModal">
+        <h3>🍺 Спасибо!</h3>
+        <p>Если приложение оказалось полезным, можете поблагодарить разработчика — скинуть на пивко для мотивации!</p>
+        <div class="timer" id="thanksTimer">5</div>
+        <div class="links">
+            <a class="tip-link" href="https://pay.cloudtips.ru/p/4c114ddf" target="_blank">☕ Поддержать разработчика</a>
+        </div>
+    </div>
+    <button class="notify-btn" id="notifyBtn" onclick="requestPermission()">🔔 Включить уведомления</button>
+    <button class="change-email-btn" id="changeEmailBtn" onclick="changeEmail()">✏️ Email</button>
+    <button class="clear-cache-btn" id="clearCacheBtn" onclick="clearAppCache()" title="Очистить кэш и обновить">🗑️ Очистить кэш</button>
+    <div class="bottom-btns">
+        <button class="apk-btn" id="installBtn" style="display:none" onclick="installPWA()">➕ Установить приложение</button>
+    </div>
+    <button class="thanks-btn" id="thanksBtn" onclick="openThanksModal()" title="Поблагодарить разработчика">☕</button>
+    <iframe id="app" class="hidden" src="https://152.228.99.155:8443/subscriber"></iframe>
 
-let gasReady=false, loading=false, loadGen=0, autoRetry=0, deferredInstall=null;
-let watchdogSoft=null, watchdogHard=null, optimistic=null, chipHideTimer=null;
-const splash=document.getElementById('splash');
-const sub=document.getElementById('sub');
-const frame=document.getElementById('gas-frame');
-const backupChip=document.getElementById('backupChip');
+    <div class="ai-drawer" id="aiDrawer">
+        <button class="ai-drawer-toggle" onclick="toggleAiPanel()" title="AI инструменты">
+            <span class="ai-toggle-icon" id="aiToggleIcon">›</span>
+        </button>
+        <div class="ai-panel-wrap" id="aiPanelWrap">
+            <div class="ai-panel" id="aiPanel">
+                <button class="ai-grok" onclick="openAi('https://grok.com')" title="Grok">
+                    <span style="font-size:18px;line-height:1">𝕏</span>
+                    <span>Grok</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
+    <script>
+        function vibe(ms) { try { navigator.vibrate && navigator.vibrate(ms || 12); } catch(e){} }
 
-function clearTimers(){
-  if(watchdogSoft){ clearTimeout(watchdogSoft); watchdogSoft=null; }
-  if(watchdogHard){ clearTimeout(watchdogHard); watchdogHard=null; }
-  if(optimistic){ clearTimeout(optimistic); optimistic=null; }
-}
-function gasTarget(fresh){
-  const u = new URL(GAS_URL);
-  const here = new URL(location.href);
-  ['phone','ref','register','message'].forEach(function(k){
-    const v = here.searchParams.get(k);
-    if (v) u.searchParams.set(k, v);
-  });
-  const h = (here.hash || '').replace('#','').toLowerCase();
-  if (h === 'register') u.searchParams.set('register','1');
-  if (h === 'renew') u.searchParams.set('message','Продлите подписку ниже');
-  u.searchParams.set('from','pwa');
-  if (fresh) u.searchParams.set('r', String(Date.now()));
-  return u.toString();
-}
-function backupUrl(){
-  const u = new URL(GAS_URL);
-  const here = new URL(location.href);
-  ['phone','ref','register','message'].forEach(function(k){
-    const v = here.searchParams.get(k);
-    if (v) u.searchParams.set(k, v);
-  });
-  u.searchParams.set('from','pwa_backup');
-  u.searchParams.set('r', String(Date.now()));
-  return u.toString();
-}
-function openBackup(){
-  const url = backupUrl();
-  // В standalone PWA уход на script.google.com часто ломается — открываем в браузере.
-  let opened = false;
-  try{
-    const w = window.open(url, '_blank', 'noopener,noreferrer');
-    opened = !!w;
-  }catch(e){}
-  if(opened) return;
-  try{
-    const a=document.createElement('a');
-    a.href=url; a.target='_blank'; a.rel='noopener noreferrer';
-    document.body.appendChild(a); a.click(); a.remove();
-    return;
-  }catch(e2){}
-  try{ location.assign(url); }catch(e3){}
-}
-function isPwaInstalled(){
-  if(window.matchMedia('(display-mode: standalone)').matches) return true;
-  if(navigator.standalone===true) return true;
-  try{ return localStorage.getItem('wk_pwa_installed')==='1'; }catch(e){ return false; }
-}
-function isIosSafari(){ return /iPhone|iPad|iPod/i.test(navigator.userAgent||'') && !window.MSStream; }
-function installHidden(){
-  try{ return localStorage.getItem('wk_pwa_install_hide')==='1'; }catch(e){ return false; }
-}
-function chipDismissed(){
-  try{ return sessionStorage.getItem('wk_backup_chip_hide')==='1'; }catch(e){ return false; }
-}
-function hideBackupChip(){
-  if(chipHideTimer){ clearTimeout(chipHideTimer); chipHideTimer=null; }
-  backupChip.classList.remove('show');
-}
-function showBackupChip(){
-  if(chipDismissed() || !splash.classList.contains('out')) return;
-  backupChip.classList.add('show');
-  if(chipHideTimer) clearTimeout(chipHideTimer);
-  chipHideTimer=setTimeout(hideBackupChip, CHIP_AUTO_HIDE_MS);
-}
-function isAndroidChrome(){
-  const ua=navigator.userAgent||'';
-  return /Android/i.test(ua) && /Chrome|CriOS|EdgA/i.test(ua) && !/OPR|Opera|SamsungBrowser/i.test(ua);
-}
-function isMobileBrowser(){
-  return isIosSafari() || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||'') || (navigator.maxTouchPoints>1 && /Mac/i.test(navigator.platform||''));
-}
-function paintInstallCopy(){
-  const text=document.getElementById('installText');
-  const btn=document.getElementById('installBtn');
-  if(isIosSafari()){
-    text.textContent='iPhone: Поделиться → На экран «Домой»';
-    btn.textContent='Как';
-  } else if(deferredInstall){
-    text.textContent='Поставьте оплату иконкой на экран — как приложение';
-    btn.textContent='Установить';
-  } else {
-    text.textContent='Добавьте оплату на экран телефона (меню браузера → Установить / На экран)';
-    btn.textContent='Как';
-  }
-}
-function showInstallHelp(){
-  const ol=document.getElementById('installHelpSteps');
-  ol.innerHTML='';
-  const steps = isIosSafari()
-    ? ['Откройте сайт в Safari','Нажмите «Поделиться» (квадрат со стрелкой)','Выберите «На экран «Домой»»','Подтвердите «Добавить»']
-    : (isAndroidChrome()
-      ? ['Откройте сайт в Chrome','Меню ⋮ справа сверху','«Установить приложение» или «На экран»','Подтвердите установку']
-      : ['Откройте сайт в Chrome / Safari','Меню браузера','«Установить» / «На экран Домой»','Подтвердите']);
-  steps.forEach(function(s){ const li=document.createElement('li'); li.textContent=s; ol.appendChild(li); });
-  document.getElementById('installHelp').classList.add('show');
-}
-function showInstall(){
-  if(isPwaInstalled() || installHidden()) return;
-  const splashBtn=document.getElementById('splashInstall');
-  if(splashBtn && !splash.classList.contains('out')) splashBtn.classList.add('ready');
-  if(!splash.classList.contains('out')) return; // bar only after cabinet visible
-  if(!isMobileBrowser() && !deferredInstall) return;
-  paintInstallCopy();
-  document.getElementById('installBar').classList.add('show');
-}
-function tryNativeInstall(){
-  if(deferredInstall){
-    deferredInstall.prompt();
-    deferredInstall.userChoice.then(function(c){
-      deferredInstall=null;
-      if(c && c.outcome==='accepted'){ try{ localStorage.setItem('wk_pwa_installed','1'); }catch(e){} hideInstall(); }
-      else paintInstallCopy();
-    }).catch(function(){ showInstallHelp(); });
-    return;
-  }
-  showInstallHelp();
-}
-function hideInstall(){ document.getElementById('installBar').classList.remove('show'); }
-function hideSplash(){
-  splash.classList.add('out');
-  splash.classList.remove('stuck');
-  showInstall();
-  showBackupChip();
-}
-function markReady(){
-  gasReady=true;
-  loading=false;
-  autoRetry=0;
-  clearTimers();
-  hideSplash();
-}
-function showStuck(msg){
-  loading=false;
-  hideBackupChip();
-  splash.classList.add('stuck');
-  splash.classList.remove('out');
-  sub.textContent=msg || 'Не открылось. Нажмите «Повторить» или «Резервный сайт».';
-}
-function armWatchdogs(gen){
-  clearTimers();
-  watchdogSoft=setTimeout(function(){
-    if(gen!==loadGen || gasReady) return;
-    sub.textContent='Google отвечает дольше обычного…';
-  }, SOFT_MS);
-  watchdogHard=setTimeout(function(){
-    if(gen!==loadGen || gasReady) return;
-    if(autoRetry < MAX_AUTO_RETRY){
-      autoRetry++;
-      sub.textContent='Повторяем загрузку ('+autoRetry+'/'+MAX_AUTO_RETRY+')…';
-      loadGas(true);
-      return;
-    }
-    showStuck('Google не ответил. Повторите или откройте резервный сайт.');
-  }, HARD_MS);
-}
-function warmGoogle(){
-  try{
-    // no-cors прогрев DNS/TLS; ответ не читаем
-    fetch(GAS_URL + '?from=pwa_warm&r=' + Date.now(), { mode:'no-cors', cache:'no-store', credentials:'omit' }).catch(function(){});
-  }catch(e){}
-}
-function loadGas(fresh){
-  if(loading && !fresh) return;
-  loading=true;
-  gasReady=false;
-  loadGen++;
-  const gen=loadGen;
-  splash.classList.remove('out','stuck');
-  hideBackupChip();
-  sub.textContent= navigator.onLine === false ? 'Нет сети. Ждём интернет…' : 'Открываем оплату';
-  hideInstall();
-  if(navigator.onLine === false){
-    loading=false;
-    showStuck('Нет интернета. Включите сеть и нажмите «Повторить».');
-    return;
-  }
-  // Не чистим src без нужды — лишний round-trip. Только при повторе.
-  if(fresh){
-    try{ frame.src = 'about:blank'; }catch(e){}
-  }
-  frame.src=gasTarget(!!fresh);
-  armWatchdogs(gen);
-}
-function isGasMessage(e){
-  try{
-    const o = String(e.origin||'');
-    return /google\.com/i.test(o) || /googleusercontent\.com/i.test(o);
-  }catch(err){ return false; }
-}
-function openExternal(url){
-  if(!url) return;
-  try{
-    const a=document.createElement('a');
-    a.href=url; a.target='_blank'; a.rel='noopener noreferrer';
-    document.body.appendChild(a); a.click(); a.remove();
-    return;
-  }catch(e){}
-  try{ location.assign(url); }catch(e2){}
-}
+        function updateAppBadge(count) {
+            try {
+                if ('setAppBadge' in navigator) {
+                    count > 0 ? navigator.setAppBadge(count) : navigator.clearAppBadge();
+                }
+            } catch(e) {}
+        }
+    </script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD2HkY76nLBhE7GuCwXi1j6qzKyYPSmypg",
+            authDomain: "planzayavok.firebaseapp.com",
+            projectId: "planzayavok",
+            storageBucket: "planzayavok.firebasestorage.app",
+            messagingSenderId: "655180080768",
+            appId: "1:655180080768:web:449d8189bf747d34b46865"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const messaging = firebase.messaging();
 
-frame.addEventListener('load', function(){
-  if(gasReady) return;
-  try{
-    if((frame.src||'').indexOf('about:blank')===0) return;
-  }catch(e){}
-  const gen=loadGen;
-  if(optimistic) clearTimeout(optimistic);
-  sub.textContent='Кабинет загружается…';
-  // Раньше прятали splash: iframe load уже значит оболочка Google пришла
-  optimistic=setTimeout(function(){
-    if(gen!==loadGen || gasReady) return;
-    hideSplash();
-  }, FALLBACK_AFTER_LOAD_MS);
-});
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(function(reg) {
+                console.log('SW registered');
+            }).catch(function(e) {
+                console.log('SW error', e);
+            });
+        }
 
-window.addEventListener('message', function(e){
-  const d=e.data;
-  if(!d || typeof d !== 'object') return;
-  if(!isGasMessage(e) && !(d.type && String(d.type).indexOf('weltkind_')===0)) return;
-  if(d.type==='weltkind_ready' || d.type==='weltkind_sub') markReady();
-  if(d.type==='weltkind_open' && d.url){ openExternal(d.url); return; }
-  if(d.type!=='weltkind_sub') return;
-  const iso=(function(str){
-    if(!str || str==='Не определено' || str==='Не оплачено') return null;
-    const p=String(str).split(/[./-]/);
-    if(p.length===3) return p[2]+'-'+String(p[1]).padStart(2,'0')+'-'+String(p[0]).padStart(2,'0');
-    return null;
-  })(d.expiryDate);
-  (async function saveSub(subData){
-    try{ localStorage.setItem('wk_phone', subData.phone||''); localStorage.setItem('wk_sub', JSON.stringify(subData)); }catch(err){}
-    try{
-      const cache=await caches.open('Weltkind-user-data');
-      await cache.put(SUB_KEY, new Response(JSON.stringify(subData)));
-    }catch(err){}
-    if(navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type:'bg_check' });
-  })({
-    phone:String(d.phone||'').replace(/\D/g,''),
-    date:iso,
-    status:d.status,
-    pwaNotifs:{}
-  });
-  if(typeof Notification!=='undefined' && Notification.permission==='default') Notification.requestPermission().catch(function(){});
-});
+        const iframe = document.getElementById('app');
+        const loader = document.getElementById('loader');
+        const notifyBtn = document.getElementById('notifyBtn');
+        const emailPrompt = document.getElementById('emailPrompt');
+        const overlay = document.getElementById('overlay');
+        const changeEmailBtn = document.getElementById('changeEmailBtn');
+        const thanksModal = document.getElementById('thanksModal');
+        const thanksOverlay = document.getElementById('thanksOverlay');
+        const thanksTimer = document.getElementById('thanksTimer');
 
-document.getElementById('retry').onclick=function(){ autoRetry=0; loadGas(true); };
-document.getElementById('backup').onclick=openBackup;
-document.getElementById('backupChipGo').onclick=openBackup;
-document.getElementById('backupChipHide').onclick=function(){
-  try{ sessionStorage.setItem('wk_backup_chip_hide','1'); }catch(e){}
-  hideBackupChip();
-};
-window.addEventListener('beforeinstallprompt', function(e){
-  e.preventDefault();
-  deferredInstall=e;
-  showInstall();
-});
-window.addEventListener('appinstalled', function(){
-  try{ localStorage.setItem('wk_pwa_installed','1'); }catch(e){}
-  deferredInstall=null;
-  hideInstall();
-});
-document.getElementById('installBtn').onclick=function(){ tryNativeInstall(); };
-document.getElementById('splashInstall').onclick=function(){ tryNativeInstall(); };
-document.getElementById('installHelpOk').onclick=function(){ document.getElementById('installHelp').classList.remove('show'); };
-document.getElementById('installHide').onclick=function(){
-  try{ localStorage.setItem('wk_pwa_install_hide','1'); }catch(e){}
-  hideInstall();
-};
+        // PWA install (Android/Chrome/Edge)
+        let deferredInstallPrompt = null;
+        const installBtn = document.getElementById('installBtn');
 
-async function pollChat(){
-  const phone=localStorage.getItem('wk_phone')||'';
-  if(phone.length<10 || typeof Notification==='undefined' || Notification.permission!=='granted') return;
-  const since=parseInt(localStorage.getItem('wk_chat_ts')||'0',10)||0;
-  const ctrl = (typeof AbortController!=='undefined') ? new AbortController() : null;
-  const to = ctrl ? setTimeout(function(){ try{ ctrl.abort(); }catch(e){} }, 12000) : null;
-  try{
-    const q=new URLSearchParams({ action:'getMessages', phone:phone, since:String(since) });
-    const res=await fetch(GAS_URL+'?'+q.toString(), { cache:'no-store', mode:'cors', signal: ctrl ? ctrl.signal : undefined });
-    const text=await res.text();
-    const a=text.indexOf('{'), b=text.lastIndexOf('}');
-    if(a<0 || b<=a) return;
-    const j=JSON.parse(text.slice(a,b+1));
-    if(j.status!=='ok' || !Array.isArray(j.messages) || !j.messages.length) return;
-    let maxTs=since;
-    const admin=j.messages.filter(function(m){ if(m.ts>maxTs) maxTs=m.ts; return m.sender==='admin'; });
-    localStorage.setItem('wk_chat_ts', String(maxTs));
-    if(!admin.length) return;
-    const last=admin[admin.length-1];
-    if(navigator.serviceWorker.controller){
-      navigator.serviceWorker.controller.postMessage({
-        type:'SHOW_NOTIFICATION',
-        title:'Поддержка Weltkind',
-        body:(last.text||'Новое сообщение').slice(0,120),
-        tag:'chat-'+phone,
-        requireInteraction:true,
-        data:{ url:'./?source=pwa', type:'chat' }
-      });
-    }
-  }catch(e){}
-  finally{ if(to) clearTimeout(to); }
-}
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent automatic mini-infobar
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            if (installBtn) installBtn.style.display = 'flex';
+        });
 
-window.addEventListener('online', function(){
-  if(!gasReady){ autoRetry=0; loadGas(true); }
-});
-document.addEventListener('visibilitychange', function(){
-  if(document.hidden) return;
-  pollChat();
-  if(navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type:'bg_check' });
-  if(!gasReady && splash.classList.contains('stuck')) loadGas(true);
-});
-window.addEventListener('pageshow', function(ev){
-  if(ev.persisted && !gasReady) loadGas(true);
-});
+        window.addEventListener('appinstalled', () => {
+            deferredInstallPrompt = null;
+            if (installBtn) installBtn.style.display = 'none';
+            console.log('PWA installed');
+        });
 
-warmGoogle();
-loadGas(false);
-setTimeout(function(){
-  if(!isPwaInstalled() && !installHidden()){
-    var b=document.getElementById('splashInstall');
-    if(b) b.classList.add('ready');
-  }
-}, 700);
+        async function installPWA() {
+            vibe();
+            try {
+                if (!deferredInstallPrompt) return;
+                deferredInstallPrompt.prompt();
+                const choice = await deferredInstallPrompt.userChoice;
+                console.log('Install choice:', choice);
+                deferredInstallPrompt = null;
+                if (installBtn) installBtn.style.display = 'none';
+            } catch (e) {
+                console.log('Install error:', e);
+            }
+        }
 
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).then(function(reg){
-    if(reg.waiting) reg.waiting.postMessage({ type:'SKIP_WAITING' });
-    if('periodicSync' in reg) reg.periodicSync.register('check-subscription', { minInterval:12*3600000 }).catch(function(){});
-    reg.update().catch(function(){});
-  }).catch(function(){});
-}
-setInterval(pollChat, 45000);
-setInterval(function(){
-  if(navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type:'bg_check' });
-}, 3600000);
-</script>
+        let timerInterval = null;
+
+        // Если iframe не загрузился за 15 секунд — показываем offline-блок
+        let offlineTimer = setTimeout(function() {
+            const offlineBlock = document.getElementById('loaderOffline');
+            if (offlineBlock && !loader.classList.contains('hidden')) {
+                offlineBlock.style.display = 'flex';
+                document.querySelector('.loader-dots').style.display = 'none';
+            }
+        }, 15000);
+
+        function retryLoad() {
+            vibe();
+            clearTimeout(offlineTimer);
+            const offlineBlock = document.getElementById('loaderOffline');
+            if (offlineBlock) offlineBlock.style.display = 'none';
+            document.querySelector('.loader-dots').style.display = 'flex';
+            iframe.src = iframe.src;
+            offlineTimer = setTimeout(function() {
+                if (!loader.classList.contains('hidden')) {
+                    offlineBlock.style.display = 'flex';
+                    document.querySelector('.loader-dots').style.display = 'none';
+                }
+            }, 15000);
+        }
+
+        iframe.onload = function() {
+            clearTimeout(offlineTimer);
+            setTimeout(function() {
+                loader.classList.add('hidden');
+                iframe.classList.remove('hidden');
+                document.getElementById('aiDrawer').style.display = 'flex';
+                document.getElementById('thanksBtn').style.display = 'flex';
+                document.getElementById('clearCacheBtn').style.display = 'block';
+                checkNotificationPermission();
+
+                // Скрываем кнопки через 6 сек, но только если нет кнопки установки
+                setTimeout(function() {
+                    const bottomBtns = document.querySelector('.bottom-btns');
+                    if (!bottomBtns) return;
+                    const _installBtn = document.getElementById('installBtn');
+                    if (_installBtn && window.getComputedStyle(_installBtn).display !== 'none') return;
+                    bottomBtns.classList.add('fade-out');
+                    setTimeout(function() {
+                        bottomBtns.classList.add('hidden');
+                    }, 400);
+                }, 6000);
+            }, 500);
+        };
+
+        function openThanksModal() {
+            vibe();
+            thanksModal.style.display = 'block';
+            thanksOverlay.style.display = 'block';
+            let seconds = 5;
+            thanksTimer.textContent = seconds;
+            timerInterval = setInterval(function() {
+                seconds--;
+                thanksTimer.textContent = seconds;
+                if (seconds <= 0) {
+                    clearInterval(timerInterval);
+                    closeThanksModal();
+                }
+            }, 1000);
+        }
+
+        function closeThanksModal() {
+            thanksModal.style.display = 'none';
+            thanksOverlay.style.display = 'none';
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function checkNotificationPermission() {
+            if ('Notification' in window) {
+                var savedEmail = localStorage.getItem('pushEmail') || '';
+                if (Notification.permission === 'default') {
+                    notifyBtn.style.display = 'block';
+                    notifyBtn.textContent = '🔔 Включить уведомления';
+                    notifyBtn.style.background = '#fff';
+                    notifyBtn.style.color = '#4f46e5';
+                    changeEmailBtn.style.display = 'none';
+                } else if (Notification.permission === 'denied') {
+                    notifyBtn.style.display = 'none';
+                    changeEmailBtn.style.display = 'none';
+                } else {
+                    notifyBtn.style.display = 'none';
+                    if (savedEmail) {
+                        changeEmailBtn.style.display = 'block';
+                    } else {
+                        notifyBtn.style.display = 'block';
+                        notifyBtn.textContent = '🔔 Настроить уведомления';
+                        notifyBtn.style.background = '#fff';
+                        notifyBtn.style.color = '#4f46e5';
+                        changeEmailBtn.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        function closeEmailPrompt() {
+            emailPrompt.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+
+        function changeEmail() {
+            vibe();
+            var currentEmail = localStorage.getItem('pushEmail') || '';
+            document.getElementById('promptEmail').value = currentEmail;
+            emailPrompt.style.display = 'block';
+            overlay.style.display = 'block';
+            document.getElementById('promptEmail').focus();
+        }
+
+        async function requestPermission() {
+            vibe();
+            try {
+                const permission = await Notification.requestPermission();
+                console.log('Permission:', permission);
+                if (permission === 'granted') {
+                    notifyBtn.textContent = '✅ Получаем токен...';
+                    notifyBtn.style.background = '#10b981';
+                    notifyBtn.style.color = '#fff';
+                    await getTokenAndSave();
+                } else {
+                    notifyBtn.textContent = '🔕 Заблокировано';
+                    notifyBtn.style.background = '#ef4444';
+                    notifyBtn.style.color = '#fff';
+                    setTimeout(function() {
+                        notifyBtn.style.display = 'none';
+                    }, 3000);
+                }
+            } catch (err) {
+                console.error('Permission error:', err);
+                notifyBtn.textContent = '❌ Ошибка';
+                notifyBtn.style.background = '#ef4444';
+            }
+        }
+
+        async function getTokenAndSave() {
+            try {
+                const swReg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+                const token = await messaging.getToken({
+                    vapidKey: 'BJ5PR5eT1hyx47uNgz8EAqThCVqGKGrJmOZ-q14Gjl5StjpOkilCj3tYRD8dIzVJJPg1tGql5WVPTfJM2OnVvcg',
+                    serviceWorkerRegistration: swReg
+                });
+
+                console.log('FCM Token:', token);
+                localStorage.setItem('fcmToken', token);
+
+                var email = localStorage.getItem('pushEmail') || '';
+                if (!email) {
+                    notifyBtn.style.display = 'none';
+                    emailPrompt.style.display = 'block';
+                    overlay.style.display = 'block';
+                    document.getElementById('promptEmail').focus();
+                    return;
+                }
+
+                saveTokenToServer(token, email);
+                notifyBtn.style.display = 'none';
+                changeEmailBtn.style.display = 'block';
+
+                new Notification('Уведомления включены!', {
+                    body: 'Email: ' + email,
+                    icon: 'icon-192.png'
+                });
+            } catch (err) {
+                console.error('Token error:', err);
+                notifyBtn.style.display = 'none';
+            }
+        }
+
+        function submitEmail() {
+            vibe();
+            var email = document.getElementById('promptEmail').value.trim();
+            if (!email) {
+                alert('Введите email');
+                return;
+            }
+
+            localStorage.setItem('pushEmail', email);
+            closeEmailPrompt();
+
+            var token = localStorage.getItem('fcmToken');
+            if (token) {
+                saveTokenToServer(token, email);
+                notifyBtn.style.display = 'none';
+                changeEmailBtn.style.display = 'block';
+
+                new Notification('Готово!', {
+                    body: 'Уведомления: ' + email,
+                    icon: 'icon-192.png'
+                });
+            } else {
+                getTokenAndSave();
+            }
+        }
+
+        function saveTokenToServer(token, email) {
+            console.log('Saving token for:', email);
+            var saveUrl = 'https://script.google.com/macros/s/AKfycbziJi6zBrH0meVhi27JPdFquQYGhjDK2iX0EIjKrRplhW8E9CQZAkA1ZQpdiNqVsGI1/exec?action=savePushToken&token=' +
+                encodeURIComponent(token) + '&email=' + encodeURIComponent(email);
+
+            fetch(saveUrl, { mode: 'no-cors' })
+                .then(function() {
+                    console.log('Token saved!');
+                })
+                .catch(function(e) {
+                    console.log('Save error:', e);
+                });
+        }
+
+        messaging.onMessage(function(payload) {
+            console.log('Message received:', payload);
+            if (payload && payload.notification) {
+                new Notification(payload.notification.title, {
+                    body: payload.notification.body,
+                    icon: 'icon-192.png'
+                });
+            }
+        });
+
+        // ─────────────────────────────────────────────────────────────────
+        // ИСПРАВЛЕНИЕ: слушаем postMessage от GAS-iframe
+        // GAS не может сам запросить разрешение (script.google.com заблокирован),
+        // поэтому он шлёт нам сообщение, а мы делаем всё здесь на github.io
+        // ─────────────────────────────────────────────────────────────────
+        window.addEventListener('message', function(e) {
+            if (!e.data) return;
+
+            // Пришёл email после логина в GAS — сохраняем и привязываем токен
+            if (e.data.type === 'userEmail' && e.data.email) {
+                var email = e.data.email;
+                console.log('Got email from GAS iframe:', email);
+                localStorage.setItem('pushEmail', email);
+
+                var token = localStorage.getItem('fcmToken');
+                if (token) {
+                    // Токен уже есть — сразу привязываем к этому email
+                    saveTokenToServer(token, email);
+                    notifyBtn.style.display = 'none';
+                    changeEmailBtn.style.display = 'block';
+                } else if (Notification.permission === 'granted') {
+                    // Разрешение уже дано — получаем токен тихо
+                    getTokenAndSave();
+                }
+                // Если permission === 'default' — кнопка уже видна, пользователь нажмёт сам
+            }
+
+            // Пользователь нажал 🔔 внутри GAS-приложения
+            if (e.data.type === 'requestPushPermission') {
+                if (e.data.email) localStorage.setItem('pushEmail', e.data.email);
+                if (Notification.permission === 'granted') {
+                    getTokenAndSave();
+                } else {
+                    requestPermission();
+                }
+            }
+
+            // Бейдж: количество просроченных заявок от GAS
+            if (e.data.type === 'badgeCount') {
+                updateAppBadge(e.data.count || 0);
+            }
+        });
+
+    </script>
+
+    <script>
+        async function clearAppCache() {
+            vibe(20);
+            var btn = document.getElementById('clearCacheBtn');
+            btn.textContent = '⏳ Очистка...';
+            btn.style.opacity = '1';
+
+            // Сохраняем логин и токен уведомлений
+            var savedEmail = localStorage.getItem('pushEmail');
+            var savedToken = localStorage.getItem('fcmToken');
+
+            // Очищаем все SW-кэши
+            if ('caches' in window) {
+                var keys = await caches.keys();
+                await Promise.all(keys.map(function(k) { return caches.delete(k); }));
+            }
+
+            // Отписываем старый SW чтобы он перегрузился
+            if ('serviceWorker' in navigator) {
+                var regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(regs.map(function(r) { return r.unregister(); }));
+            }
+
+            // Очищаем sessionStorage и localStorage
+            sessionStorage.clear();
+            localStorage.clear();
+
+            // Возвращаем сохранённое
+            if (savedEmail) localStorage.setItem('pushEmail', savedEmail);
+            if (savedToken) localStorage.setItem('fcmToken', savedToken);
+
+            // Перезагрузка без кэша
+            window.location.reload(true);
+        }
+
+        function toggleAiPanel() {
+            vibe();
+            document.getElementById('aiDrawer').classList.toggle('open');
+        }
+
+        // Закрыть панель при клике снаружи
+        document.addEventListener('click', function(e) {
+            var drawer = document.getElementById('aiDrawer');
+            if (drawer && drawer.classList.contains('open') && !drawer.contains(e.target)) {
+                drawer.classList.remove('open');
+            }
+        });
+
+        function openAi(url) {
+            vibe();
+            // Закрываем панель после выбора
+            document.getElementById('aiDrawer').classList.remove('open');
+            var w = Math.min(480, screen.width);
+            var h = Math.min(800, screen.height);
+            var left = Math.round((screen.width - w) / 2);
+            var top  = Math.round((screen.height - h) / 2);
+            window.open(url, '_blank',
+                'width=' + w + ',height=' + h +
+                ',left=' + left + ',top=' + top +
+                ',toolbar=no,menubar=no,location=yes,scrollbars=yes,resizable=yes'
+            );
+        }
+    </script>
 </body>
 </html>
