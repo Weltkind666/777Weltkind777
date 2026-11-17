@@ -221,6 +221,42 @@
         .ai-panel .ai-grok { background: linear-gradient(135deg, #1a1a1a, #3d3d3d); }
 
 
+
+        .app-launch {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            font-family: system-ui, sans-serif;
+        }
+        .app-launch-card {
+            width: min(100%, 420px);
+            padding: 32px 24px;
+            border-radius: 24px;
+            background: #fff;
+            color: #222;
+            text-align: center;
+            box-shadow: 0 16px 48px rgba(0,0,0,.22);
+        }
+        .app-launch-icon { font-size: 48px; margin-bottom: 12px; }
+        .app-launch-card h1 { font-size: 23px; margin-bottom: 10px; }
+        .app-launch-card p { color: #666; font-size: 14px; line-height: 1.5; }
+        .app-launch-btn {
+            display: block;
+            margin: 24px 0 14px;
+            padding: 16px 22px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: #fff;
+            font-size: 17px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .app-launch-btn:active { transform: scale(.98); }
+        .app-launch-note { font-size: 12px !important; }
+
         .hidden {
             display: none !important;
         }
@@ -476,8 +512,8 @@
             <span></span><span></span><span></span>
         </div>
         <div class="loader-offline" id="loaderOffline">
-            <p>⚠️ Нет соединения с сервером.<br>Проверьте интернет и попробуйте снова.</p>
-            <button class="retry-btn" onclick="retryLoad()">🔄 Повторить</button>
+            <p>⚠️ Не удалось открыть приложение автоматически.<br>Нажмите кнопку ниже, чтобы открыть его.</p>
+            <button class="retry-btn" onclick="retryLoad()">Открыть приложение</button>
         </div>
     </div>
     <div class="overlay" id="overlay" onclick="closeEmailPrompt()"></div>
@@ -503,7 +539,18 @@
         <button class="apk-btn" id="installBtn" style="display:none" onclick="installPWA()">➕ Установить приложение</button>
     </div>
     <button class="thanks-btn" id="thanksBtn" onclick="openThanksModal()" title="Поблагодарить разработчика">☕</button>
-    <iframe id="app" class="hidden" src="https://152.228.99.155:8443/subscriber"></iframe>
+    
+    <section class="app-launch" id="appLaunch">
+        <div class="app-launch-card">
+            <div class="app-launch-icon">📋</div>
+            <h1>Планировщик заявок</h1>
+            <p>Приложение открывается отдельно, без iframe.</p>
+            <a class="app-launch-btn" href="https://152.228.99.155:8443/subscriber"
+               target="_blank" rel="noopener noreferrer">Открыть приложение</a>
+            <p class="app-launch-note">Если новая вкладка не открылась, разрешите всплывающие окна для этого сайта.</p>
+        </div>
+    </section>
+
 
     <div class="ai-drawer" id="aiDrawer">
         <button class="ai-drawer-toggle" onclick="toggleAiPanel()" title="AI инструменты">
@@ -609,38 +656,32 @@
             const offlineBlock = document.getElementById('loaderOffline');
             if (offlineBlock) offlineBlock.style.display = 'none';
             document.querySelector('.loader-dots').style.display = 'flex';
-            iframe.src = iframe.src;
-            offlineTimer = setTimeout(function() {
-                if (!loader.classList.contains('hidden')) {
-                    offlineBlock.style.display = 'flex';
-                    document.querySelector('.loader-dots').style.display = 'none';
-                }
-            }, 15000);
+            window.open('https://152.228.99.155:8443/subscriber', '_blank', 'noopener,noreferrer');
+            loader.classList.add('hidden');
+            offlineTimer = setTimeout(function() {}, 15000);
         }
 
-        iframe.onload = function() {
-            clearTimeout(offlineTimer);
-            setTimeout(function() {
-                loader.classList.add('hidden');
-                iframe.classList.remove('hidden');
-                document.getElementById('aiDrawer').style.display = 'flex';
-                document.getElementById('thanksBtn').style.display = 'flex';
-                document.getElementById('clearCacheBtn').style.display = 'block';
-                checkNotificationPermission();
+        // Нет iframe: внешнее приложение открывается отдельной вкладкой.
+        // Оболочка остаётся открытой и продолжает обслуживать Firebase Push.
+        clearTimeout(offlineTimer);
+        setTimeout(function() {
+            loader.classList.add('hidden');
+            document.getElementById('aiDrawer').style.display = 'flex';
+            document.getElementById('thanksBtn').style.display = 'flex';
+            document.getElementById('clearCacheBtn').style.display = 'block';
+            checkNotificationPermission();
 
-                // Скрываем кнопки через 6 сек, но только если нет кнопки установки
+            setTimeout(function() {
+                const bottomBtns = document.querySelector('.bottom-btns');
+                if (!bottomBtns) return;
+                const _installBtn = document.getElementById('installBtn');
+                if (_installBtn && window.getComputedStyle(_installBtn).display !== 'none') return;
+                bottomBtns.classList.add('fade-out');
                 setTimeout(function() {
-                    const bottomBtns = document.querySelector('.bottom-btns');
-                    if (!bottomBtns) return;
-                    const _installBtn = document.getElementById('installBtn');
-                    if (_installBtn && window.getComputedStyle(_installBtn).display !== 'none') return;
-                    bottomBtns.classList.add('fade-out');
-                    setTimeout(function() {
-                        bottomBtns.classList.add('hidden');
-                    }, 400);
-                }, 6000);
-            }, 500);
-        };
+                    bottomBtns.classList.add('hidden');
+                }, 400);
+            }, 6000);
+        }, 500);
 
         function openThanksModal() {
             vibe();

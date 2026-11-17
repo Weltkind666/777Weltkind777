@@ -1,4 +1,4 @@
-const CACHE_NAME = 'planzayavok-v5';
+const CACHE_NAME = 'planzayavok-v6';
 const ASSETS = [
   './',
   './index.html',
